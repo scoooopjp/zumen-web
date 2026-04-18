@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ZUMEN Web
 
-## Getting Started
+ZUMEN DIY アプリの公開 Web サイト＋管理画面。
+Next.js 14 App Router / Tailwind CSS / TypeScript / Vercel デプロイ。
 
-First, run the development server:
+## ページ構成
+
+| パス | 内容 |
+|------|------|
+| `/` | LP (Issue 8-2) |
+| `/blueprint/[slug]` | 設計図詳細・BOM・作例サムネイル (Issue 8-3) |
+| `/example/[id]` | 作例詳細 (Issue 8-4) |
+| `/category` | カテゴリ一覧 (Issue 8-5) |
+| `/category/[slug]` | カテゴリ別設計図 |
+| `/store/[retailer]` | ホームセンター別ページ (Issue 8-7) |
+| `/og` | 動的 OGP 画像 (Edge Runtime, next/og) |
+| `/admin` | 管理ダッシュボード |
+| `/admin/blueprints` | 設計図管理 (Issue 9-1) |
+| `/admin/examples` | 作例審査 (Issue 9-4) |
+| `/admin/skus` | 商品 SKU 管理 (Issue 9-2) |
+| `/admin/rules` | 代替ルール管理 (Issue 9-3) |
+| `/admin/retailers` | ホームセンター評価 (Issue 9-5) |
+
+## 開発環境
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npx tsc --noEmit # 型チェック
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Firebase 設定
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`.env.local` を作成して環境変数を設定:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...
+```
 
-## Learn More
+未設定の場合は `lib/data.ts` / `lib/examples.ts` のモックデータにフォールバックします。
 
-To learn more about Next.js, take a look at the following resources:
+## デプロイ
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Vercel (東京リージョン hnd1):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+vercel --prod
+```
 
-## Deploy on Vercel
+`vercel.json` でセキュリティヘッダと hnd1 リージョンを設定済み。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## ライブラリ構成
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+lib/
+  firebase.ts      # Firebase 初期化 (未設定時は null)
+  firestore.ts     # Firestore データフェッチ (FSUseCase/FSExample DTO → model)
+  data.ts          # UseCase モデル・モックデータ
+  examples.ts      # Example モデル・モックデータ
+```
