@@ -58,10 +58,28 @@ export interface UseCase {
   imageAlt: string;
 }
 
+export interface Part {
+  name: string;
+  spec: string;
+  quantity: number;
+  unit: string;
+  note?: string;
+  purchaseURL?: string;
+}
+
+export interface CutItem {
+  partName: string;
+  thickness: number; // mm
+  width: number;     // mm
+  length: number;    // mm
+  quantity: number;
+}
+
 export interface BlueprintDetail extends UseCase {
   dimensions: { width: number; depth: number; height: number };
   tools: string[];
-  parts: { name: string; spec: string; quantity: number; unit: string }[];
+  parts: Part[];
+  cutItems: CutItem[];
   steps: { order: number; title: string; description: string }[];
   warnings: string[];
   relatedSlugs: string[];
@@ -276,6 +294,11 @@ export const blueprintDetails: BlueprintDetail[] = [
       { name: "幕板 (2×4材)", spec: "1200mm", quantity: 2, unit: "本" },
       { name: "コーススレッド", spec: "65mm", quantity: 40, unit: "本" },
     ],
+    cutItems: [
+      { partName: "天板", thickness: 38, width: 140, length: 1200, quantity: 2 },
+      { partName: "脚材", thickness: 38, width: 89, length: 400, quantity: 4 },
+      { partName: "幕板", thickness: 38, width: 89, length: 1200, quantity: 2 },
+    ],
     steps: [
       { order: 1, title: "材料をカット", description: "脚材・幕板・天板を指定サイズにカットします。" },
       { order: 2, title: "脚フレームを組む", description: "脚材2本を幕板でつないで左右のコの字フレームを作ります。" },
@@ -298,6 +321,11 @@ export const blueprintDetails: BlueprintDetail[] = [
       { name: "束石", spec: "150mm角", quantity: 6, unit: "個" },
       { name: "コーススレッド", spec: "90mm", quantity: 100, unit: "本" },
     ],
+    cutItems: [
+      { partName: "デッキ材", thickness: 20, width: 90, length: 1800, quantity: 12 },
+      { partName: "根太", thickness: 38, width: 89, length: 1200, quantity: 6 },
+      { partName: "大引き", thickness: 89, width: 89, length: 1800, quantity: 3 },
+    ],
     steps: [
       { order: 1, title: "レイアウトと束石設置", description: "設置場所を決め、水平に束石を配置します。" },
       { order: 2, title: "大引きを設置", description: "束石の上に大引きを水平に並べます。" },
@@ -318,6 +346,11 @@ export const blueprintDetails: BlueprintDetail[] = [
       { name: "棚板 (SPF 1×10材)", spec: "600mm", quantity: 3, unit: "枚" },
       { name: "背板 (ベニヤ 4mm)", spec: "600×500mm", quantity: 1, unit: "枚" },
       { name: "コーススレッド", spec: "38mm", quantity: 30, unit: "本" },
+    ],
+    cutItems: [
+      { partName: "側板", thickness: 19, width: 235, length: 500, quantity: 2 },
+      { partName: "棚板", thickness: 19, width: 235, length: 600, quantity: 3 },
+      { partName: "背板 (ベニヤ)", thickness: 4, width: 500, length: 600, quantity: 1 },
     ],
     steps: [
       { order: 1, title: "材料をカット", description: "各パーツを指定サイズにカットします。" },
@@ -341,6 +374,10 @@ export const blueprintDetails: BlueprintDetail[] = [
       { name: "コーススレッド", spec: "65mm", quantity: 20, unit: "本" },
       { name: "ボルト・ナット", spec: "M8 × 40mm", quantity: 4, unit: "組" },
     ],
+    cutItems: [
+      { partName: "支柱", thickness: 38, width: 89, length: 1600, quantity: 2 },
+      { partName: "横桟", thickness: 38, width: 89, length: 900, quantity: 2 },
+    ],
     steps: [
       { order: 1, title: "材料をカット・やすりがけ", description: "各部材を指定サイズにカットしてやすりがけします。" },
       { order: 2, title: "フレームを組む", description: "支柱2本を横桟2本でつなぎ、H型のフレームを作ります。" },
@@ -360,6 +397,11 @@ export const blueprintDetails: BlueprintDetail[] = [
       { name: "側板 (SPF 1x8)", spec: "1200mm", quantity: 2, unit: "枚" },
       { name: "背板 (ベニヤ)", spec: "900×1200mm", quantity: 1, unit: "枚" },
       { name: "コーススレッド", spec: "65mm", quantity: 50, unit: "本" },
+    ],
+    cutItems: [
+      { partName: "棚板", thickness: 19, width: 184, length: 900, quantity: 4 },
+      { partName: "側板", thickness: 19, width: 184, length: 1200, quantity: 2 },
+      { partName: "背板 (ベニヤ)", thickness: 4, width: 900, length: 1200, quantity: 1 },
     ],
     steps: [
       { order: 1, title: "材料をカット", description: "ホームセンターのカットサービスを利用すると便利です。" },
@@ -381,6 +423,11 @@ export const blueprintDetails: BlueprintDetail[] = [
       { name: "横桟 (SPF 1x4)", spec: "360mm", quantity: 4, unit: "本" },
       { name: "コーススレッド", spec: "65mm", quantity: 30, unit: "本" },
     ],
+    cutItems: [
+      { partName: "天板", thickness: 19, width: 140, length: 400, quantity: 1 },
+      { partName: "脚材", thickness: 38, width: 89, length: 560, quantity: 4 },
+      { partName: "横桟", thickness: 19, width: 89, length: 360, quantity: 4 },
+    ],
     steps: [
       { order: 1, title: "材料をカット", description: "各パーツを指定サイズにカットします。" },
       { order: 2, title: "脚を組む", description: "4本の脚を横桟でつなぎ箱型の台座を作ります。" },
@@ -400,6 +447,11 @@ export const blueprintDetails: BlueprintDetail[] = [
       { name: "コーススレッド", spec: "75mm", quantity: 60, unit: "本" },
       { name: "蝶番", spec: "中型", quantity: 2, unit: "個" },
       { name: "防虫ネット", spec: "70cm角", quantity: 1, unit: "枚" },
+    ],
+    cutItems: [
+      { partName: "側板・前後板", thickness: 20, width: 200, length: 700, quantity: 4 },
+      { partName: "底板", thickness: 20, width: 600, length: 600, quantity: 1 },
+      { partName: "蓋板", thickness: 20, width: 600, length: 600, quantity: 1 },
     ],
     steps: [
       { order: 1, title: "材料をカット", description: "全パーツを所定のサイズにカットします。" },

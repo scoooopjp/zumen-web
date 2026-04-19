@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AppStoreCTA from "@/components/AppStoreCTA";
+import AppOnlyGate from "@/components/AppOnlyGate";
+import SaveButton from "@/components/SaveButton";
 import BlueprintCard from "@/components/BlueprintCard";
 import {
   getBlueprintBySlug,
@@ -122,8 +124,11 @@ export default async function BlueprintPage({ params }: Props) {
           );
         })()}
 
-        {/* タイトル・バッジ */}
-        <p className="text-sm text-gray-400 mb-1">{bp.category}</p>
+        {/* タイトル・バッジ・保存ボタン */}
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <p className="text-sm text-gray-400">{bp.category}</p>
+          <SaveButton />
+        </div>
         <h1 className="text-3xl font-bold text-gray-900">{bp.name}</h1>
         <p className="text-gray-500 mt-3 leading-relaxed">{bp.description}</p>
 
@@ -167,6 +172,61 @@ export default async function BlueprintPage({ params }: Props) {
           </div>
         </section>
 
+        {/* カット図 */}
+        {bp.cutItems.length > 0 && (
+          <section className="mt-10">
+            <h2 className="text-xl font-bold text-gray-900 mb-3">カット図</h2>
+            <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+              {/* ヘッダー */}
+              <div
+                className="grid text-xs font-bold px-4 py-2.5"
+                style={{
+                  gridTemplateColumns: "1fr 120px 40px",
+                  background: "var(--canvas)",
+                  color: "var(--text-secondary)",
+                  borderBottom: "1px solid var(--border)",
+                }}
+              >
+                <span>部材名</span>
+                <span>寸法 (T×W×L mm)</span>
+                <span className="text-right">数</span>
+              </div>
+              {/* 行 */}
+              {bp.cutItems.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="grid items-center px-4 py-3"
+                  style={{
+                    gridTemplateColumns: "1fr 120px 40px",
+                    borderBottom: idx < bp.cutItems.length - 1 ? "1px solid var(--border)" : "none",
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                      style={{ background: "var(--amber-pale)", color: "var(--amber)" }}
+                    >
+                      {idx + 1}
+                    </span>
+                    <span className="text-sm font-medium" style={{ color: "var(--navy-deep)" }}>
+                      {item.partName}
+                    </span>
+                  </div>
+                  <span
+                    className="text-sm font-mono"
+                    style={{ color: "var(--text-secondary)" }}
+                  >
+                    {item.thickness}×{item.width}×{item.length}
+                  </span>
+                  <span className="text-sm font-bold text-right" style={{ color: "var(--navy-deep)" }}>
+                    ×{item.quantity}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* 工具一覧 */}
         <section className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 mb-3">必要工具</h2>
@@ -183,16 +243,35 @@ export default async function BlueprintPage({ params }: Props) {
         {/* 資材一覧 */}
         <section className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 mb-3">資材一覧</h2>
-          <div className="bg-gray-50 rounded-xl divide-y divide-gray-100 overflow-hidden">
-            {bp.parts.map((part) => (
-              <div key={part.name} className="px-4 py-3 flex items-center justify-between text-sm">
+          <div className="rounded-xl divide-y overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+            {bp.parts.map((part, idx) => (
+              <div key={idx} className="px-4 py-3 flex items-center justify-between text-sm" style={{ background: "var(--surface)" }}>
                 <div>
                   <p className="font-medium text-gray-900">{part.name}</p>
                   <p className="text-gray-400 text-xs">{part.spec}</p>
+                  {part.note && (
+                    <p className="text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>{part.note}</p>
+                  )}
                 </div>
-                <p className="font-bold text-gray-700">
-                  {part.quantity} {part.unit}
-                </p>
+                <div className="flex items-center gap-3 shrink-0 ml-3">
+                  <p className="font-bold text-gray-700">
+                    {part.quantity} {part.unit}
+                  </p>
+                  {part.purchaseURL && (
+                    <a
+                      href={part.purchaseURL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-xs font-bold text-white px-2.5 py-1.5 rounded-full"
+                      style={{ background: "var(--navy-deep)" }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0" />
+                      </svg>
+                      購入
+                    </a>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -204,7 +283,7 @@ export default async function BlueprintPage({ params }: Props) {
           <ol className="space-y-4">
             {bp.steps.map((step) => (
               <li key={step.order} className="flex gap-4">
-                <div className="shrink-0 w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ background: "var(--navy-deep)" }}>
                   {step.order}
                 </div>
                 <div className="pt-1">
@@ -220,7 +299,10 @@ export default async function BlueprintPage({ params }: Props) {
         {bp.warnings.length > 0 && (
           <section className="mt-10">
             <h2 className="text-xl font-bold text-gray-900 mb-3">注意点</h2>
-            <ul className="space-y-2">
+            <ul
+              className="space-y-2 p-4 rounded-xl"
+              style={{ background: "var(--amber-pale)", border: "1px solid rgba(217,123,42,0.25)" }}
+            >
               {bp.warnings.map((w) => (
                 <li key={w} className="flex gap-2 text-sm text-gray-600">
                   <span className="text-orange-500 shrink-0">⚠️</span>
@@ -230,6 +312,80 @@ export default async function BlueprintPage({ params }: Props) {
             </ul>
           </section>
         )}
+
+        {/* カスタム設計 — App 限定ゲート */}
+        <section className="mt-10">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">カスタム設計</h2>
+          <AppOnlyGate
+            title="自分のサイズで設計図を生成"
+            description="幅・奥行・高さを入力するだけでカインズ・コメリ別の材料リストと費用を自動計算します。"
+            ctaLabel="アプリで試す（無料）"
+          >
+            {/* プレビューUI — app と同じレイアウト */}
+            <div className="p-5 space-y-4" style={{ background: "var(--surface)" }}>
+              <div>
+                <p className="text-sm font-semibold mb-2" style={{ color: "var(--navy-deep)" }}>
+                  寸法を入力してください (mm)
+                </p>
+                <div className="grid grid-cols-3 gap-3">
+                  {["幅 W", "奥行 D", "高さ H"].map((label) => (
+                    <div key={label}>
+                      <p className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
+                      <div
+                        className="rounded-lg px-3 py-2 text-sm"
+                        style={{ background: "var(--canvas)", color: "var(--text-tertiary)", border: "1px solid var(--border)" }}
+                      >
+                        例: 900
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs mt-2" style={{ color: "var(--text-tertiary)" }}>
+                  参考: ベーシック寸法 {bp.dimensions.width}×{bp.dimensions.depth}×{bp.dimensions.height} mm
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold mb-2" style={{ color: "var(--navy-deep)" }}>優先ホームセンター</p>
+                <div className="flex gap-2">
+                  {bp.supportedRetailers.map((r) => (
+                    <span
+                      key={r}
+                      className="text-sm px-4 py-1.5 rounded-full"
+                      style={{ background: "var(--canvas)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
+                    >
+                      {r}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div
+                className="w-full py-3 rounded-xl text-center font-bold text-sm text-white"
+                style={{ background: "var(--navy-deep)" }}
+              >
+                設計図を生成する
+              </div>
+            </div>
+          </AppOnlyGate>
+        </section>
+
+        {/* 作例 */}
+        <div className="mt-10">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-gray-900">作例</h2>
+            <Link
+              href="/example"
+              className="text-sm font-semibold"
+              style={{ color: "var(--amber)" }}
+            >
+              すべて見る →
+            </Link>
+          </div>
+          <AppStoreCTA
+            variant="inline"
+            title="作例を投稿するにはアプリから"
+            description="写真・実費・コメントをアプリで投稿するとここに掲載されます。"
+          />
+        </div>
 
         {/* App CTA */}
         <div className="mt-12">
