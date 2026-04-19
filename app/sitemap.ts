@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { useCases, categories } from "@/lib/data";
 import { mockExamples } from "@/lib/examples";
 
-const BASE = "https://www.scoooop.com/apps/zumen";
+const BASE = "https://zumen.scoooop.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

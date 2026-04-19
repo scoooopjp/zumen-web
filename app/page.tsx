@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     description: "22種の設計図から材料リストを自動生成。カインズ・コメリ対応。",
     images: ["/images/apps/zumen-og.png"],
   },
-  alternates: { canonical: "https://www.scoooop.com/apps/zumen/" },
+  alternates: { canonical: "https://zumen.scoooop.com/" },
 };
 
 /* ─── JSON-LD Structured Data ─── */
@@ -33,19 +33,45 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": "https://www.scoooop.com/apps/zumen/#website",
-      "url": "https://www.scoooop.com/apps/zumen/",
+      "@id": "https://zumen.scoooop.com/#website",
+      "url": "https://zumen.scoooop.com/",
       "name": "ZUMEN",
       "description": "DIY設計図・木材リスト自動生成サービス",
       "inLanguage": "ja",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": "https://zumen.scoooop.com/category?q={search_term_string}",
+        },
+        "query-input": "required name=search_term_string",
+      },
     },
     {
       "@type": "SoftwareApplication",
+      "@id": "https://zumen.scoooop.com/#app",
       "name": "ZUMEN - DIY設計図・木材リスト",
       "operatingSystem": "iOS 17+",
       "applicationCategory": "LifestyleApplication",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" },
-      "url": "https://apps.apple.com/us/app/zumen-diy%E8%A8%AD%E8%A8%88%E5%9B%B3-%E6%9C%A8%E6%9D%90%E3%83%AA%E3%82%B9%E3%83%88/id6762496625",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5.0",
+        "ratingCount": "1",
+      },
+      "offers": [
+        { "@type": "Offer", "price": "0", "priceCurrency": "JPY", "name": "基本プラン" },
+        { "@type": "Offer", "price": "370", "priceCurrency": "JPY", "name": "カスタム設計（単発）" },
+        { "@type": "Offer", "price": "480", "priceCurrency": "JPY", "name": "プレミアム月額" },
+      ],
+      "url": "https://apps.apple.com/jp/app/id6762496625",
+      "downloadUrl": "https://apps.apple.com/jp/app/id6762496625",
+      "screenshot": "https://zumen.scoooop.com/opengraph-image.png",
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://www.scoooop.com/#org",
+      "name": "SCOOOOP",
+      "url": "https://www.scoooop.com",
     },
   ],
 };

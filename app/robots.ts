@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin/", "/og/", "/_next/"],
       },
     ],
-    sitemap: "https://www.scoooop.com/apps/zumen/sitemap.xml",
+    sitemap: "https://zumen.scoooop.com/sitemap.xml",
   };
 }
