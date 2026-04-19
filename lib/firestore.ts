@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { useCases as mockUseCases } from "./data";
+import { getUseCaseById } from "./data";
 import { mockExamples } from "./examples";
 import type { UseCase, Difficulty, IndoorOutdoor, Retailer } from "./data";
 import type { Example } from "./examples";
@@ -98,11 +99,13 @@ function fsUseCaseToModel(dto: FSUseCase): UseCase | null {
 }
 
 function fsExampleToModel(dto: FSExample): Example {
+  const useCaseSlug = getUseCaseById(dto.useCaseID)?.slug ?? dto.useCaseID;
+
   return {
     id: dto.id,
     useCaseID: dto.useCaseID,
     useCaseName: dto.useCaseName,
-    useCaseSlug: SLUG_MAP[dto.useCaseID] ?? dto.useCaseID,
+    useCaseSlug,
     imageURL: dto.imageURL,
     actualWidth: dto.actualWidth,
     actualDepth: dto.actualDepth,

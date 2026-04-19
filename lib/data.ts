@@ -487,6 +487,10 @@ export function getUseCaseBySlug(slug: string): UseCase | undefined {
   return useCases.find((uc) => uc.slug === slug);
 }
 
+export function getUseCaseById(id: string): UseCase | undefined {
+  return useCases.find((uc) => uc.id === id);
+}
+
 export function getBlueprintBySlug(slug: string): BlueprintDetail | undefined {
   return blueprintDetails.find((bp) => bp.slug === slug);
 }

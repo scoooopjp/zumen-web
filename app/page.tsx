@@ -16,13 +16,13 @@ export const metadata: Metadata = {
       "棚・ベンチ・ウッドデッキなど22種のDIY設計図。サイズ入力でカインズ・コメリ別の材料リストを自動生成。",
     type: "website",
     locale: "ja_JP",
-    images: [{ url: "/images/apps/zumen-og.png", width: 1200, height: 630 }],
+    images: [{ url: "/opengraph-image.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "ZUMEN｜DIY設計図・木材リスト自動生成",
     description: "22種の設計図から材料リストを自動生成。カインズ・コメリ対応。",
-    images: ["/images/apps/zumen-og.png"],
+    images: ["/opengraph-image.png"],
   },
   alternates: { canonical: "https://zumen.scoooop.com/" },
 };
