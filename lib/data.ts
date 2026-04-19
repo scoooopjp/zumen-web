@@ -64,8 +64,42 @@ export interface Part {
   quantity: number;
   unit: string;
   note?: string;
-  purchaseURL?: string;
+  cainzURL?: string;  // カインズ購入リンク
+  komeriURL?: string; // コメリ購入リンク
 }
+
+// ── 購入リンク定数（RetailerCatalog.swift と同期） ──────────────────
+const C = {
+  spf1x4:  "https://www.cainz.com/shop/g/gSPF1x4",
+  spf1x6:  "https://www.cainz.com/shop/g/gSPF1x6",
+  spf1x8:  "https://www.cainz.com/shop/g/gSPF1x8",
+  spf2x4:  "https://www.cainz.com/shop/g/gSPF2x4",
+  cedar:   "https://www.cainz.com/shop/g/gREDCEDAR",
+  plywood: "https://www.cainz.com/shop/c/c10503010201",
+  screw:   "https://www.cainz.com/shop/c/c10504030201",
+  bracket: "https://www.cainz.com/shop/c/c10504040106",
+  hinge:   "https://www.cainz.com/shop/c/c10504040101",
+  net:     "https://www.cainz.com/shop/c/c10602020104",
+  lumber:  "https://www.cainz.com/shop/c/c10503010101",
+  hardware:"https://www.cainz.com/shop/c/c10504040101",
+};
+const K = {
+  spf1x4:  "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=1x4+SPF",
+  spf1x6:  "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=1x6+SPF",
+  spf1x8:  "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=1x8+SPF",
+  spf2x4:  "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=2x4+SPF",
+  cedar:   "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E3%83%AC%E3%83%83%E3%83%89%E3%82%B7%E3%83%80%E3%83%BC",
+  plywood: "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E3%83%99%E3%83%8B%E3%83%A4",
+  sugi:    "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E6%9D%89%E6%9D%BF",
+  screw:   "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E3%82%B3%E3%83%BC%E3%82%B9%E3%83%AC%E3%83%83%E3%83%89",
+  bracket: "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=L%E5%AD%97%E9%87%91%E5%85%B7",
+  hinge:   "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E8%9D%B6%E7%95%AA",
+  net:     "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E9%89%A2%E5%BA%95%E3%83%8D%E3%83%83%E3%83%88",
+  flange:  "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E3%83%95%E3%83%A9%E3%83%B3%E3%82%B8",
+  pipe:    "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E3%82%A2%E3%82%A4%E3%82%A2%E3%83%B3%E3%83%91%E3%82%A4%E3%83%97",
+  lumber:  "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E6%9C%A8%E6%9D%90",
+  stone:   "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E6%9D%9F%E7%9F%B3",
+};
 
 export interface CutItem {
   partName: string;
@@ -289,10 +323,10 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 1200, depth: 350, height: 430 },
     tools: ["電動ドライバー", "メジャー", "鉛筆", "のこぎり（カットサービス利用可）"],
     parts: [
-      { name: "天板 (2×6材)", spec: "1200mm", quantity: 2, unit: "枚" },
-      { name: "脚材 (2×4材)", spec: "400mm", quantity: 4, unit: "本" },
-      { name: "幕板 (2×4材)", spec: "1200mm", quantity: 2, unit: "本" },
-      { name: "コーススレッド", spec: "65mm", quantity: 40, unit: "本" },
+      { name: "天板 (2×6材)", spec: "38×140×1200mm", quantity: 2, unit: "枚", cainzURL: C.lumber, komeriURL: "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=2x6+SPF" },
+      { name: "脚材 (2×4材)", spec: "38×89×400mm", quantity: 4, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
+      { name: "幕板 (2×4材)", spec: "38×89×1200mm", quantity: 2, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
+      { name: "コーススレッド", spec: "65mm", quantity: 40, unit: "本", note: "約40本使用", cainzURL: C.screw, komeriURL: K.screw },
     ],
     cutItems: [
       { partName: "天板", thickness: 38, width: 140, length: 1200, quantity: 2 },
@@ -315,11 +349,11 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 1800, depth: 1200, height: 300 },
     tools: ["電動ドライバー", "丸ノコまたはのこぎり", "メジャー", "水平器", "墨つぼ"],
     parts: [
-      { name: "デッキ材 (イペ or SPF)", spec: "1800mm", quantity: 12, unit: "枚" },
-      { name: "根太 (2×4材)", spec: "1200mm", quantity: 6, unit: "本" },
-      { name: "大引き (4×4材)", spec: "1800mm", quantity: 3, unit: "本" },
-      { name: "束石", spec: "150mm角", quantity: 6, unit: "個" },
-      { name: "コーススレッド", spec: "90mm", quantity: 100, unit: "本" },
+      { name: "デッキ材 (ウエスタンレッドシダー)", spec: "20×90×1800mm", quantity: 12, unit: "枚", note: "屋外対応", cainzURL: C.cedar, komeriURL: K.cedar },
+      { name: "根太 (2×4材)", spec: "38×89×1200mm", quantity: 6, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
+      { name: "大引き (4×4材)", spec: "89×89×1800mm", quantity: 3, unit: "本", cainzURL: C.lumber, komeriURL: K.lumber },
+      { name: "束石", spec: "150mm角", quantity: 6, unit: "個", cainzURL: "https://www.cainz.com/shop/c/c10601010201", komeriURL: K.stone },
+      { name: "コーススレッド", spec: "90mm", quantity: 100, unit: "本", note: "ステンレス製推奨", cainzURL: C.screw, komeriURL: K.screw },
     ],
     cutItems: [
       { partName: "デッキ材", thickness: 20, width: 90, length: 1800, quantity: 12 },
@@ -342,10 +376,10 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 600, depth: 300, height: 500 },
     tools: ["電動ドライバー", "メジャー", "鉛筆", "のこぎり"],
     parts: [
-      { name: "側板 (SPF 1×10材)", spec: "500mm", quantity: 2, unit: "枚" },
-      { name: "棚板 (SPF 1×10材)", spec: "600mm", quantity: 3, unit: "枚" },
-      { name: "背板 (ベニヤ 4mm)", spec: "600×500mm", quantity: 1, unit: "枚" },
-      { name: "コーススレッド", spec: "38mm", quantity: 30, unit: "本" },
+      { name: "側板 (SPF 1×10材)", spec: "19×235×500mm", quantity: 2, unit: "枚", cainzURL: C.lumber, komeriURL: K.lumber },
+      { name: "棚板 (SPF 1×10材)", spec: "19×235×600mm", quantity: 3, unit: "枚", cainzURL: C.lumber, komeriURL: K.lumber },
+      { name: "背板 (ベニヤ 4mm)", spec: "600×500mm", quantity: 1, unit: "枚", note: "4mm厚", cainzURL: C.plywood, komeriURL: K.plywood },
+      { name: "コーススレッド", spec: "38mm", quantity: 30, unit: "本", cainzURL: C.screw, komeriURL: K.screw },
     ],
     cutItems: [
       { partName: "側板", thickness: 19, width: 235, length: 500, quantity: 2 },
@@ -367,12 +401,12 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 900, depth: 400, height: 1600 },
     tools: ["電動ドライバー", "メジャー", "レンチ", "のこぎり"],
     parts: [
-      { name: "支柱 (2×4材)", spec: "1600mm", quantity: 2, unit: "本" },
-      { name: "横桟 (2×4材)", spec: "900mm", quantity: 2, unit: "本" },
-      { name: "ハンガーパイプ (アイアン丸棒)", spec: "φ19mm × 900mm", quantity: 1, unit: "本" },
-      { name: "フランジ (パイプ取付金具)", spec: "φ19mm対応", quantity: 2, unit: "個" },
-      { name: "コーススレッド", spec: "65mm", quantity: 20, unit: "本" },
-      { name: "ボルト・ナット", spec: "M8 × 40mm", quantity: 4, unit: "組" },
+      { name: "支柱 (2×4材)", spec: "38×89×1600mm", quantity: 2, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
+      { name: "横桟 (2×4材)", spec: "38×89×900mm", quantity: 2, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
+      { name: "ハンガーパイプ (アイアン丸棒)", spec: "φ19mm × 900mm", quantity: 1, unit: "本", cainzURL: C.hardware, komeriURL: K.pipe },
+      { name: "フランジ (パイプ取付金具)", spec: "φ19mm対応", quantity: 2, unit: "個", cainzURL: C.hardware, komeriURL: K.flange },
+      { name: "コーススレッド", spec: "65mm", quantity: 20, unit: "本", cainzURL: C.screw, komeriURL: K.screw },
+      { name: "ボルト・ナット", spec: "M8 × 40mm", quantity: 4, unit: "組", cainzURL: C.hardware, komeriURL: K.flange },
     ],
     cutItems: [
       { partName: "支柱", thickness: 38, width: 89, length: 1600, quantity: 2 },
@@ -393,10 +427,10 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 900, depth: 200, height: 1200 },
     tools: ["電動ドライバー", "メジャー", "鉛筆", "のこぎり（カットサービス利用可）"],
     parts: [
-      { name: "棚板 (SPF 1x8)", spec: "900mm", quantity: 4, unit: "枚" },
-      { name: "側板 (SPF 1x8)", spec: "1200mm", quantity: 2, unit: "枚" },
-      { name: "背板 (ベニヤ)", spec: "900×1200mm", quantity: 1, unit: "枚" },
-      { name: "コーススレッド", spec: "65mm", quantity: 50, unit: "本" },
+      { name: "棚板 (SPF 1×8材)", spec: "19×184×900mm", quantity: 4, unit: "枚", cainzURL: C.spf1x8, komeriURL: K.spf1x8 },
+      { name: "側板 (SPF 1×8材)", spec: "19×184×1200mm", quantity: 2, unit: "枚", cainzURL: C.spf1x8, komeriURL: K.spf1x8 },
+      { name: "背板 (ベニヤ 4mm)", spec: "900×1200mm", quantity: 1, unit: "枚", cainzURL: C.plywood, komeriURL: K.plywood },
+      { name: "コーススレッド", spec: "65mm", quantity: 50, unit: "本", cainzURL: C.screw, komeriURL: K.screw },
     ],
     cutItems: [
       { partName: "棚板", thickness: 19, width: 184, length: 900, quantity: 4 },
@@ -418,10 +452,10 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 400, depth: 400, height: 600 },
     tools: ["電動ドライバー", "メジャー", "鉛筆", "のこぎり"],
     parts: [
-      { name: "天板 (SPF 1x6)", spec: "400mm", quantity: 1, unit: "枚" },
-      { name: "脚材 (2×4)", spec: "560mm", quantity: 4, unit: "本" },
-      { name: "横桟 (SPF 1x4)", spec: "360mm", quantity: 4, unit: "本" },
-      { name: "コーススレッド", spec: "65mm", quantity: 30, unit: "本" },
+      { name: "天板 (SPF 1×6材)", spec: "19×140×400mm", quantity: 1, unit: "枚", cainzURL: C.spf1x6, komeriURL: K.spf1x6 },
+      { name: "脚材 (2×4材)", spec: "38×89×560mm", quantity: 4, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
+      { name: "横桟 (SPF 1×4材)", spec: "19×89×360mm", quantity: 4, unit: "本", cainzURL: C.spf1x4, komeriURL: K.spf1x4 },
+      { name: "コーススレッド", spec: "65mm", quantity: 30, unit: "本", cainzURL: C.screw, komeriURL: K.screw },
     ],
     cutItems: [
       { partName: "天板", thickness: 19, width: 140, length: 400, quantity: 1 },
@@ -441,12 +475,12 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 600, depth: 600, height: 700 },
     tools: ["電動ドライバー", "丸ノコまたはのこぎり", "メジャー", "鉛筆", "L字金具"],
     parts: [
-      { name: "側板・前後板 (杉板)", spec: "700mm", quantity: 4, unit: "枚" },
-      { name: "底板 (杉板)", spec: "600×600mm", quantity: 1, unit: "枚" },
-      { name: "蓋板 (杉板)", spec: "600×600mm", quantity: 1, unit: "枚" },
-      { name: "コーススレッド", spec: "75mm", quantity: 60, unit: "本" },
-      { name: "蝶番", spec: "中型", quantity: 2, unit: "個" },
-      { name: "防虫ネット", spec: "70cm角", quantity: 1, unit: "枚" },
+      { name: "側板・前後板 (杉板)", spec: "20×200×700mm", quantity: 4, unit: "枚", cainzURL: C.lumber, komeriURL: K.sugi },
+      { name: "底板 (杉板)", spec: "20×600×600mm", quantity: 1, unit: "枚", cainzURL: C.lumber, komeriURL: K.sugi },
+      { name: "蓋板 (杉板)", spec: "20×600×600mm", quantity: 1, unit: "枚", cainzURL: C.lumber, komeriURL: K.sugi },
+      { name: "コーススレッド", spec: "75mm", quantity: 60, unit: "本", note: "ステンレス製推奨", cainzURL: C.screw, komeriURL: K.screw },
+      { name: "蝶番", spec: "中型", quantity: 2, unit: "個", cainzURL: C.hinge, komeriURL: K.hinge },
+      { name: "防虫ネット", spec: "70cm角", quantity: 1, unit: "枚", cainzURL: C.net, komeriURL: K.net },
     ],
     cutItems: [
       { partName: "側板・前後板", thickness: 20, width: 200, length: 700, quantity: 4 },
