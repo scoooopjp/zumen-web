@@ -10,6 +10,7 @@ import {
   formatBudget,
   formatTime,
   blueprintDetails,
+  getCategoryThumbnailURL,
 } from "@/lib/data";
 
 interface Props {
@@ -100,9 +101,26 @@ export default async function BlueprintPage({ params }: Props) {
         </nav>
 
         {/* ヒーロー */}
-        <div className="aspect-video bg-gray-100 rounded-2xl flex items-center justify-center mb-6">
-          <span className="text-6xl">🪚</span>
-        </div>
+        {(() => {
+          const thumbURL = getCategoryThumbnailURL(bp.category);
+          return thumbURL ? (
+            <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "3/2" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={thumbURL} alt={bp.imageAlt} className="w-full h-full object-cover" />
+              <span
+                className="absolute bottom-3 right-3 text-[11px] px-2 py-1 rounded"
+                style={{ background: "rgba(0,0,0,0.45)", color: "rgba(255,255,255,0.92)" }}
+              >
+                ※完成イメージ
+              </span>
+            </div>
+          ) : (
+            <div className="aspect-video rounded-2xl flex items-center justify-center mb-6"
+              style={{ background: "var(--canvas)" }}>
+              <span className="text-6xl">🪚</span>
+            </div>
+          );
+        })()}
 
         {/* タイトル・バッジ */}
         <p className="text-sm text-gray-400 mb-1">{bp.category}</p>
