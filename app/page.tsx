@@ -8,8 +8,8 @@ import { useCases, categories } from "@/lib/data";
 export const metadata: Metadata = {
   title: "ZUMEN｜DIY設計図・木材リスト自動生成アプリ",
   description:
-    "棚・ベンチ・ウッドデッキなど22種のDIY設計図を無料公開。サイズを入力するだけでカインズ・コメリ別の木材リストと費用を自動計算。初心者から上級者まで使えるDIY支援サービス。",
-  keywords: ["DIY", "設計図", "木材リスト", "カインズ", "コメリ", "棚", "ウッドデッキ", "2×4", "SPF材"],
+    "棚・ベンチ・ウッドデッキなど22種のDIY設計図を無料公開。サイズを入力するだけでカインズ・コメリ・コーナン・DCM別の木材リストと費用を自動計算。初心者から上級者まで使えるDIY支援サービス。",
+  keywords: ["DIY", "設計図", "木材リスト", "カインズ", "コメリ", "コーナン", "DCM", "棚", "ウッドデッキ", "2×4", "SPF材"],
   openGraph: {
     title: "ZUMEN｜DIY設計図・木材リスト自動生成アプリ",
     description:
@@ -258,15 +258,17 @@ export default function HomePage() {
           <br className="sm:hidden" />
           そのまま買い物リストに
         </h2>
-        <div className="flex justify-center gap-6">
+        <div className="flex flex-wrap justify-center gap-4">
           {[
-            { slug: "cainz", name: "カインズ",  emoji: "🔵" },
-            { slug: "komeri", name: "コメリ", emoji: "🔴" },
+            { slug: "cainz",  name: "カインズ",  emoji: "🔵" },
+            { slug: "komeri", name: "コメリ",    emoji: "🔴" },
+            { slug: "kohnan", name: "コーナン",  emoji: "🟠" },
+            { slug: "dcm",    name: "DCM",        emoji: "🟢" },
           ].map((store) => (
             <Link
               key={store.slug}
               href={`/store/${store.slug}`}
-              className="zumen-card flex flex-col items-center gap-3 p-6 w-36"
+              className="zumen-card flex flex-col items-center gap-3 p-6 w-32"
             >
               <span className="text-4xl">{store.emoji}</span>
               <span className="font-bold text-sm" style={{ color: "var(--navy-deep)" }}>
@@ -275,9 +277,6 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
-        <p className="mt-5 text-xs" style={{ color: "var(--text-tertiary)" }}>
-          順次対応ホームセンターを拡大予定
-        </p>
       </section>
 
       {/* ── App CTA ───────────────────────────────────────── */}

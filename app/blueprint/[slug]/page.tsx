@@ -6,6 +6,7 @@ import AppOnlyGate from "@/components/AppOnlyGate";
 import SaveButton from "@/components/SaveButton";
 import StepIllustration from "@/components/StepIllustration";
 import BlueprintCard from "@/components/BlueprintCard";
+import PartPriceTag from "@/components/PartPriceTag";
 import {
   getBlueprintBySlug,
   getUseCaseBySlug,
@@ -259,36 +260,44 @@ export default async function BlueprintPage({ params }: Props) {
                     {part.quantity} {part.unit}
                   </p>
                 </div>
-                {/* 購入リンク — カインズ / コメリ */}
-                {(part.cainzURL || part.komeriURL) && (
-                  <div className="flex gap-2 mt-2.5">
+                {/* 購入リンク — カインズ / コメリ / コーナン / DCM (with live prices) */}
+                {(part.cainzURL || part.komeriURL || part.kohnanURL || part.dcmURL) && (
+                  <div className="flex flex-wrap gap-2 mt-2.5">
                     {part.cainzURL && (
-                      <a
+                      <PartPriceTag
                         href={part.cainzURL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full"
+                        searchURL={part.komeriURL || part.kohnanURL || part.dcmURL}
+                        retailer="cainz"
+                        label="カインズ"
                         style={{ background: "#1565C020", color: "#1565C0", border: "1px solid #1565C040" }}
-                      >
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                          <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.82 13h7.86l1.79-7H5.21l-.94-4H1v2h2l3.6 7.59L5.25 13c-.16.28-.25.61-.25.95C5 15.1 5.9 16 7 16h13v-2H7.42z"/>
-                        </svg>
-                        カインズ
-                      </a>
+                      />
                     )}
                     {part.komeriURL && (
-                      <a
+                      <PartPriceTag
                         href={part.komeriURL}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full"
+                        searchURL={part.komeriURL}
+                        retailer="komeri"
+                        label="コメリ"
                         style={{ background: "#C0000020", color: "#C00000", border: "1px solid #C0000040" }}
-                      >
-                        <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                          <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM7.82 13h7.86l1.79-7H5.21l-.94-4H1v2h2l3.6 7.59L5.25 13c-.16.28-.25.61-.25.95C5 15.1 5.9 16 7 16h13v-2H7.42z"/>
-                        </svg>
-                        コメリ
-                      </a>
+                      />
+                    )}
+                    {part.kohnanURL && (
+                      <PartPriceTag
+                        href={part.kohnanURL}
+                        searchURL={part.kohnanURL}
+                        retailer="kohnan"
+                        label="コーナン"
+                        style={{ background: "#E6500020", color: "#E65000", border: "1px solid #E6500040" }}
+                      />
+                    )}
+                    {part.dcmURL && (
+                      <PartPriceTag
+                        href={part.dcmURL}
+                        searchURL={part.dcmURL}
+                        retailer="dcm"
+                        label="DCM"
+                        style={{ background: "#2E7D3220", color: "#2E7D32", border: "1px solid #2E7D3240" }}
+                      />
                     )}
                   </div>
                 )}

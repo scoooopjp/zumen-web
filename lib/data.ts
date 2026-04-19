@@ -39,7 +39,7 @@ export function getCategoryThumbnailURL(category: string): string | null {
 
 export type Difficulty = "初心者向け" | "中級者向け" | "上級者向け";
 export type IndoorOutdoor = "室内" | "屋外" | "両用";
-export type Retailer = "カインズ" | "コメリ";
+export type Retailer = "カインズ" | "コメリ" | "コーナン" | "DCM";
 
 export interface UseCase {
   id: string;
@@ -66,6 +66,8 @@ export interface Part {
   note?: string;
   cainzURL?: string;  // カインズ購入リンク
   komeriURL?: string; // コメリ購入リンク
+  kohnanURL?: string; // コーナン購入リンク
+  dcmURL?: string;    // DCM購入リンク
 }
 
 // ── 購入リンク定数（RetailerCatalog.swift と同期） ──────────────────
@@ -100,6 +102,40 @@ const K = {
   lumber:  "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E6%9C%A8%E6%9D%90",
   stone:   "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=%E6%9D%9F%E7%9F%B3",
 };
+const KH = {
+  spf1x4:  "https://www.kohnan-eshop.com/shop/search?searchWord=1x4+SPF",
+  spf1x6:  "https://www.kohnan-eshop.com/shop/search?searchWord=1x6+SPF",
+  spf1x8:  "https://www.kohnan-eshop.com/shop/search?searchWord=1x8+SPF",
+  spf2x4:  "https://www.kohnan-eshop.com/shop/search?searchWord=2x4+SPF",
+  cedar:   "https://www.kohnan-eshop.com/shop/search?searchWord=%E3%83%AC%E3%83%83%E3%83%89%E3%82%B7%E3%83%80%E3%83%BC",
+  plywood: "https://www.kohnan-eshop.com/shop/search?searchWord=%E3%83%99%E3%83%8B%E3%83%A4%E5%90%88%E6%9D%BF",
+  sugi:    "https://www.kohnan-eshop.com/shop/search?searchWord=%E6%9D%89%E6%9D%BF",
+  screw:   "https://www.kohnan-eshop.com/shop/search?searchWord=%E3%82%B3%E3%83%BC%E3%82%B9%E3%83%AC%E3%83%83%E3%83%89",
+  bracket: "https://www.kohnan-eshop.com/shop/search?searchWord=L%E5%AD%97%E9%87%91%E5%85%B7",
+  hinge:   "https://www.kohnan-eshop.com/shop/search?searchWord=%E8%9D%B6%E7%95%AA",
+  net:     "https://www.kohnan-eshop.com/shop/search?searchWord=%E9%89%A2%E5%BA%95%E3%83%8D%E3%83%83%E3%83%88",
+  flange:  "https://www.kohnan-eshop.com/shop/search?searchWord=%E3%83%95%E3%83%A9%E3%83%B3%E3%82%B8",
+  pipe:    "https://www.kohnan-eshop.com/shop/search?searchWord=%E3%82%A2%E3%82%A4%E3%82%A2%E3%83%B3%E3%83%91%E3%82%A4%E3%83%97",
+  lumber:  "https://www.kohnan-eshop.com/shop/search?searchWord=%E6%9C%A8%E6%9D%90",
+  stone:   "https://www.kohnan-eshop.com/shop/search?searchWord=%E8%B8%8F%E3%81%BF%E7%9F%B3",
+};
+const D = {
+  spf1x4:  "https://www.dcm-online.jp/search?q=1x4+SPF",
+  spf1x6:  "https://www.dcm-online.jp/search?q=1x6+SPF",
+  spf1x8:  "https://www.dcm-online.jp/search?q=1x8+SPF",
+  spf2x4:  "https://www.dcm-online.jp/search?q=2x4+SPF",
+  cedar:   "https://www.dcm-online.jp/search?q=%E3%83%AC%E3%83%83%E3%83%89%E3%82%B7%E3%83%80%E3%83%BC",
+  plywood: "https://www.dcm-online.jp/search?q=%E3%83%99%E3%83%8B%E3%83%A4%E5%90%88%E6%9D%BF",
+  sugi:    "https://www.dcm-online.jp/search?q=%E6%9D%89%E6%9D%BF",
+  screw:   "https://www.dcm-online.jp/search?q=%E3%82%B3%E3%83%BC%E3%82%B9%E3%83%AC%E3%83%83%E3%83%89",
+  bracket: "https://www.dcm-online.jp/search?q=L%E5%AD%97%E9%87%91%E5%85%B7",
+  hinge:   "https://www.dcm-online.jp/search?q=%E8%9D%B6%E7%95%AA",
+  net:     "https://www.dcm-online.jp/search?q=%E9%89%A2%E5%BA%95%E3%83%8D%E3%83%83%E3%83%88",
+  flange:  "https://www.dcm-online.jp/search?q=%E3%83%95%E3%83%A9%E3%83%B3%E3%82%B8",
+  pipe:    "https://www.dcm-online.jp/search?q=%E3%82%A2%E3%82%A4%E3%82%A2%E3%83%B3%E3%83%91%E3%82%A4%E3%83%97",
+  lumber:  "https://www.dcm-online.jp/search?q=%E6%9C%A8%E6%9D%90",
+  stone:   "https://www.dcm-online.jp/search?q=%E8%B8%8F%E3%81%BF%E7%9F%B3",
+};
 
 export interface CutItem {
   partName: string;
@@ -133,7 +169,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 8000,
     estimatedTimeMinutes: 120,
     indoorOutdoor: "室内",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-shelf-basic",
     description: "SPF材で作るシンプルな壁面棚。初めてのDIYにも最適。サイズを自由に調整できます。",
     imageAlt: "シンプルな木製壁面棚のDIY設計図",
@@ -149,7 +185,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 5000,
     estimatedTimeMinutes: 90,
     indoorOutdoor: "両用",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-planter-stand",
     description: "お気に入りの植物を引き立てる木製のプランター台。屋外にも使えるシンプルデザイン。",
     imageAlt: "木製プランター台のDIY設計図",
@@ -165,7 +201,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 10000,
     estimatedTimeMinutes: 180,
     indoorOutdoor: "屋外",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-compost-box",
     description: "生ゴミを堆肥に変えるコンポストボックス。ガーデニングと組み合わせて循環型の暮らしへ。",
     imageAlt: "木製コンポストボックスのDIY設計図",
@@ -181,7 +217,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 7000,
     estimatedTimeMinutes: 120,
     indoorOutdoor: "両用",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-bench",
     description: "2×4材で作るシンプルなガーデンベンチ。玄関・庭・ベランダに。防腐塗装で長持ち。",
     imageAlt: "木製ガーデンベンチのDIY設計図",
@@ -197,7 +233,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 40000,
     estimatedTimeMinutes: 480,
     indoorOutdoor: "屋外",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-deck",
     description: "庭をもっと活用するためのウッドデッキ。根太・デッキ材の基本構造から学べる入門設計。",
     imageAlt: "木製ウッドデッキのDIY設計図",
@@ -213,7 +249,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 5000,
     estimatedTimeMinutes: 90,
     indoorOutdoor: "室内",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-shoe-rack",
     description: "玄関をすっきり整理するオープンシューズラック。SPF材で軽量コンパクトに仕上げる。",
     imageAlt: "木製シューズラックのDIY設計図",
@@ -229,7 +265,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 4000,
     estimatedTimeMinutes: 60,
     indoorOutdoor: "両用",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-flower-box",
     description: "窓辺や玄関先を彩る木製フラワーボックス。1×4材で作るビギナー向け定番DIY。",
     imageAlt: "木製フラワーボックスのDIY設計図",
@@ -245,7 +281,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 8000,
     estimatedTimeMinutes: 90,
     indoorOutdoor: "室内",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-hanger-rack",
     description: "衣類をおしゃれに収納するシンプルなハンガーラック。アイアンバーと木材の組み合わせ。",
     imageAlt: "木製ハンガーラックのDIY設計図",
@@ -261,7 +297,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 15000,
     estimatedTimeMinutes: 240,
     indoorOutdoor: "屋外",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-garden-table",
     description: "庭でのBBQや朝食に使えるガーデンテーブル。天板・脚の基本的な組み方を習得できる。",
     imageAlt: "木製ガーデンテーブルのDIY設計図",
@@ -277,7 +313,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 20000,
     estimatedTimeMinutes: 300,
     indoorOutdoor: "室内",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-tv-stand",
     description: "すっきりとしたローボードタイプのテレビ台。引き戸付きで配線も隠せる本格仕様。",
     imageAlt: "木製テレビ台のDIY設計図",
@@ -293,7 +329,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 10000,
     estimatedTimeMinutes: 150,
     indoorOutdoor: "室内",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-bookshelf",
     description: "文庫本からA4サイズまで対応する可動棚式の本棚。棚板の位置を自分で変えられる。",
     imageAlt: "木製本棚のDIY設計図",
@@ -309,7 +345,7 @@ export const useCases: UseCase[] = [
     estimatedBudgetMax: 12000,
     estimatedTimeMinutes: 180,
     indoorOutdoor: "室内",
-    supportedRetailers: ["カインズ", "コメリ"],
+    supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
     templateID: "tpl-cat-walk",
     description: "壁を活用した猫用キャットウォーク。ステップ板を壁に固定してスペースを有効活用。",
     imageAlt: "DIYキャットウォークの設計図",
@@ -323,10 +359,10 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 1200, depth: 350, height: 430 },
     tools: ["電動ドライバー", "メジャー", "鉛筆", "のこぎり（カットサービス利用可）"],
     parts: [
-      { name: "天板 (2×6材)", spec: "38×140×1200mm", quantity: 2, unit: "枚", cainzURL: C.lumber, komeriURL: "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=2x6+SPF" },
-      { name: "脚材 (2×4材)", spec: "38×89×400mm", quantity: 4, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
-      { name: "幕板 (2×4材)", spec: "38×89×1200mm", quantity: 2, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
-      { name: "コーススレッド", spec: "65mm", quantity: 40, unit: "本", note: "約40本使用", cainzURL: C.screw, komeriURL: K.screw },
+      { name: "天板 (2×6材)", spec: "38×140×1200mm", quantity: 2, unit: "枚", cainzURL: C.lumber, komeriURL: "https://www.komeri.com/disp/CKmSfKeyWordPage.jsp?KEYWORDS=2x6+SPF", kohnanURL: "https://www.kohnan-eshop.com/shop/search?searchWord=2x6+SPF", dcmURL: "https://www.dcm-online.jp/search?q=2x6+SPF" },
+      { name: "脚材 (2×4材)", spec: "38×89×400mm", quantity: 4, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4, kohnanURL: KH.spf2x4, dcmURL: D.spf2x4 },
+      { name: "幕板 (2×4材)", spec: "38×89×1200mm", quantity: 2, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4, kohnanURL: KH.spf2x4, dcmURL: D.spf2x4 },
+      { name: "コーススレッド", spec: "65mm", quantity: 40, unit: "本", note: "約40本使用", cainzURL: C.screw, komeriURL: K.screw, kohnanURL: KH.screw, dcmURL: D.screw },
     ],
     cutItems: [
       { partName: "天板", thickness: 38, width: 140, length: 1200, quantity: 2 },
@@ -349,11 +385,11 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 1800, depth: 1200, height: 300 },
     tools: ["電動ドライバー", "丸ノコまたはのこぎり", "メジャー", "水平器", "墨つぼ"],
     parts: [
-      { name: "デッキ材 (ウエスタンレッドシダー)", spec: "20×90×1800mm", quantity: 12, unit: "枚", note: "屋外対応", cainzURL: C.cedar, komeriURL: K.cedar },
-      { name: "根太 (2×4材)", spec: "38×89×1200mm", quantity: 6, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
-      { name: "大引き (4×4材)", spec: "89×89×1800mm", quantity: 3, unit: "本", cainzURL: C.lumber, komeriURL: K.lumber },
-      { name: "束石", spec: "150mm角", quantity: 6, unit: "個", cainzURL: "https://www.cainz.com/shop/c/c10601010201", komeriURL: K.stone },
-      { name: "コーススレッド", spec: "90mm", quantity: 100, unit: "本", note: "ステンレス製推奨", cainzURL: C.screw, komeriURL: K.screw },
+      { name: "デッキ材 (ウエスタンレッドシダー)", spec: "20×90×1800mm", quantity: 12, unit: "枚", note: "屋外対応", cainzURL: C.cedar, komeriURL: K.cedar, kohnanURL: KH.cedar, dcmURL: D.cedar },
+      { name: "根太 (2×4材)", spec: "38×89×1200mm", quantity: 6, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4, kohnanURL: KH.spf2x4, dcmURL: D.spf2x4 },
+      { name: "大引き (4×4材)", spec: "89×89×1800mm", quantity: 3, unit: "本", cainzURL: C.lumber, komeriURL: K.lumber, kohnanURL: KH.lumber, dcmURL: D.lumber },
+      { name: "束石", spec: "150mm角", quantity: 6, unit: "個", cainzURL: "https://www.cainz.com/shop/c/c10601010201", komeriURL: K.stone, kohnanURL: KH.stone, dcmURL: D.stone },
+      { name: "コーススレッド", spec: "90mm", quantity: 100, unit: "本", note: "ステンレス製推奨", cainzURL: C.screw, komeriURL: K.screw, kohnanURL: KH.screw, dcmURL: D.screw },
     ],
     cutItems: [
       { partName: "デッキ材", thickness: 20, width: 90, length: 1800, quantity: 12 },
@@ -376,10 +412,10 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 600, depth: 300, height: 500 },
     tools: ["電動ドライバー", "メジャー", "鉛筆", "のこぎり"],
     parts: [
-      { name: "側板 (SPF 1×10材)", spec: "19×235×500mm", quantity: 2, unit: "枚", cainzURL: C.lumber, komeriURL: K.lumber },
-      { name: "棚板 (SPF 1×10材)", spec: "19×235×600mm", quantity: 3, unit: "枚", cainzURL: C.lumber, komeriURL: K.lumber },
-      { name: "背板 (ベニヤ 4mm)", spec: "600×500mm", quantity: 1, unit: "枚", note: "4mm厚", cainzURL: C.plywood, komeriURL: K.plywood },
-      { name: "コーススレッド", spec: "38mm", quantity: 30, unit: "本", cainzURL: C.screw, komeriURL: K.screw },
+      { name: "側板 (SPF 1×10材)", spec: "19×235×500mm", quantity: 2, unit: "枚", cainzURL: C.lumber, komeriURL: K.lumber, kohnanURL: KH.lumber, dcmURL: D.lumber },
+      { name: "棚板 (SPF 1×10材)", spec: "19×235×600mm", quantity: 3, unit: "枚", cainzURL: C.lumber, komeriURL: K.lumber, kohnanURL: KH.lumber, dcmURL: D.lumber },
+      { name: "背板 (ベニヤ 4mm)", spec: "600×500mm", quantity: 1, unit: "枚", note: "4mm厚", cainzURL: C.plywood, komeriURL: K.plywood, kohnanURL: KH.plywood, dcmURL: D.plywood },
+      { name: "コーススレッド", spec: "38mm", quantity: 30, unit: "本", cainzURL: C.screw, komeriURL: K.screw, kohnanURL: KH.screw, dcmURL: D.screw },
     ],
     cutItems: [
       { partName: "側板", thickness: 19, width: 235, length: 500, quantity: 2 },
@@ -401,12 +437,12 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 900, depth: 400, height: 1600 },
     tools: ["電動ドライバー", "メジャー", "レンチ", "のこぎり"],
     parts: [
-      { name: "支柱 (2×4材)", spec: "38×89×1600mm", quantity: 2, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
-      { name: "横桟 (2×4材)", spec: "38×89×900mm", quantity: 2, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
-      { name: "ハンガーパイプ (アイアン丸棒)", spec: "φ19mm × 900mm", quantity: 1, unit: "本", cainzURL: C.hardware, komeriURL: K.pipe },
-      { name: "フランジ (パイプ取付金具)", spec: "φ19mm対応", quantity: 2, unit: "個", cainzURL: C.hardware, komeriURL: K.flange },
-      { name: "コーススレッド", spec: "65mm", quantity: 20, unit: "本", cainzURL: C.screw, komeriURL: K.screw },
-      { name: "ボルト・ナット", spec: "M8 × 40mm", quantity: 4, unit: "組", cainzURL: C.hardware, komeriURL: K.flange },
+      { name: "支柱 (2×4材)", spec: "38×89×1600mm", quantity: 2, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4, kohnanURL: KH.spf2x4, dcmURL: D.spf2x4 },
+      { name: "横桟 (2×4材)", spec: "38×89×900mm", quantity: 2, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4, kohnanURL: KH.spf2x4, dcmURL: D.spf2x4 },
+      { name: "ハンガーパイプ (アイアン丸棒)", spec: "φ19mm × 900mm", quantity: 1, unit: "本", cainzURL: C.hardware, komeriURL: K.pipe, kohnanURL: KH.pipe, dcmURL: D.pipe },
+      { name: "フランジ (パイプ取付金具)", spec: "φ19mm対応", quantity: 2, unit: "個", cainzURL: C.hardware, komeriURL: K.flange, kohnanURL: KH.flange, dcmURL: D.flange },
+      { name: "コーススレッド", spec: "65mm", quantity: 20, unit: "本", cainzURL: C.screw, komeriURL: K.screw, kohnanURL: KH.screw, dcmURL: D.screw },
+      { name: "ボルト・ナット", spec: "M8 × 40mm", quantity: 4, unit: "組", cainzURL: C.hardware, komeriURL: K.flange, kohnanURL: KH.flange, dcmURL: D.flange },
     ],
     cutItems: [
       { partName: "支柱", thickness: 38, width: 89, length: 1600, quantity: 2 },
@@ -427,10 +463,10 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 900, depth: 200, height: 1200 },
     tools: ["電動ドライバー", "メジャー", "鉛筆", "のこぎり（カットサービス利用可）"],
     parts: [
-      { name: "棚板 (SPF 1×8材)", spec: "19×184×900mm", quantity: 4, unit: "枚", cainzURL: C.spf1x8, komeriURL: K.spf1x8 },
-      { name: "側板 (SPF 1×8材)", spec: "19×184×1200mm", quantity: 2, unit: "枚", cainzURL: C.spf1x8, komeriURL: K.spf1x8 },
-      { name: "背板 (ベニヤ 4mm)", spec: "900×1200mm", quantity: 1, unit: "枚", cainzURL: C.plywood, komeriURL: K.plywood },
-      { name: "コーススレッド", spec: "65mm", quantity: 50, unit: "本", cainzURL: C.screw, komeriURL: K.screw },
+      { name: "棚板 (SPF 1×8材)", spec: "19×184×900mm", quantity: 4, unit: "枚", cainzURL: C.spf1x8, komeriURL: K.spf1x8, kohnanURL: KH.spf1x8, dcmURL: D.spf1x8 },
+      { name: "側板 (SPF 1×8材)", spec: "19×184×1200mm", quantity: 2, unit: "枚", cainzURL: C.spf1x8, komeriURL: K.spf1x8, kohnanURL: KH.spf1x8, dcmURL: D.spf1x8 },
+      { name: "背板 (ベニヤ 4mm)", spec: "900×1200mm", quantity: 1, unit: "枚", cainzURL: C.plywood, komeriURL: K.plywood, kohnanURL: KH.plywood, dcmURL: D.plywood },
+      { name: "コーススレッド", spec: "65mm", quantity: 50, unit: "本", cainzURL: C.screw, komeriURL: K.screw, kohnanURL: KH.screw, dcmURL: D.screw },
     ],
     cutItems: [
       { partName: "棚板", thickness: 19, width: 184, length: 900, quantity: 4 },
@@ -452,10 +488,10 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 400, depth: 400, height: 600 },
     tools: ["電動ドライバー", "メジャー", "鉛筆", "のこぎり"],
     parts: [
-      { name: "天板 (SPF 1×6材)", spec: "19×140×400mm", quantity: 1, unit: "枚", cainzURL: C.spf1x6, komeriURL: K.spf1x6 },
-      { name: "脚材 (2×4材)", spec: "38×89×560mm", quantity: 4, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4 },
-      { name: "横桟 (SPF 1×4材)", spec: "19×89×360mm", quantity: 4, unit: "本", cainzURL: C.spf1x4, komeriURL: K.spf1x4 },
-      { name: "コーススレッド", spec: "65mm", quantity: 30, unit: "本", cainzURL: C.screw, komeriURL: K.screw },
+      { name: "天板 (SPF 1×6材)", spec: "19×140×400mm", quantity: 1, unit: "枚", cainzURL: C.spf1x6, komeriURL: K.spf1x6, kohnanURL: KH.spf1x6, dcmURL: D.spf1x6 },
+      { name: "脚材 (2×4材)", spec: "38×89×560mm", quantity: 4, unit: "本", cainzURL: C.spf2x4, komeriURL: K.spf2x4, kohnanURL: KH.spf2x4, dcmURL: D.spf2x4 },
+      { name: "横桟 (SPF 1×4材)", spec: "19×89×360mm", quantity: 4, unit: "本", cainzURL: C.spf1x4, komeriURL: K.spf1x4, kohnanURL: KH.spf1x4, dcmURL: D.spf1x4 },
+      { name: "コーススレッド", spec: "65mm", quantity: 30, unit: "本", cainzURL: C.screw, komeriURL: K.screw, kohnanURL: KH.screw, dcmURL: D.screw },
     ],
     cutItems: [
       { partName: "天板", thickness: 19, width: 140, length: 400, quantity: 1 },
@@ -475,12 +511,12 @@ export const blueprintDetails: BlueprintDetail[] = [
     dimensions: { width: 600, depth: 600, height: 700 },
     tools: ["電動ドライバー", "丸ノコまたはのこぎり", "メジャー", "鉛筆", "L字金具"],
     parts: [
-      { name: "側板・前後板 (杉板)", spec: "20×200×700mm", quantity: 4, unit: "枚", cainzURL: C.lumber, komeriURL: K.sugi },
-      { name: "底板 (杉板)", spec: "20×600×600mm", quantity: 1, unit: "枚", cainzURL: C.lumber, komeriURL: K.sugi },
-      { name: "蓋板 (杉板)", spec: "20×600×600mm", quantity: 1, unit: "枚", cainzURL: C.lumber, komeriURL: K.sugi },
-      { name: "コーススレッド", spec: "75mm", quantity: 60, unit: "本", note: "ステンレス製推奨", cainzURL: C.screw, komeriURL: K.screw },
-      { name: "蝶番", spec: "中型", quantity: 2, unit: "個", cainzURL: C.hinge, komeriURL: K.hinge },
-      { name: "防虫ネット", spec: "70cm角", quantity: 1, unit: "枚", cainzURL: C.net, komeriURL: K.net },
+      { name: "側板・前後板 (杉板)", spec: "20×200×700mm", quantity: 4, unit: "枚", cainzURL: C.lumber, komeriURL: K.sugi, kohnanURL: KH.sugi, dcmURL: D.sugi },
+      { name: "底板 (杉板)", spec: "20×600×600mm", quantity: 1, unit: "枚", cainzURL: C.lumber, komeriURL: K.sugi, kohnanURL: KH.sugi, dcmURL: D.sugi },
+      { name: "蓋板 (杉板)", spec: "20×600×600mm", quantity: 1, unit: "枚", cainzURL: C.lumber, komeriURL: K.sugi, kohnanURL: KH.sugi, dcmURL: D.sugi },
+      { name: "コーススレッド", spec: "75mm", quantity: 60, unit: "本", note: "ステンレス製推奨", cainzURL: C.screw, komeriURL: K.screw, kohnanURL: KH.screw, dcmURL: D.screw },
+      { name: "蝶番", spec: "中型", quantity: 2, unit: "個", cainzURL: C.hinge, komeriURL: K.hinge, kohnanURL: KH.hinge, dcmURL: D.hinge },
+      { name: "防虫ネット", spec: "70cm角", quantity: 1, unit: "枚", cainzURL: C.net, komeriURL: K.net, kohnanURL: KH.net, dcmURL: D.net },
     ],
     cutItems: [
       { partName: "側板・前後板", thickness: 20, width: 200, length: 700, quantity: 4 },

@@ -11,8 +11,10 @@ interface Props {
 }
 
 const storeMap: Record<string, { name: Retailer; desc: string }> = {
-  cainz: { name: "カインズ", desc: "全国に約230店舗。SPF材・ビス・金物が揃うDIY向けホームセンター。" },
-  komeri: { name: "コメリ", desc: "全国に約1,200店舗。農業・ガーデニング資材も豊富。" },
+  cainz:  { name: "カインズ",  desc: "全国に約230店舗。SPF材・ビス・金物が揃うDIY向けホームセンター。" },
+  komeri: { name: "コメリ",   desc: "全国に約1,200店舗。農業・ガーデニング資材も豊富。" },
+  kohnan: { name: "コーナン", desc: "関西・中国・九州エリアを中心に約350店舗。工具・木材が充実。" },
+  dcm:    { name: "DCM",      desc: "全国に約670店舗のホームセンターチェーン。豊富な品揃えと価格の安さが魅力。" },
 };
 
 export async function generateStaticParams() {
