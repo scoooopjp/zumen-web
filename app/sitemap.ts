@@ -2,14 +2,16 @@ import type { MetadataRoute } from "next";
 import { useCases, categories } from "@/lib/data";
 import { mockExamples } from "@/lib/examples";
 
-const BASE = "https://zumen.app";
+const BASE = "https://www.scoooop.com/apps/zumen";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: BASE, lastModified: now, changeFrequency: "weekly", priority: 1.0 },
+    { url: `${BASE}/`, lastModified: now, changeFrequency: "weekly", priority: 1.0 },
     { url: `${BASE}/category`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${BASE}/support`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   const categoryRoutes: MetadataRoute.Sitemap = categories.map((cat) => ({

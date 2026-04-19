@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["BSGU2F7TSS.com.scoooop.zumen"],
+        "components": [
+          { "/": "/blueprint/*", "comment": "Blueprint detail deep link" },
+          { "/": "/usecase/*",   "comment": "Use case deep link" },
+          { "/": "/example/*",  "comment": "Example deep link" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["BSGU2F7TSS.com.scoooop.zumen"]
+  }
+}

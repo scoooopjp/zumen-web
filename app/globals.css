@@ -1,27 +1,155 @@
 @import "tailwindcss";
 
+/* ─── ZUMEN Design Tokens ─── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Canvas */
+  --canvas:       #F5F0E8;
+  --parchment:    #FAF7F0;
+  --surface:      #FFFDFB;
+
+  /* Navy (blueprint lines) */
+  --navy-deep:    #0F2A4A;
+  --navy-mid:     #1A3A5C;
+  --navy-light:   #2E5077;
+
+  /* Amber (CTA, accent) */
+  --amber:        #D97B2A;
+  --amber-light:  #F0A84B;
+  --amber-pale:   #FEF3E2;
+
+  /* Text */
+  --text-primary:   #0F2A4A;
+  --text-secondary: #627282;
+  --text-tertiary:  #94A3B2;
+
+  /* Border */
+  --border:         #DCD4C8;
+  --divider:        rgba(220,212,200,0.6);
+
+  /* Background */
+  --background: var(--canvas);
+  --foreground: var(--navy-deep);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-canvas:      var(--canvas);
+  --color-parchment:   var(--parchment);
+  --color-surface:     var(--surface);
+  --color-navy:        var(--navy-deep);
+  --color-navy-mid:    var(--navy-mid);
+  --color-amber:       var(--amber);
+  --color-amber-light: var(--amber-light);
+  --color-amber-pale:  var(--amber-pale);
+  --color-border:      var(--border);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary:  var(--text-tertiary);
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
+               -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ─── Base ─── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  background: var(--canvas);
+  color: var(--navy-deep);
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP",
+               -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+/* ─── Blueprint grid overlay (subtle) ─── */
+.bp-grid {
+  background-image:
+    linear-gradient(rgba(184,201,217,0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184,201,217,0.18) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* ─── Typography ─── */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--navy-deep);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Card ─── */
+.zumen-card {
+  background: var(--parchment);
+  border: 0.8px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(15,42,74,0.06);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.zumen-card:hover {
+  box-shadow: 0 6px 20px rgba(15,42,74,0.10);
+  transform: translateY(-1px);
+}
+
+/* ─── Buttons ─── */
+.btn-primary {
+  background: var(--navy-deep);
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 13px 28px;
+  transition: background 0.15s, transform 0.1s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary:hover  { background: var(--navy-mid); }
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-amber {
+  background: var(--amber);
+  color: #fff;
+  border-radius: 12px;
+  font-weight: 700;
+  padding: 13px 28px;
+  transition: background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-amber:hover { background: var(--amber-light); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--navy-deep);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  font-weight: 600;
+  padding: 12px 28px;
+  transition: border-color 0.15s, background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-outline:hover { border-color: var(--navy-light); background: var(--parchment); }
+
+/* ─── Section label ─── */
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+/* ─── Difficulty badges ─── */
+.badge-beginner     { background: #D1FAE5; color: #065F46; }
+.badge-intermediate { background: #FEF3E2; color: #92400E; }
+.badge-advanced     { background: #FEE2E2; color: #991B1B; }
+
+/* ─── Focus ring (a11y) ─── */
+:focus-visible {
+  outline: 2.5px solid var(--amber);
+  outline-offset: 3px;
 }

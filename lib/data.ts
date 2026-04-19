@@ -1,6 +1,42 @@
 // 静的データ層（Firestore 接続前のモックデータ）
 // iOS の UseCase.mock / Blueprint と対応
 
+// ── Firebase Storage サムネイル ──────────────────────────
+
+const STORAGE_BASE =
+  "https://firebasestorage.googleapis.com/v0/b/zumen-d0625.firebasestorage.app/o/usecase-thumbnails%2F";
+
+const categoryToFile: Record<string, string> = {
+  "棚":             "thumb_shelf.png",
+  "本棚":           "thumb_bookshelf.png",
+  "TV台":           "thumb_tv_stand.png",
+  "ダイニングテーブル": "thumb_dining_table.png",
+  "デスク・作業台":  "thumb_desk.png",
+  "ベンチ":         "thumb_bench.png",
+  "ガーデンテーブル": "thumb_garden_table.png",
+  "ウッドデッキ":   "thumb_deck.png",
+  "ガーデンフェンス": "thumb_fence.png",
+  "シューズラック":  "thumb_shoe_rack.png",
+  "玄関収納":       "thumb_entrance_storage.png",
+  "フラワーボックス": "thumb_flower_box.png",
+  "プランター台":   "thumb_planter_stand.png",
+  "コンポスト":     "thumb_compost.png",
+  "キャットウォーク": "thumb_cat_walk.png",
+  "キャットタワー": "thumb_cat_tower.png",
+  "犬小屋":         "thumb_dog_house.png",
+  "ペット用収納":   "thumb_pet_storage.png",
+  "子供用家具":     "thumb_kids_furniture.png",
+  "ハンガーラック": "thumb_hanger_rack.png",
+  "物置・収納":     "thumb_storage_shed.png",
+  "看板・インテリア": "thumb_sign.png",
+};
+
+export function getCategoryThumbnailURL(category: string): string | null {
+  const file = categoryToFile[category];
+  if (!file) return null;
+  return `${STORAGE_BASE}${file}?alt=media`;
+}
+
 export type Difficulty = "初心者向け" | "中級者向け" | "上級者向け";
 export type IndoorOutdoor = "室内" | "屋外" | "両用";
 export type Retailer = "カインズ" | "コメリ";
