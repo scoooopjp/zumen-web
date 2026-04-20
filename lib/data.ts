@@ -3,32 +3,33 @@
 
 // ── Firebase Storage サムネイル ──────────────────────────
 
+// リサイズ済みサムネイル（600px幅・JPEG）を使用
 const STORAGE_BASE =
-  "https://firebasestorage.googleapis.com/v0/b/zumen-d0625.firebasestorage.app/o/usecase-thumbnails%2F";
+  "https://firebasestorage.googleapis.com/v0/b/zumen-d0625.firebasestorage.app/o/usecase-thumbnails-resized%2F";
 
 const categoryToFile: Record<string, string> = {
-  "棚":             "thumb_shelf.png",
-  "本棚":           "thumb_bookshelf.png",
-  "TV台":           "thumb_tv_stand.png",
-  "ダイニングテーブル": "thumb_dining_table.png",
-  "デスク・作業台":  "thumb_desk.png",
-  "ベンチ":         "thumb_bench.png",
-  "ガーデンテーブル": "thumb_garden_table.png",
-  "ウッドデッキ":   "thumb_deck.png",
-  "ガーデンフェンス": "thumb_fence.png",
-  "シューズラック":  "thumb_shoe_rack.png",
-  "玄関収納":       "thumb_entrance_storage.png",
-  "フラワーボックス": "thumb_flower_box.png",
-  "プランター台":   "thumb_planter_stand.png",
-  "コンポスト":     "thumb_compost.png",
-  "キャットウォーク": "thumb_cat_walk.png",
-  "キャットタワー": "thumb_cat_tower.png",
-  "犬小屋":         "thumb_dog_house.png",
-  "ペット用収納":   "thumb_pet_storage.png",
-  "子供用家具":     "thumb_kids_furniture.png",
-  "ハンガーラック": "thumb_hanger_rack.png",
-  "物置・収納":     "thumb_storage_shed.png",
-  "看板・インテリア": "thumb_sign.png",
+  "棚":             "thumb_shelf.jpg",
+  "本棚":           "thumb_bookshelf.jpg",
+  "TV台":           "thumb_tv_stand.jpg",
+  "ダイニングテーブル": "thumb_dining_table.jpg",
+  "デスク・作業台":  "thumb_desk.jpg",
+  "ベンチ":         "thumb_bench.jpg",
+  "ガーデンテーブル": "thumb_garden_table.jpg",
+  "ウッドデッキ":   "thumb_deck.jpg",
+  "ガーデンフェンス": "thumb_fence.jpg",
+  "シューズラック":  "thumb_shoe_rack.jpg",
+  "玄関収納":       "thumb_entrance_storage.jpg",
+  "フラワーボックス": "thumb_flower_box.jpg",
+  "プランター台":   "thumb_planter_stand.jpg",
+  "コンポスト":     "thumb_compost.jpg",
+  "キャットウォーク": "thumb_cat_walk.jpg",
+  "キャットタワー": "thumb_cat_tower.jpg",
+  "犬小屋":         "thumb_dog_house.jpg",
+  "ペット用収納":   "thumb_pet_storage.jpg",
+  "子供用家具":     "thumb_kids_furniture.jpg",
+  "ハンガーラック": "thumb_hanger_rack.jpg",
+  "物置・収納":     "thumb_storage_shed.jpg",
+  "看板・インテリア": "thumb_sign.jpg",
 };
 
 export function getCategoryThumbnailURL(category: string): string | null {

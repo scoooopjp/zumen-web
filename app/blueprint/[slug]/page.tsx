@@ -397,6 +397,7 @@ export default async function BlueprintPage({ params }: Props) {
                   stepOrder={step.order}
                   totalSteps={steps.length}
                   illustrationType={"illustrationType" in step ? (step as { illustrationType?: string }).illustrationType : undefined}
+                  dimensions={dimensions}
                 />
               </li>
             ))}

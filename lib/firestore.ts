@@ -46,6 +46,15 @@ interface FSExample {
   createdAt: FirebaseFirestore.Timestamp;
 }
 
+// ── URL変換：オリジナルサムネイル → リサイズ済みサムネイル ──────────
+// usecase-thumbnails/{id}.png → usecase-thumbnails-resized/{id}.jpg
+function toResizedThumbnailURL(url: string | undefined | null): string | undefined {
+  if (!url) return undefined;
+  return url
+    .replace("usecase-thumbnails%2F", "usecase-thumbnails-resized%2F")
+    .replace(/\.png(\?|$)/, ".jpg$1");
+}
+
 // ── DTO → Model 変換 ─────────────────────────────────────────
 
 /** iOS enum rawValue → Web Difficulty 型 */
@@ -100,7 +109,7 @@ function fsUseCaseToModel(dto: FSUseCase): UseCase | null {
     templateID: dto.templateID,
     description: dto.description ?? `${dto.name}のDIY設計図`,
     imageAlt: dto.imageAlt ?? `${dto.name}のDIY設計図`,
-    imageURL: dto.imageURL,
+    imageURL: toResizedThumbnailURL(dto.imageURL),
   };
 }
 

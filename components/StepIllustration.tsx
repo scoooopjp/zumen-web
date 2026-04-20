@@ -120,17 +120,23 @@ function detectType(title: string, desc: string, order: number, total: number): 
 }
 
 /* ── SVG ダイアグラム ── */
-const Diagrams: Record<IllType, React.FC<{ accent: string }>> = {
-  measure: ({ accent }) => (
+const Diagrams: Record<IllType, React.FC<{ accent: string; dimensions?: { width: number; depth: number; height: number } }>> = {
+  measure: ({ accent, dimensions }) => (
     <svg viewBox="0 0 100 70" width="100" height="70" aria-hidden="true">
-      <rect x="8" y="28" width="84" height="14" rx="2" fill={accent} fillOpacity=".15" stroke={accent} strokeWidth="1.2"/>
-      {Array.from({length: 10}).map((_, i) => (
-        <line key={i} x1={12 + i * 8} y1="28" x2={12 + i * 8} y2={i % 2 === 0 ? 23 : 25} stroke={accent} strokeWidth="1"/>
+      {/* 定規（iOS: 上部の目盛り付きバー） */}
+      <rect x="8" y="10" width="84" height="10" rx="1" fill={accent} fillOpacity=".12" stroke={accent} strokeWidth="1"/>
+      {Array.from({length: 13}).map((_, i) => (
+        <line key={i} x1={8 + i * 7} y1="10" x2={8 + i * 7} y2={i % 2 === 0 ? 14 : 16} stroke={accent} strokeWidth="1"/>
       ))}
-      <path d={`M8 35 l7 -3 l0 6 z`} fill={accent}/>
-      <path d={`M92 35 l-7 -3 l0 6 z`} fill={accent}/>
-      <text x="50" y="22" textAnchor="middle" fontSize="8" fill={accent} fontWeight="bold">W × D × H</text>
-      <text x="50" y="56" textAnchor="middle" fontSize="7" fill={accent} fillOpacity=".7">寸法を確認</text>
+      {/* 木材の板（iOS: 中央の長方形） */}
+      <rect x="8" y="24" width="84" height="18" rx="2" fill={accent} fillOpacity=".15" stroke={accent} strokeWidth="1.2"/>
+      {/* 寸法線（iOS: 矢印 + W xxx mm） */}
+      <line x1="8" y1="51" x2="92" y2="51" stroke={accent} strokeWidth="1"/>
+      <path d="M8 51 l6 -3 l0 6 z" fill={accent}/>
+      <path d="M92 51 l-6 -3 l0 6 z" fill={accent}/>
+      <text x="50" y="63" textAnchor="middle" fontSize="7.5" fill={accent} fontWeight="bold">
+        {dimensions ? `W ${dimensions.width} mm` : "W × D × H"}
+      </text>
     </svg>
   ),
   markLine: ({ accent }) => (
@@ -291,11 +297,18 @@ const Diagrams: Record<IllType, React.FC<{ accent: string }>> = {
 
 /* ── アイコン（iOS SF Symbol に対応するSVG） ── */
 const Icons: Record<IllType, React.FC<{ color: string }>> = {
-  // measure: ruler
+  // measure: ruler (iOS: ruler SF Symbol)
   measure: ({ color }) => (
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M2 12h20M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3"/>
-      <line x1="12" y1="9" x2="12" y2="15"/>
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {/* 定規の本体 */}
+      <rect x="2" y="8" width="20" height="8" rx="1.5" stroke={color} strokeWidth="1.5" fill="none"/>
+      {/* 目盛り */}
+      <line x1="5" y1="8" x2="5" y2="11.5" stroke={color} strokeWidth="1.2"/>
+      <line x1="8" y1="8" x2="8" y2="10.5" stroke={color} strokeWidth="1.2"/>
+      <line x1="11" y1="8" x2="11" y2="11.5" stroke={color} strokeWidth="1.2"/>
+      <line x1="14" y1="8" x2="14" y2="10.5" stroke={color} strokeWidth="1.2"/>
+      <line x1="17" y1="8" x2="17" y2="11.5" stroke={color} strokeWidth="1.2"/>
+      <line x1="20" y1="8" x2="20" y2="10.5" stroke={color} strokeWidth="1.2"/>
     </svg>
   ),
   // markLine: pencil.and.ruler
@@ -412,6 +425,8 @@ interface Props {
   totalSteps: number;
   /** Firestoreから取得したillustration種別 (iOS IllType rawValue) */
   illustrationType?: string | null;
+  /** Firestoreから取得した完成品の寸法 (measure ダイアグラムで表示) */
+  dimensions?: { width: number; depth: number; height: number };
 }
 
 function resolveType(illustrationType: string | null | undefined, title: string, desc: string, order: number, total: number): IllType {
@@ -426,7 +441,7 @@ function resolveType(illustrationType: string | null | undefined, title: string,
   return detectType(title, desc, order, total);
 }
 
-export default function StepIllustration({ stepTitle, stepDescription, stepOrder, totalSteps, illustrationType }: Props) {
+export default function StepIllustration({ stepTitle, stepDescription, stepOrder, totalSteps, illustrationType, dimensions }: Props) {
   const type = resolveType(illustrationType, stepTitle, stepDescription, stepOrder, totalSteps);
   const theme = THEMES[type];
   const Diagram = Diagrams[type];
@@ -474,7 +489,7 @@ export default function StepIllustration({ stepTitle, stepDescription, stepOrder
 
       {/* 右パネル：ダイアグラム */}
       <div className="flex-1 flex items-center justify-center">
-        <Diagram accent={theme.accent} />
+        <Diagram accent={theme.accent} dimensions={dimensions} />
       </div>
 
       {/* 下部：左 label ＋ 右 STEP X/Y（iOS と同じ構成） */}
