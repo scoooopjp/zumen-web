@@ -56,6 +56,8 @@ export interface UseCase {
   templateID: string;
   description: string;
   imageAlt: string;
+  /** Firebase Storage の useCaseID 固有サムネイル URL */
+  imageURL?: string;
 }
 
 export interface Part {

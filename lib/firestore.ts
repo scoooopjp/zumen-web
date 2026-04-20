@@ -26,6 +26,7 @@ interface FSUseCase {
   supportedRetailers: string[];
   description?: string;
   imageAlt?: string;
+  imageURL?: string;
 }
 
 interface FSExample {
@@ -99,6 +100,7 @@ function fsUseCaseToModel(dto: FSUseCase): UseCase | null {
     templateID: dto.templateID,
     description: dto.description ?? `${dto.name}のDIY設計図`,
     imageAlt: dto.imageAlt ?? `${dto.name}のDIY設計図`,
+    imageURL: dto.imageURL,
   };
 }
 

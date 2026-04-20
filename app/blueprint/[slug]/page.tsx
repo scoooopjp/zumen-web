@@ -164,7 +164,8 @@ export default async function BlueprintPage({ params }: Props) {
 
         {/* ヒーロー */}
         {(() => {
-          const thumbURL = getCategoryThumbnailURL(bp.category);
+          // useCaseID固有 → カテゴリ共通 の優先順
+          const thumbURL = uc?.imageURL ?? getCategoryThumbnailURL(bp.category);
           return thumbURL ? (
             <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "3/2" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}

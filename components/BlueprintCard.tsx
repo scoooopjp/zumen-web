@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { UseCase, formatBudget, formatTime, getCategoryThumbnailURL } from "@/lib/data";
 
+/** useCaseID固有サムネイル → カテゴリサムネイル → null の順でURL解決 */
+function resolveThumbURL(useCase: UseCase): string | null {
+  if (useCase.imageURL) return useCase.imageURL;
+  return getCategoryThumbnailURL(useCase.category);
+}
+
 interface BlueprintCardProps {
   useCase: UseCase;
 }
@@ -26,7 +32,7 @@ const categoryIcon: Record<string, string> = {
 };
 
 export default function BlueprintCard({ useCase }: BlueprintCardProps) {
-  const thumbURL = getCategoryThumbnailURL(useCase.category);
+  const thumbURL = resolveThumbURL(useCase);
 
   return (
     <Link href={`/blueprint/${useCase.slug}`} className="zumen-card block overflow-hidden group">
