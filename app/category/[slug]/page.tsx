@@ -3,14 +3,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
-import { getUseCasesByCategory, categories } from "@/lib/data";
+import { categories } from "@/lib/data";
+import { fetchUseCases } from "@/lib/firestore";
+
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
 
 interface Props {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  return categories.map((c) => ({ slug: c.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -29,7 +29,8 @@ export default async function CategoryDetailPage({ params }: Props) {
   const cat = categories.find((c) => c.slug === slug);
   if (!cat) notFound();
 
-  const items = getUseCasesByCategory(slug);
+  const allUseCases = await fetchUseCases();
+  const items = allUseCases.filter((uc) => uc.categorySlug === slug);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">

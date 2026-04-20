@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
-import { useCases, categories } from "@/lib/data";
+import { categories } from "@/lib/data";
+import { fetchUseCases } from "@/lib/firestore";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "DIY設計図一覧",
@@ -10,7 +13,8 @@ export const metadata: Metadata = {
   alternates: { canonical: "/category" },
 };
 
-export default function CategoryListPage() {
+export default async function CategoryListPage() {
+  const useCasesData = await fetchUseCases();
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       {/* パンくず */}
@@ -26,7 +30,7 @@ export default function CategoryListPage() {
       </p>
 
       {categories.map((cat) => {
-        const items = useCases.filter((uc) => uc.categorySlug === cat.slug);
+        const items = useCasesData.filter((uc) => uc.categorySlug === cat.slug);
         return (
           <section key={cat.slug} className="mb-12">
             <div className="flex items-center justify-between mb-4">

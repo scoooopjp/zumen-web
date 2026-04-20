@@ -9,34 +9,69 @@ import BlueprintCard from "@/components/BlueprintCard";
 import PartPriceTag from "@/components/PartPriceTag";
 import {
   getBlueprintBySlug,
+  getBlueprintByTemplateID,
   getUseCaseBySlug,
   useCases,
   formatBudget,
   formatTime,
   blueprintDetails,
   getCategoryThumbnailURL,
+  enrichPartWithRetailerURLs,
 } from "@/lib/data";
+import { fetchUseCaseById, fetchBlueprintByUseCaseID } from "@/lib/firestore";
+import type { FSBlueprintDetail } from "@/lib/firestore";
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
+export const dynamicParams = true;
+export const revalidate = 3600;
+
 export async function generateStaticParams() {
   return blueprintDetails.map((bp) => ({ slug: bp.slug }));
 }
 
+/** UseCase・FirestoreのBlueprintDetailを返す */
+async function resolvePageData(slug: string): Promise<{
+  bp: (typeof blueprintDetails)[number];
+  uc: Awaited<ReturnType<typeof fetchUseCaseById>>;
+  fsBp: FSBlueprintDetail | null;
+} | null> {
+  // 1) Direct match — slug is a template slug (e.g. "garden-bench")
+  const direct = getBlueprintBySlug(slug);
+  if (direct) {
+    // テンプレートslugの場合はuseCaseIDがないのでfsBpなし
+    return { bp: direct, uc: null, fsBp: null };
+  }
+  // 2) Firestore use case ID → templateID → blueprint template
+  const uc = await fetchUseCaseById(slug);
+  if (!uc?.templateID) return null;
+  const bp = getBlueprintByTemplateID(uc.templateID);
+  if (!bp) return null;
+  // blueprints/{useCaseID} から固有データを取得
+  const fsBp = await fetchBlueprintByUseCaseID(uc.id);
+  return { bp, uc, fsBp };
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const bp = getBlueprintBySlug(slug);
-  if (!bp) return {};
-  const ogUrl = `/og?title=${encodeURIComponent(bp.name)}&category=${encodeURIComponent(bp.category)}&difficulty=${encodeURIComponent(bp.difficulty)}&budget=${encodeURIComponent(formatBudget(bp.estimatedBudgetMin, bp.estimatedBudgetMax))}`;
+  const data = await resolvePageData(slug);
+  if (!data) return {};
+  const { bp, uc } = data;
+  const name = uc?.name ?? bp.name;
+  const difficulty = uc?.difficulty ?? bp.difficulty;
+  const budgetMin = uc?.estimatedBudgetMin ?? bp.estimatedBudgetMin;
+  const budgetMax = uc?.estimatedBudgetMax ?? bp.estimatedBudgetMax;
+  const time = uc?.estimatedTimeMinutes ?? bp.estimatedTimeMinutes;
+  const ogUrl = `/og?title=${encodeURIComponent(name)}&category=${encodeURIComponent(bp.category)}&difficulty=${encodeURIComponent(difficulty)}&budget=${encodeURIComponent(formatBudget(budgetMin, budgetMax))}`;
   return {
-    title: `${bp.name} DIY 設計図`,
-    description: `${bp.name}のDIY設計図。難易度${bp.difficulty}、予算${formatBudget(bp.estimatedBudgetMin, bp.estimatedBudgetMax)}、制作時間${formatTime(bp.estimatedTimeMinutes)}。カインズ・コメリ対応の材料リスト付き。`,
+    title: `${name} DIY 設計図`,
+    description: `${name}のDIY設計図。難易度${difficulty}、予算${formatBudget(budgetMin, budgetMax)}、制作時間${formatTime(time)}。カインズ・コメリ対応の材料リスト付き。`,
     alternates: { canonical: `/blueprint/${slug}` },
     openGraph: {
-      title: `${bp.name} DIY 設計図 | ZUMEN`,
-      description: bp.description,
+      title: `${name} DIY 設計図 | ZUMEN`,
+      description: uc?.description ?? bp.description,
       images: [{ url: ogUrl, width: 1200, height: 630 }],
     },
   };
@@ -50,8 +85,31 @@ const difficultyColor: Record<string, string> = {
 
 export default async function BlueprintPage({ params }: Props) {
   const { slug } = await params;
-  const bp = getBlueprintBySlug(slug);
-  if (!bp) notFound();
+  const data = await resolvePageData(slug);
+  if (!data) notFound();
+
+  const { bp, uc, fsBp } = data;
+  // use case 固有の値を優先、なければテンプレートの値にフォールバック
+  const name        = uc?.name ?? fsBp?.name ?? bp.name;
+  const description = uc?.description ?? bp.description;
+  const difficulty  = uc?.difficulty ?? bp.difficulty;
+  const budgetMin   = uc?.estimatedBudgetMin ?? bp.estimatedBudgetMin;
+  const budgetMax   = uc?.estimatedBudgetMax ?? bp.estimatedBudgetMax;
+  const time        = uc?.estimatedTimeMinutes ?? bp.estimatedTimeMinutes;
+  const indoor      = uc?.indoorOutdoor ?? fsBp?.indoorOutdoor ?? bp.indoorOutdoor;
+  const retailers   = uc?.supportedRetailers ?? bp.supportedRetailers;
+
+  // Firestore blueprint を優先、なければローカルにフォールバック
+  const dimensions = fsBp?.dimensions ?? bp.dimensions;
+  const tools      = fsBp?.tools ?? bp.tools;
+  const warnings   = fsBp?.warnings ?? bp.warnings;
+  const steps      = fsBp?.steps ?? bp.steps;
+  const cutItems   = fsBp?.cutItems ?? bp.cutItems;
+  // parts: Firestore データにリテーラーURLを付与してマージ
+  const parts = (fsBp?.parts ?? bp.parts).map((p) => ({
+    ...p,
+    ...(fsBp ? enrichPartWithRetailerURLs(p.name, p.spec) : {}),
+  }));
 
   const relatedUseCases = bp.relatedSlugs
     .map((s) => getUseCaseBySlug(s))
@@ -61,21 +119,21 @@ export default async function BlueprintPage({ params }: Props) {
   const howToSchema = {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: `${bp.name}の作り方`,
-    description: bp.description,
+    name: `${name}の作り方`,
+    description,
     estimatedCost: {
       "@type": "MonetaryAmount",
       currency: "JPY",
-      minValue: bp.estimatedBudgetMin,
-      maxValue: bp.estimatedBudgetMax,
+      minValue: budgetMin,
+      maxValue: budgetMax,
     },
-    totalTime: `PT${bp.estimatedTimeMinutes}M`,
-    tool: bp.tools.map((t) => ({ "@type": "HowToTool", name: t })),
-    supply: bp.parts.map((p) => ({
+    totalTime: `PT${time}M`,
+    tool: tools.map((t) => ({ "@type": "HowToTool", name: t })),
+    supply: parts.map((p) => ({
       "@type": "HowToSupply",
       name: `${p.name} (${p.spec}) × ${p.quantity}${p.unit}`,
     })),
-    step: bp.steps.map((s) => ({
+    step: steps.map((s) => ({
       "@type": "HowToStep",
       position: s.order,
       name: s.title,
@@ -101,7 +159,7 @@ export default async function BlueprintPage({ params }: Props) {
             {bp.category}
           </Link>
           <span>/</span>
-          <span className="text-gray-600">{bp.name}</span>
+          <span className="text-gray-600">{name}</span>
         </nav>
 
         {/* ヒーロー */}
@@ -110,7 +168,7 @@ export default async function BlueprintPage({ params }: Props) {
           return thumbURL ? (
             <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "3/2" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={thumbURL} alt={bp.imageAlt} className="w-full h-full object-cover" />
+              <img src={thumbURL} alt={uc?.imageAlt ?? bp.imageAlt} className="w-full h-full object-cover" />
               <span
                 className="absolute bottom-3 right-3 text-[11px] px-2 py-1 rounded"
                 style={{ background: "rgba(0,0,0,0.45)", color: "rgba(255,255,255,0.92)" }}
@@ -131,26 +189,26 @@ export default async function BlueprintPage({ params }: Props) {
           <p className="text-sm text-gray-400">{bp.category}</p>
           <SaveButton />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">{bp.name}</h1>
-        <p className="text-gray-500 mt-3 leading-relaxed">{bp.description}</p>
+        <h1 className="text-3xl font-bold text-gray-900">{name}</h1>
+        <p className="text-gray-500 mt-3 leading-relaxed">{description}</p>
 
         <div className="flex flex-wrap gap-2 mt-4">
-          <span className={`text-sm px-3 py-1 rounded-full font-medium ${difficultyColor[bp.difficulty]}`}>
-            {bp.difficulty}
+          <span className={`text-sm px-3 py-1 rounded-full font-medium ${difficultyColor[difficulty]}`}>
+            {difficulty}
           </span>
           <span className="text-sm px-3 py-1 rounded-full bg-gray-100 text-gray-600">
-            {formatBudget(bp.estimatedBudgetMin, bp.estimatedBudgetMax)}
+            {formatBudget(budgetMin, budgetMax)}
           </span>
           <span className="text-sm px-3 py-1 rounded-full bg-gray-100 text-gray-600">
-            {formatTime(bp.estimatedTimeMinutes)}
+            {formatTime(time)}
           </span>
           <span className="text-sm px-3 py-1 rounded-full bg-gray-100 text-gray-600">
-            {bp.indoorOutdoor}
+            {indoor}
           </span>
         </div>
 
         <div className="flex gap-2 mt-3">
-          {bp.supportedRetailers.map((r) => (
+          {retailers.map((r) => (
             <span key={r} className="text-xs px-2 py-1 border border-gray-200 rounded-full text-gray-500">
               {r}
             </span>
@@ -162,9 +220,9 @@ export default async function BlueprintPage({ params }: Props) {
           <h2 className="text-xl font-bold text-gray-900 mb-3">基本寸法</h2>
           <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
             {[
-              { label: "幅 (W)", value: `${bp.dimensions.width}mm` },
-              { label: "奥行 (D)", value: `${bp.dimensions.depth}mm` },
-              { label: "高さ (H)", value: `${bp.dimensions.height}mm` },
+              { label: "幅 (W)", value: `${dimensions.width}mm` },
+              { label: "奥行 (D)", value: `${dimensions.depth}mm` },
+              { label: "高さ (H)", value: `${dimensions.height}mm` },
             ].map((d) => (
               <div key={d.label}>
                 <p className="text-xs text-gray-400">{d.label}</p>
@@ -175,7 +233,7 @@ export default async function BlueprintPage({ params }: Props) {
         </section>
 
         {/* カット図 */}
-        {bp.cutItems.length > 0 && (
+        {cutItems.length > 0 && (
           <section className="mt-10">
             <h2 className="text-xl font-bold text-gray-900 mb-3">カット図</h2>
             <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
@@ -194,13 +252,13 @@ export default async function BlueprintPage({ params }: Props) {
                 <span className="text-right">数</span>
               </div>
               {/* 行 */}
-              {bp.cutItems.map((item, idx) => (
+              {cutItems.map((item, idx) => (
                 <div
                   key={idx}
                   className="grid items-center px-4 py-3"
                   style={{
                     gridTemplateColumns: "1fr 120px 40px",
-                    borderBottom: idx < bp.cutItems.length - 1 ? "1px solid var(--border)" : "none",
+                    borderBottom: idx < cutItems.length - 1 ? "1px solid var(--border)" : "none",
                   }}
                 >
                   <div className="flex items-center gap-2">
@@ -233,7 +291,7 @@ export default async function BlueprintPage({ params }: Props) {
         <section className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 mb-3">必要工具</h2>
           <ul className="bg-gray-50 rounded-xl divide-y divide-gray-100">
-            {bp.tools.map((tool) => (
+            {tools.map((tool) => (
               <li key={tool} className="px-4 py-3 flex items-center gap-3 text-sm text-gray-700">
                 <span className="text-green-500">✓</span>
                 {tool}
@@ -246,7 +304,7 @@ export default async function BlueprintPage({ params }: Props) {
         <section className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 mb-3">資材一覧</h2>
           <div className="rounded-xl divide-y overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-            {bp.parts.map((part, idx) => (
+            {parts.map((part, idx) => (
               <div key={idx} className="px-4 py-3 text-sm" style={{ background: "var(--surface)" }}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -310,7 +368,7 @@ export default async function BlueprintPage({ params }: Props) {
         <section className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 mb-4">工程</h2>
           <ol className="space-y-6">
-            {bp.steps.map((step) => (
+            {steps.map((step) => (
               <li key={step.order}>
                 {/* ステップヘッダー */}
                 <div className="flex gap-4 mb-3">
@@ -327,7 +385,7 @@ export default async function BlueprintPage({ params }: Props) {
                   stepTitle={step.title}
                   stepDescription={step.description}
                   stepOrder={step.order}
-                  totalSteps={bp.steps.length}
+                  totalSteps={steps.length}
                 />
               </li>
             ))}
@@ -335,14 +393,14 @@ export default async function BlueprintPage({ params }: Props) {
         </section>
 
         {/* 注意点 */}
-        {bp.warnings.length > 0 && (
+        {warnings.length > 0 && (
           <section className="mt-10">
             <h2 className="text-xl font-bold text-gray-900 mb-3">注意点</h2>
             <ul
               className="space-y-2 p-4 rounded-xl"
               style={{ background: "var(--amber-pale)", border: "1px solid rgba(217,123,42,0.25)" }}
             >
-              {bp.warnings.map((w) => (
+              {warnings.map((w) => (
                 <li key={w} className="flex gap-2 text-sm text-gray-600">
                   <span className="text-orange-500 shrink-0">⚠️</span>
                   {w}
@@ -380,13 +438,13 @@ export default async function BlueprintPage({ params }: Props) {
                   ))}
                 </div>
                 <p className="text-xs mt-2" style={{ color: "var(--text-tertiary)" }}>
-                  参考: ベーシック寸法 {bp.dimensions.width}×{bp.dimensions.depth}×{bp.dimensions.height} mm
+                  参考: ベーシック寸法 {dimensions.width}×{dimensions.depth}×{dimensions.height} mm
                 </p>
               </div>
               <div>
                 <p className="text-sm font-semibold mb-2" style={{ color: "var(--navy-deep)" }}>優先ホームセンター</p>
                 <div className="flex gap-2">
-                  {bp.supportedRetailers.map((r) => (
+                  {retailers.map((r) => (
                     <span
                       key={r}
                       className="text-sm px-4 py-1.5 rounded-full"

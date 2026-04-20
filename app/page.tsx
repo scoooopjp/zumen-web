@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
-import { useCases, categories } from "@/lib/data";
+import { categories } from "@/lib/data";
+import { fetchUseCases } from "@/lib/firestore";
+
+export const dynamic = "force-dynamic";
 
 /* ─── SEO Metadata ─── */
 export const metadata: Metadata = {
@@ -109,7 +112,8 @@ const features = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const useCasesData = await fetchUseCases();
   return (
     <>
       <script
@@ -191,7 +195,7 @@ export default function HomePage() {
                 {cat.name}
               </p>
               <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                {cat.count}件
+                {useCasesData.filter((uc) => uc.categorySlug === cat.slug).length}件
               </p>
             </Link>
           ))}
@@ -209,7 +213,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {useCases.slice(0, 6).map((uc) => (
+          {useCasesData.slice(0, 6).map((uc) => (
             <BlueprintCard key={uc.id} useCase={uc} />
           ))}
         </div>
