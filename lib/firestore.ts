@@ -188,7 +188,7 @@ export interface FSBlueprintDetail {
   indoorOutdoor: string;
   dimensions: { width: number; depth: number; height: number };
   warnings: string[];
-  tools: string[];
+  tools: Array<{ name: string; note?: string }>;
   steps: FSBlueprintStep[];
   parts: FSBlueprintPart[];
   cutItems: FSBlueprintCutItem[];

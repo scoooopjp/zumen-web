@@ -128,7 +128,7 @@ export default async function BlueprintPage({ params }: Props) {
       maxValue: budgetMax,
     },
     totalTime: `PT${time}M`,
-    tool: tools.map((t) => ({ "@type": "HowToTool", name: t })),
+    tool: tools.map((t) => ({ "@type": "HowToTool", name: typeof t === "string" ? t : t.name })),
     supply: parts.map((p) => ({
       "@type": "HowToSupply",
       name: `${p.name} (${p.spec}) × ${p.quantity}${p.unit}`,
@@ -291,12 +291,21 @@ export default async function BlueprintPage({ params }: Props) {
         <section className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 mb-3">必要工具</h2>
           <ul className="bg-gray-50 rounded-xl divide-y divide-gray-100">
-            {tools.map((tool) => (
-              <li key={tool} className="px-4 py-3 flex items-center gap-3 text-sm text-gray-700">
-                <span className="text-green-500">✓</span>
-                {tool}
-              </li>
-            ))}
+            {tools.map((tool) => {
+              const toolName = typeof tool === "string" ? tool : tool.name;
+              const toolNote = typeof tool === "string" ? undefined : tool.note;
+              return (
+                <li key={toolName} className="px-4 py-3 flex items-start gap-3 text-sm">
+                  <span className="text-green-500 mt-0.5 shrink-0">✓</span>
+                  <div>
+                    <p className="font-medium text-gray-800">{toolName}</p>
+                    {toolNote && (
+                      <p className="text-xs text-gray-400 mt-0.5">{toolNote}</p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </section>
 
@@ -386,6 +395,7 @@ export default async function BlueprintPage({ params }: Props) {
                   stepDescription={step.description}
                   stepOrder={step.order}
                   totalSteps={steps.length}
+                  illustrationType={"illustrationType" in step ? (step as { illustrationType?: string }).illustrationType : undefined}
                 />
               </li>
             ))}

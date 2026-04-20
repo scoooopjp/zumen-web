@@ -27,11 +27,12 @@ type IllType =
 interface Step { order: number; title: string; description: string; illustrationType: IllType }
 interface Part { name: string; spec: string; quantity: number; unit: string; note?: string }
 interface CutItem { partName: string; thickness: number; width: number; length: number; quantity: number }
+interface Tool { name: string; note: string }
 interface Blueprint {
   useCaseID: string; templateID: string; name: string; category: string;
   indoorOutdoor: string;
   dimensions: { width: number; depth: number; height: number };
-  warnings: string[]; tools: string[];
+  warnings: string[]; tools: Tool[];
   steps: Step[]; parts: Part[]; cutItems: CutItem[];
 }
 
@@ -310,18 +311,30 @@ const CATALOG: UCRow[] = [
 
 // ── カテゴリ別 Generator ──────────────────────────────────────
 
-function makeTools(category: string, outdoor: boolean): string[] {
-  const base = ["メジャー", "鉛筆", "電動ドライバー", "コーナークランプ"];
-  if (outdoor) base.push("水平器");
-  if (["ウッドデッキ", "ガーデンフェンス", "物置・収納"].includes(category)) {
-    base.push("丸ノコ", "墨つぼ");
+// iOS の buildTools(for:) と完全一致させる
+function makeTools(category: string, outdoor: boolean): Tool[] {
+  const tools: Tool[] = [
+    { name: "メジャー（5m以上）",  note: "各部材の採寸に使用" },
+    { name: "鉛筆・さしがね",      note: "墨線引き・直角確認" },
+    { name: "のこぎり",            note: "ホームセンターのカットサービス利用を推奨" },
+    { name: "電動ドライバー",      note: "インパクトドライバーが作業効率UP" },
+    { name: "サンドペーパー",      note: "#120・#240の2種を用意" },
+    { name: "水平器",              note: "組み立て時の水平確認に必須" },
+    { name: "クランプ（2個以上）", note: "接合時の仮固定に使用" },
+  ];
+  if (outdoor) {
+    tools.push({ name: "刷毛・塗料バット", note: "防腐塗料の塗布に使用" });
   } else {
-    base.push("のこぎり（カットサービス利用可）");
+    tools.push({ name: "刷毛・塗料バット", note: "オイル・ニス仕上げに使用" });
   }
-  if (["TV台", "デスク・作業台", "本棚", "ダイニングテーブル"].includes(category)) {
-    base.push("サンドペーパー #120/#240");
+  if (category === "ウッドデッキ") {
+    tools.push({ name: "水糸・杭",       note: "基準線の設定に使用" });
+    tools.push({ name: "スコップ・砕石", note: "整地・砕石敷きに使用" });
   }
-  return base;
+  if (category === "キャットウォーク" || category === "キャットタワー") {
+    tools.push({ name: "下地センサー", note: "壁の柱・間柱の位置を確認" });
+  }
+  return tools;
 }
 
 function makeWarnings(category: string, outdoor: boolean, name: string): string[] {
