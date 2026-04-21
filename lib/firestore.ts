@@ -46,13 +46,23 @@ interface FSExample {
   createdAt: FirebaseFirestore.Timestamp;
 }
 
-// ── URL変換：オリジナルサムネイル → リサイズ済みサムネイル ──────────
-// usecase-thumbnails/{id}.png → usecase-thumbnails-resized/{id}.jpg
-function toResizedThumbnailURL(url: string | undefined | null): string | undefined {
-  if (!url) return undefined;
-  return url
-    .replace("usecase-thumbnails%2F", "usecase-thumbnails-resized%2F")
-    .replace(/\.png(\?|$)/, ".jpg$1");
+// ── Storage URL ベース（リサイズ済み） ────────────────────────
+const STORAGE_RESIZED_BASE =
+  "https://firebasestorage.googleapis.com/v0/b/zumen-d0625.firebasestorage.app/o/usecase-thumbnails-resized%2F";
+
+/** UseCase 固有サムネイル URL — `{id}.jpg` を参照 */
+function useCaseThumbnailURL(id: string): string {
+  return `${STORAGE_RESIZED_BASE}${encodeURIComponent(id + ".jpg")}?alt=media`;
+}
+
+/** dto.imageURL が未設定なら UseCase 固有 URL にフォールバック */
+function resolveImageURL(dto: FSUseCase): string {
+  if (dto.imageURL) {
+    return dto.imageURL
+      .replace("usecase-thumbnails%2F", "usecase-thumbnails-resized%2F")
+      .replace(/\.png(\?|$)/, ".jpg$1");
+  }
+  return useCaseThumbnailURL(dto.id);
 }
 
 // ── DTO → Model 変換 ─────────────────────────────────────────
@@ -72,27 +82,35 @@ function normalizeIndoorOutdoor(v: string): IndoorOutdoor {
   return v as IndoorOutdoor; // "屋外" / "両用" already match
 }
 
-/** templateID → categorySlug */
-const TEMPLATE_CATEGORY_SLUG: Record<string, string> = {
-  "tpl-shelf-basic":   "tana",
-  "tpl-planter-stand": "planter-dai",
-  "tpl-compost-box":   "compost",
-  "tpl-bench":         "bench",
-  "tpl-wood-deck":     "deck",
-  "tpl-shoe-rack":     "shoe-rack",
-  "tpl-flower-box":    "flower-box",
-  "tpl-hanger-rack":   "hanger-rack",
-  "tpl-garden-table":  "garden-table",
-  "tpl-tv-stand":      "tv-stand",
-  "tpl-cat-walk":      "cat-walk",
+/** 日本語カテゴリ名 → URL 用 slug（lib/data.ts の categories と一致） */
+const CATEGORY_SLUG: Record<string, string> = {
+  "棚":             "tana",
+  "本棚":           "bookshelf",
+  "TV台":           "tv-stand",
+  "ダイニングテーブル": "dining-table",
+  "デスク・作業台":  "desk",
+  "ベンチ":         "bench",
+  "ガーデンテーブル": "garden-table",
+  "ウッドデッキ":   "deck",
+  "ガーデンフェンス": "garden-fence",
+  "シューズラック":  "shoe-rack",
+  "玄関収納":       "entrance-storage",
+  "フラワーボックス": "flower-box",
+  "プランター台":   "planter-dai",
+  "コンポスト":     "compost",
+  "キャットウォーク": "cat-walk",
+  "キャットタワー": "cat-tower",
+  "犬小屋":         "dog-house",
+  "ペット用収納":   "pet-storage",
+  "子供用家具":     "kids-furniture",
+  "ハンガーラック": "hanger-rack",
+  "物置・収納":     "storage-shed",
+  "看板・インテリア": "sign",
 };
 
 function fsUseCaseToModel(dto: FSUseCase): UseCase | null {
   const slug = dto.id;
-  const categorySlug =
-    dto.categorySlug ??
-    TEMPLATE_CATEGORY_SLUG[dto.templateID] ??
-    dto.category;
+  const categorySlug = CATEGORY_SLUG[dto.category] ?? dto.categorySlug ?? dto.category;
 
   return {
     id: dto.id,
@@ -109,7 +127,7 @@ function fsUseCaseToModel(dto: FSUseCase): UseCase | null {
     templateID: dto.templateID,
     description: dto.description ?? `${dto.name}のDIY設計図`,
     imageAlt: dto.imageAlt ?? `${dto.name}のDIY設計図`,
-    imageURL: toResizedThumbnailURL(dto.imageURL),
+    imageURL: resolveImageURL(dto),
   };
 }
 
@@ -141,12 +159,16 @@ export async function fetchUseCases(): Promise<UseCase[]> {
   if (!db) return mockUseCases;
   try {
     const snap = await db.collection("useCases").orderBy("category").get();
-    if (snap.empty) return mockUseCases;
+    if (snap.empty) {
+      console.warn("[firestore] useCases collection empty — falling back to mock");
+      return mockUseCases;
+    }
     const results = snap.docs
       .map((d) => fsUseCaseToModel({ id: d.id, ...d.data() } as FSUseCase))
       .filter((uc): uc is UseCase => uc !== null);
     return results.length > 0 ? results : mockUseCases;
-  } catch {
+  } catch (e) {
+    console.error("[firestore] fetchUseCases failed:", e);
     return mockUseCases;
   }
 }
@@ -160,7 +182,8 @@ export async function fetchUseCaseById(id: string): Promise<UseCase | null> {
     const snap = await db.collection("useCases").doc(id).get();
     if (!snap.exists) return getUseCaseById(id) ?? null;
     return fsUseCaseToModel({ id: snap.id, ...snap.data() } as FSUseCase);
-  } catch {
+  } catch (e) {
+    console.error(`[firestore] fetchUseCaseById(${id}) failed:`, e);
     return getUseCaseById(id) ?? null;
   }
 }
@@ -212,7 +235,8 @@ export async function fetchBlueprintByUseCaseID(useCaseID: string): Promise<FSBl
     const snap = await db.collection("blueprints").doc(useCaseID).get();
     if (!snap.exists) return null;
     return snap.data() as FSBlueprintDetail;
-  } catch {
+  } catch (e) {
+    console.error(`[firestore] fetchBlueprintByUseCaseID(${useCaseID}) failed:`, e);
     return null;
   }
 }
@@ -240,7 +264,8 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
     return snap.docs.map((d) =>
       fsExampleToModel({ id: d.id, ...d.data() } as FSExample)
     );
-  } catch {
+  } catch (e) {
+    console.error(`[firestore] fetchExamples(${useCaseID ?? "all"}) failed:`, e);
     return useCaseID
       ? mockExamples.filter((e) => e.useCaseID === useCaseID)
       : mockExamples;
