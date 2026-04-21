@@ -3,7 +3,7 @@ import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import { categories } from "@/lib/data";
-import { fetchUseCases } from "@/lib/firestore";
+import { fetchUseCases, fetchFeaturedUseCases } from "@/lib/firestore";
 
 export const dynamic = "force-dynamic";
 
@@ -132,7 +132,10 @@ const features = [
 ];
 
 export default async function HomePage() {
-  const useCasesData = await fetchUseCases();
+  const [useCasesData, featuredUseCases] = await Promise.all([
+    fetchUseCases(),
+    fetchFeaturedUseCases(6),
+  ]);
   return (
     <>
       <script
@@ -236,7 +239,7 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {useCasesData.slice(0, 6).map((uc) => (
+          {featuredUseCases.map((uc) => (
             <BlueprintCard key={uc.id} useCase={uc} />
           ))}
         </div>

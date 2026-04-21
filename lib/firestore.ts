@@ -173,6 +173,38 @@ export async function fetchUseCases(): Promise<UseCase[]> {
   }
 }
 
+// ── Featured UseCases (人気の設計図) ─────────────────────────
+// `config/featured` ドキュメント (scripts/update-featured.ts が書き込み)
+// の popularUseCaseIds を参照し、ID 順で UseCase を返す。
+
+export async function fetchFeaturedUseCases(limit = 6): Promise<UseCase[]> {
+  const db = getAdminDb();
+  if (!db) return mockUseCases.slice(0, limit);
+  try {
+    const configSnap = await db.collection("config").doc("featured").get();
+    const ids = (configSnap.data()?.popularUseCaseIds ?? []) as string[];
+    if (ids.length === 0) {
+      const all = await fetchUseCases();
+      return all.slice(0, limit);
+    }
+
+    const picked = ids.slice(0, limit);
+    const refs = picked.map((id) => db.collection("useCases").doc(id));
+    const docs = await db.getAll(...refs);
+
+    const results: UseCase[] = [];
+    for (const d of docs) {
+      if (!d.exists) continue;
+      const model = fsUseCaseToModel({ id: d.id, ...d.data() } as FSUseCase);
+      if (model) results.push(model);
+    }
+    return results.length > 0 ? results : mockUseCases.slice(0, limit);
+  } catch (e) {
+    console.error("[firestore] fetchFeaturedUseCases failed:", e);
+    return mockUseCases.slice(0, limit);
+  }
+}
+
 // ── Single UseCase ───────────────────────────────────────────
 
 export async function fetchUseCaseById(id: string): Promise<UseCase | null> {
