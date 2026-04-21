@@ -185,8 +185,12 @@ export default async function HomePage() {
             </a>
           </div>
           {/* Social proof */}
-          <p className="mt-6 text-xs" style={{ color: "var(--text-tertiary)" }}>
-            iOS 17以上対応 &nbsp;·&nbsp; 完全無料で閲覧可能 &nbsp;·&nbsp; カスタム設計はアプリ限定
+          <p className="mt-6 text-xs flex flex-wrap justify-center gap-x-3 gap-y-1" style={{ color: "var(--text-tertiary)" }}>
+            <span className="whitespace-nowrap">iOS 17以上対応</span>
+            <span aria-hidden="true">·</span>
+            <span className="whitespace-nowrap">完全無料で閲覧可能</span>
+            <span aria-hidden="true">·</span>
+            <span className="whitespace-nowrap">カスタム設計はアプリ限定</span>
           </p>
         </div>
       </section>
