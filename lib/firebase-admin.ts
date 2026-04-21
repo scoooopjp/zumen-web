@@ -13,7 +13,10 @@ function getAdminApp() {
   if (existing) return existing;
 
   const keyJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson) return null;
+  if (!keyJson) {
+    console.warn("[firebase-admin] FIREBASE_SERVICE_ACCOUNT_KEY not set — falling back to mock data");
+    return null;
+  }
 
   try {
     const serviceAccount = JSON.parse(keyJson);
