@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/og/", "/_next/"],
+        disallow: ["/og/", "/_next/"],
       },
     ],
     sitemap: "https://zumen.scoooop.com/sitemap.xml",

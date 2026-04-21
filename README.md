@@ -1,6 +1,6 @@
 # ZUMEN Web
 
-ZUMEN DIY アプリの公開 Web サイト＋管理画面。
+ZUMEN DIY アプリの公開 Web サイト。
 Next.js 14 App Router / Tailwind CSS / TypeScript / Vercel デプロイ。
 
 ## ページ構成
@@ -14,12 +14,6 @@ Next.js 14 App Router / Tailwind CSS / TypeScript / Vercel デプロイ。
 | `/category/[slug]` | カテゴリ別設計図 |
 | `/store/[retailer]` | ホームセンター別ページ (Issue 8-7) |
 | `/og` | 動的 OGP 画像 (Edge Runtime, next/og) |
-| `/admin` | 管理ダッシュボード |
-| `/admin/blueprints` | 設計図管理 (Issue 9-1) |
-| `/admin/examples` | 作例審査 (Issue 9-4) |
-| `/admin/skus` | 商品 SKU 管理 (Issue 9-2) |
-| `/admin/rules` | 代替ルール管理 (Issue 9-3) |
-| `/admin/retailers` | ホームセンター評価 (Issue 9-5) |
 
 ## 開発環境
 
