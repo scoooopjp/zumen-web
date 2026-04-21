@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { sandGrit, drillDiameter, spacingLabel, screwLabel } from "@/lib/stepLabelExtractor";
 
 // Lottie アセットが存在するタイプ（追加したら public/lottie に同名 JSON を置く）
 const LOTTIE_AVAILABLE: ReadonlySet<string> = new Set([
@@ -16,29 +17,32 @@ const LOTTIE_AVAILABLE: ReadonlySet<string> = new Set([
   "topBoard", "frame", "wallMount", "waterproof", "paint", "inspect", "screw", "complete",
 ]);
 
-// Lottie 版ではテキストを HTML オーバーレイで描画する（フォント依存回避）。
-// SVG フォールバック版は Diagram 内にテキストが既に埋め込まれている。
-const LOTTIE_CAPTIONS: Partial<Record<IllType, string>> = {
-  markLine: "さしがね使用",
-  cut: "ホームセンターでカット可",
-  sand: "#120 → #240",
-  drill: "下穴 φ3.5mm",
-  levelCheck: "水平 ✓",
-  topBoard: "5mm 間隔",
-  frame: "直角を確認",
-  wallMount: "下地に固定",
-  waterproof: "2度塗り必須",
-  paint: "ワトコオイル・ニス",
-  inspect: "ぐらつきなし ✓",
-  screw: "コーススレッド 51mm",
-  complete: "完成！おめでとう",
-};
-
-function resolveCaption(type: IllType, dimensions?: { width: number; depth: number; height: number }): string | undefined {
-  if (type === "measure") {
-    return dimensions ? `W ${dimensions.width} mm` : "W × D × H";
+/**
+ * Lottie + SVG フォールバック両方に出す図中ラベル。
+ * sand/drill/topBoard/screw は stepDescription からの動的抽出 (iOS 準拠)。
+ */
+function resolveCaption(
+  type: IllType,
+  stepDescription: string,
+  dimensions?: { width: number; depth: number; height: number },
+): string | undefined {
+  switch (type) {
+    case "measure":    return dimensions ? `W ${dimensions.width} mm` : "W × D × H";
+    case "markLine":   return "さしがね使用";
+    case "cut":        return "ホームセンターでカット可";
+    case "sand":       return sandGrit(stepDescription);
+    case "drill":      return drillDiameter(stepDescription);
+    case "levelCheck": return "水平 ✓";
+    case "topBoard":   return spacingLabel(stepDescription);
+    case "frame":      return "直角を確認";
+    case "wallMount":  return "下地に固定";
+    case "waterproof": return "2度塗り必須";
+    case "paint":      return "ワトコオイル・ニス";
+    case "inspect":    return "ぐらつきなし ✓";
+    case "screw":      return screwLabel(stepDescription);
+    case "complete":   return "完成！おめでとう";
+    default:           return undefined;
   }
-  return LOTTIE_CAPTIONS[type];
 }
 
 /**
@@ -163,6 +167,8 @@ type DiagramProps = {
   accent: string;
   secondary: string;
   dimensions?: { width: number; depth: number; height: number };
+  /** sand/drill/topBoard/screw の図中ラベルを stepDescription から動的抽出する */
+  stepDescription: string;
 };
 
 function Svg({ children }: { children: React.ReactNode }) {
@@ -266,7 +272,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
   },
 
   // 研磨: 半分研磨済みの板 + サンディングブロック + 摩擦矢印
-  sand: ({ accent, secondary }) => {
+  sand: ({ accent, secondary, stepDescription }) => {
     const cx = W / 2, cy = H / 2;
     const boardW = W * 0.70, boardH = 28;
     const bx = cx - boardW / 2, by = cy + 8;
@@ -292,13 +298,13 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
             <polygon points={`${ax + 14},${by - 6} ${ax + 10},${by - 10} ${ax + 10},${by - 2}`} fill={accent} fillOpacity="0.6"/>
           </g>
         ))}
-        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" fill={accent}>#120 → #240</text>
+        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" fill={accent}>{sandGrit(stepDescription)}</text>
       </Svg>
     );
   },
 
   // 穴あけ: ドリルビット + 板 + 穴 + 切り粉
-  drill: ({ accent }) => {
+  drill: ({ accent, stepDescription }) => {
     const cx = W / 2, cy = H / 2;
     const boardW = W * 0.68, boardH = 28;
     const bx = cx - boardW / 2, by = cy + 12;
@@ -317,7 +323,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
         {[[-12, -5], [8, -8], [-6, -2], [14, -3]].map(([dx, dy], i) => (
           <ellipse key={i} cx={cx + dx} cy={by + dy} rx="2.5" ry="1" fill={accent} fillOpacity="0.85"/>
         ))}
-        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" fill={accent}>下穴 φ3.5mm</text>
+        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" fill={accent}>{drillDiameter(stepDescription)}</text>
       </Svg>
     );
   },
@@ -364,7 +370,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
   },
 
   // 天板取付: 両脇フレーム + 4枚デッキ (末尾が上から降りてくる) + 下矢印
-  topBoard: ({ accent }) => {
+  topBoard: ({ accent, stepDescription }) => {
     const cx = W / 2, cy = H / 2;
     const fW = W * 0.64, fH = 30;
     const fx = cx - fW / 2, fy = cy + 4;
@@ -388,7 +394,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
         })}
         <line x1={lastX} y1={fy - 36} x2={lastX} y2={fy - 22} stroke={accent} strokeWidth="2"/>
         <polygon points={`${lastX},${fy - 22} ${lastX - 6},${fy - 30} ${lastX + 6},${fy - 30}`} fill={accent}/>
-        <text x={cx} y={fy + fH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fill={accent} fillOpacity="0.8">5mm 間隔</text>
+        <text x={cx} y={fy + fH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fill={accent} fillOpacity="0.8">{spacingLabel(stepDescription)}</text>
       </Svg>
     );
   },
@@ -511,7 +517,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
   },
 
   // ビス固定: 接合2材 + ビス頭 + シャフト + ドライバー矢印
-  screw: ({ accent }) => {
+  screw: ({ accent, stepDescription }) => {
     const cx = W / 2, cy = H / 2;
     const b1W = W * 0.55, b1H = 22;
     const b1X = cx - b1W / 2, b1Y = cy - 2;
@@ -528,7 +534,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
         <line x1={screwX} y1={screwY + 6} x2={screwX} y2={b1Y + b1H - 4} stroke="#9EA3B3" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 2"/>
         <line x1={screwX + 20} y1={screwY - 20} x2={screwX + 8} y2={screwY - 8} stroke={accent} strokeWidth="2" strokeLinecap="round"/>
         <polygon points={`${screwX + 8},${screwY - 8} ${screwX + 14},${screwY - 4} ${screwX + 4},${screwY - 2}`} fill={accent}/>
-        <text x={cx} y={b1Y + b1H + 16} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" fill={accent}>コーススレッド 51mm</text>
+        <text x={cx} y={b1Y + b1H + 16} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace" fill={accent}>{screwLabel(stepDescription)}</text>
       </Svg>
     );
   },
@@ -756,14 +762,14 @@ export default function StepIllustration({
         {hasLottie ? (
           <>
             <LottiePlayer type={type} />
-            {resolveCaption(type, dimensions) && (
+            {resolveCaption(type, stepDescription, dimensions) && (
               <div className="text-[10px] font-medium mt-1" style={{ color: `${theme.accent}CC` }}>
-                {resolveCaption(type, dimensions)}
+                {resolveCaption(type, stepDescription, dimensions)}
               </div>
             )}
           </>
         ) : (
-          <Diagram accent={theme.accent} secondary={theme.secondary} dimensions={dimensions} />
+          <Diagram accent={theme.accent} secondary={theme.secondary} dimensions={dimensions} stepDescription={stepDescription} />
         )}
       </div>
 
