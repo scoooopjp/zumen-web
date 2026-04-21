@@ -238,7 +238,10 @@ export default async function BlueprintPage({ params }: Props) {
         {cutItems.length > 0 && (
           <section className="mt-10">
             <h2 className="text-xl font-bold text-gray-900 mb-3">カット図</h2>
-            <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
+            >
               {/* ヘッダー */}
               <div
                 className="grid text-xs font-bold px-4 py-2.5"
