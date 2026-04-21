@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
-import { useCases, categories } from "@/lib/data";
-import { mockExamples } from "@/lib/examples";
+import { categories } from "@/lib/data";
+import { fetchUseCases } from "@/lib/firestore";
 
 const BASE = "https://zumen.scoooop.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -21,6 +21,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
+  const useCases = await fetchUseCases();
   const blueprintRoutes: MetadataRoute.Sitemap = useCases.map((uc) => ({
     url: `${BASE}/blueprint/${uc.slug}`,
     lastModified: now,

@@ -64,7 +64,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const budgetMin = uc?.estimatedBudgetMin ?? bp.estimatedBudgetMin;
   const budgetMax = uc?.estimatedBudgetMax ?? bp.estimatedBudgetMax;
   const time = uc?.estimatedTimeMinutes ?? bp.estimatedTimeMinutes;
-  const ogUrl = `/og?title=${encodeURIComponent(name)}&category=${encodeURIComponent(bp.category)}&difficulty=${encodeURIComponent(difficulty)}&budget=${encodeURIComponent(formatBudget(budgetMin, budgetMax))}`;
+  const category = uc?.category ?? bp.category;
+  const ogUrl = `/og?title=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&difficulty=${encodeURIComponent(difficulty)}&budget=${encodeURIComponent(formatBudget(budgetMin, budgetMax))}`;
   return {
     title: `${name} DIY 設計図`,
     description: `${name}のDIY設計図。難易度${difficulty}、予算${formatBudget(budgetMin, budgetMax)}、制作時間${formatTime(time)}。カインズ・コメリ対応の材料リスト付き。`,
@@ -155,8 +156,8 @@ export default async function BlueprintPage({ params }: Props) {
           <span>/</span>
           <Link href="/category" className="hover:text-gray-600">設計図一覧</Link>
           <span>/</span>
-          <Link href={`/category/${bp.categorySlug}`} className="hover:text-gray-600">
-            {bp.category}
+          <Link href={`/category/${uc?.categorySlug ?? bp.categorySlug}`} className="hover:text-gray-600">
+            {uc?.category ?? bp.category}
           </Link>
           <span>/</span>
           <span className="text-gray-600">{name}</span>
@@ -165,7 +166,7 @@ export default async function BlueprintPage({ params }: Props) {
         {/* ヒーロー */}
         {(() => {
           // useCaseID固有 → カテゴリ共通 の優先順
-          const thumbURL = uc?.imageURL ?? getCategoryThumbnailURL(bp.category);
+          const thumbURL = uc?.imageURL ?? getCategoryThumbnailURL(uc?.category ?? bp.category);
           return thumbURL ? (
             <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "3/2" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -187,7 +188,7 @@ export default async function BlueprintPage({ params }: Props) {
 
         {/* タイトル・バッジ・保存ボタン */}
         <div className="flex items-start justify-between gap-3 mb-1">
-          <p className="text-sm text-gray-400">{bp.category}</p>
+          <p className="text-sm text-gray-400">{uc?.category ?? bp.category}</p>
           <SaveButton />
         </div>
         <h1 className="text-3xl font-bold text-gray-900">{name}</h1>
