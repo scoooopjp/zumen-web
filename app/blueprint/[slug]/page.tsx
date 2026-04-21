@@ -382,29 +382,67 @@ export default async function BlueprintPage({ params }: Props) {
         <section className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 mb-4">工程</h2>
           <ol className="space-y-6">
-            {steps.map((step) => (
-              <li key={step.order}>
-                {/* ステップヘッダー */}
-                <div className="flex gap-4 mb-3">
-                  <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ background: "var(--navy-deep)" }}>
-                    {step.order}
+            {steps.map((step) => {
+              const tips = "tips" in step ? (step as { tips?: string[] }).tips : undefined;
+              const pitfalls = "pitfalls" in step ? (step as { pitfalls?: string[] }).pitfalls : undefined;
+              const estimatedMinutes = "estimatedMinutes" in step ? (step as { estimatedMinutes?: number }).estimatedMinutes : undefined;
+              return (
+                <li key={step.order}>
+                  {/* ステップヘッダー */}
+                  <div className="flex gap-4 mb-3">
+                    <div className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{ background: "var(--navy-deep)" }}>
+                      {step.order}
+                    </div>
+                    <div className="pt-1 flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <p className="font-bold text-gray-900">{step.title}</p>
+                        {typeof estimatedMinutes === "number" && estimatedMinutes > 0 && (
+                          <span className="text-xs text-gray-500 shrink-0">目安 {estimatedMinutes}分</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-500 mt-0.5">{step.description}</p>
+                    </div>
                   </div>
-                  <div className="pt-1">
-                    <p className="font-bold text-gray-900">{step.title}</p>
-                    <p className="text-sm text-gray-500 mt-0.5">{step.description}</p>
-                  </div>
-                </div>
-                {/* ビジュアルイラスト */}
-                <StepIllustration
-                  stepTitle={step.title}
-                  stepDescription={step.description}
-                  stepOrder={step.order}
-                  totalSteps={steps.length}
-                  illustrationType={"illustrationType" in step ? (step as { illustrationType?: string }).illustrationType : undefined}
-                  dimensions={dimensions}
-                />
-              </li>
-            ))}
+                  {/* ビジュアルイラスト */}
+                  <StepIllustration
+                    stepTitle={step.title}
+                    stepDescription={step.description}
+                    stepOrder={step.order}
+                    totalSteps={steps.length}
+                    illustrationType={"illustrationType" in step ? (step as { illustrationType?: string }).illustrationType : undefined}
+                    dimensions={dimensions}
+                  />
+                  {/* コツ */}
+                  {tips && tips.length > 0 && (
+                    <div
+                      className="mt-3 p-3 rounded-lg text-sm"
+                      style={{ background: "rgba(250,204,21,0.10)", border: "1px solid rgba(202,138,4,0.25)" }}
+                    >
+                      <p className="text-xs font-bold mb-1" style={{ color: "#92400E" }}>コツ</p>
+                      <ul className="space-y-1">
+                        {tips.map((t, i) => (
+                          <li key={i} className="text-gray-700 leading-relaxed">{t}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {/* つまずきポイント */}
+                  {pitfalls && pitfalls.length > 0 && (
+                    <div
+                      className="mt-2 p-3 rounded-lg text-sm"
+                      style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.25)" }}
+                    >
+                      <p className="text-xs font-bold mb-1" style={{ color: "#991B1B" }}>つまずきポイント</p>
+                      <ul className="space-y-1">
+                        {pitfalls.map((p, i) => (
+                          <li key={i} className="text-gray-700 leading-relaxed">{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ol>
         </section>
 

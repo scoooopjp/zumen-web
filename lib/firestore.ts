@@ -228,6 +228,12 @@ export interface FSBlueprintStep {
   description: string;
   /** IllType rawValue (e.g. "measure", "cut", "screw") */
   illustrationType?: string;
+  /** コツ・時短テクニック (enrich-blueprints で追加) */
+  tips?: string[];
+  /** 失敗例とリカバリ方法 (enrich-blueprints で追加) */
+  pitfalls?: string[];
+  /** 想定所要時間（分） */
+  estimatedMinutes?: number;
 }
 
 export interface FSBlueprintPart {
