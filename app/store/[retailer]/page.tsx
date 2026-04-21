@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
-import { useCases } from "@/lib/data";
 import type { Retailer } from "@/lib/data";
+import { fetchUseCases } from "@/lib/firestore";
 
 interface Props {
   params: Promise<{ retailer: string }>;
@@ -37,7 +37,8 @@ export default async function StorePage({ params }: Props) {
   const store = storeMap[retailer];
   if (!store) notFound();
 
-  const items = useCases.filter((uc) => uc.supportedRetailers.includes(store.name));
+  const allUseCases = await fetchUseCases();
+  const items = allUseCases.filter((uc) => uc.supportedRetailers.includes(store.name));
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">

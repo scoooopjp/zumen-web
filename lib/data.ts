@@ -237,7 +237,7 @@ export const useCases: UseCase[] = [
     estimatedTimeMinutes: 480,
     indoorOutdoor: "屋外",
     supportedRetailers: ["カインズ", "コメリ", "コーナン", "DCM"],
-    templateID: "tpl-deck",
+    templateID: "tpl-wood-deck",
     description: "庭をもっと活用するためのウッドデッキ。根太・デッキ材の基本構造から学べる入門設計。",
     imageAlt: "木製ウッドデッキのDIY設計図",
   },
