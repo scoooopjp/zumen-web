@@ -702,12 +702,24 @@ const KNOWN: IllType[] = [
   "assemble","install",
 ];
 
+/** 旧 illustrationType 文字列 → canonical IllType (iOS 側と一致) */
+const ALIASES: Record<string, IllType> = {
+  sanding:    "sand",
+  check:      "inspect",
+  position:   "markLine",
+  trim:       "cut",
+  back_panel: "frame",
+  finish:     "complete",
+};
+
 function resolveType(
   illustrationType: string | null | undefined,
   title: string, desc: string, order: number, total: number
 ): IllType {
-  if (illustrationType && KNOWN.includes(illustrationType as IllType)) {
-    return illustrationType as IllType;
+  if (illustrationType) {
+    if (KNOWN.includes(illustrationType as IllType)) return illustrationType as IllType;
+    const aliased = ALIASES[illustrationType];
+    if (aliased) return aliased;
   }
   return detectType(title, desc, order, total);
 }
