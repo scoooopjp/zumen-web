@@ -120,7 +120,7 @@ export default function BlueprintCard({ useCase }: BlueprintCardProps) {
         </p>
 
         {/* Badges row */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div className="flex flex-wrap gap-1.5">
           <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${difficultyClass[useCase.difficulty] ?? ""}`}>
             {useCase.difficulty}
           </span>
@@ -136,19 +136,6 @@ export default function BlueprintCard({ useCase }: BlueprintCardProps) {
           >
             {formatTime(useCase.estimatedTimeMinutes)}
           </span>
-        </div>
-
-        {/* Retailer tags */}
-        <div className="flex gap-1">
-          {useCase.supportedRetailers.map((r) => (
-            <span
-              key={r}
-              className="text-xs px-2 py-0.5 rounded-full border font-medium"
-              style={{ borderColor: "var(--border)", color: "var(--text-tertiary)" }}
-            >
-              {r}
-            </span>
-          ))}
         </div>
       </div>
     </Link>

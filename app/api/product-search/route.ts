@@ -11,12 +11,15 @@ import { scrapeProduct, type RetailerKey } from "@/lib/scraper";
 
 const VALID_RETAILERS: RetailerKey[] = ["cainz", "komeri", "kohnan", "dcm"];
 
+// 旧キャッシュ ("product-search") には DCM の過去の null レスポンスが
+// 固着しているため v2 に切り替えて失効させる。成功時のみ再キャッシュし、
+// ミス時は 1h で短命化させる。
 const getCachedProduct = unstable_cache(
   async (retailer: RetailerKey, keyword: string) => {
     return scrapeProduct(retailer, keyword);
   },
-  ["product-search"],
-  { revalidate: 86400 } // 24h
+  ["product-search-v2"],
+  { revalidate: 3600 } // 1h — DCM 修正後の再検証を早める
 );
 
 export async function GET(req: NextRequest) {
