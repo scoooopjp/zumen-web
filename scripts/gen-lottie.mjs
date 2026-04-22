@@ -146,6 +146,13 @@ const PAL = {
   complete:   { a: [0.65, 0.48, 0.05, 1], s: [0.90, 0.72, 0.20, 1] },
   assemble:   { a: [0.72, 0.20, 0.18, 1], s: [0.92, 0.60, 0.55, 1] }, // iOS StepTheme と同色 (frame legacy)
   install:    { a: [0.18, 0.55, 0.32, 1], s: [0.50, 0.80, 0.60, 1] }, // iOS StepTheme と同色 (wallMount legacy)
+  // ─ brand decorative icons (non-step) ─
+  ruler:      { a: [0.91, 0.63, 0.23, 1], s: [0.96, 0.82, 0.55, 1] }, // amber
+  pencil:     { a: [0.91, 0.63, 0.23, 1], s: [0.96, 0.82, 0.55, 1] }, // amber
+  storefront: { a: [0.22, 0.35, 0.68, 1], s: [0.91, 0.63, 0.23, 1] }, // navy + amber sign
+  cameraFlash:{ a: [0.22, 0.35, 0.68, 1], s: [0.98, 0.94, 0.78, 1] }, // navy + flash cream
+  saw:        { a: [0.85, 0.38, 0.063, 1], s: [0.98, 0.72, 0.42, 1] }, // cut orange
+  photoEmpty: { a: [0.58, 0.60, 0.66, 1], s: [0.80, 0.82, 0.86, 1] }, // neutral gray
 };
 
 // ─── per-type scene builders (all 14) ────────────────────────────────────────
@@ -1175,6 +1182,438 @@ function buildInstall() {
   return layers;
 }
 
+// ─── ruler: 木製定規 + 目盛り脈動 + 寸法矢印 ──────────────────────────────────
+function buildRuler() {
+  resetInd();
+  const { a: A, s: S } = PAL.ruler;
+  const rulerW = 132, rulerH = 28;
+  const rulerY = CY;
+  const rx = CX - rulerW / 2;
+  const layers = [];
+  // arrow line below ruler
+  const arrY = rulerY + rulerH / 2 + 18;
+  layers.push(layer(
+    "arrLine",
+    ks({ o: fadeLoop(40, 48), p: posStatic(CX, arrY), s: growX(40, 54) }),
+    [grp([rc(rulerW - 16, 1.6, 1), fl(A, 85)])]
+  ));
+  layers.push(layer(
+    "arrL",
+    ks({ o: fadeLoop(40, 50), p: posStatic(rx + 8, arrY), s: popScale(40, 50, 56) }),
+    [grp([sh([[0, 0], [8, -5], [8, 5]]), fl(A, 100)])]
+  ));
+  layers.push(layer(
+    "arrR",
+    ks({ o: fadeLoop(40, 50), p: posStatic(rx + rulerW - 8, arrY), s: popScale(40, 50, 56) }),
+    [grp([sh([[0, 0], [-8, -5], [-8, 5]]), fl(A, 100)])]
+  ));
+  // ticks (13 ticks, every 2nd taller)
+  for (let i = 0; i < 13; i++) {
+    const tx = rx + 6 + (i / 12) * (rulerW - 12);
+    const th = i % 2 === 0 ? 10 : 6;
+    const t0 = 8 + i * 2;
+    layers.push(layer(
+      `tick${i}`,
+      ks({
+        o: fadeLoop(t0, t0 + 8),
+        p: posStatic(tx, rulerY - rulerH / 2 + th / 2 + 2),
+        s: growY(t0, t0 + 8),
+      }),
+      [grp([rc(1.2, th, 0.5), fl(A, 95)])]
+    ));
+  }
+  // ruler body (wood-like amber)
+  layers.push(layer(
+    "ruler",
+    ks({
+      o: fadeLoop(0, 10),
+      p: posStatic(CX, rulerY),
+      s: popScale(0, 10, 18, 100),
+      r: rotAnim(-2, 2, 0, DUR / 2),
+    }),
+    [grp([rc(rulerW, rulerH, 4), fl(S, 95), stk(A, 100, 1.5)])]
+  ));
+  return layers;
+}
+
+// ─── pencil: 紙の上を鉛筆がなぞり、線が伸びる ────────────────────────────────
+function buildPencil() {
+  resetInd();
+  const { a: A } = PAL.pencil;
+  const paperW = 110, paperH = 78;
+  const px = CX - paperW / 2, py = CY - paperH / 2;
+  const lineY = CY + 8;
+  const lineStart = px + 12, lineEnd = px + paperW - 12;
+  const layers = [];
+  // pencil — slides along the line at 30 deg angle
+  // anchor at the tip so rotation pivots there
+  const pencilGroup = [
+    grp([rc(8, 4, 1, [0, -30]), fl([0.92, 0.55, 0.60, 1], 100)], "eraser"),
+    grp([rc(8, 3, 0, [0, -26]), fl([0.70, 0.70, 0.74, 1], 100)], "ferrule"),
+    grp([rc(8, 26, 0, [0, -12]), fl(A, 100)], "body"),
+    grp([sh([[-4, 1], [4, 1], [0, 7]]), fl([0.88, 0.70, 0.42, 1], 100)], "wood"),
+    grp([sh([[-1.6, 5.5], [1.6, 5.5], [0, 7]]), fl([0.12, 0.12, 0.14, 1], 100)], "tip"),
+  ];
+  layers.push(layer(
+    "pencil",
+    ks({
+      o: fadeLoop(8, 16),
+      r: rotStatic(30),
+      p: anim([
+        k(16, [lineStart, lineY, 0], 3),
+        k(80, [lineEnd, lineY, 0], 3),
+        { t: DUR, s: [lineEnd, lineY, 0] },
+      ], 2),
+    }),
+    pencilGroup
+  ));
+  // the drawn line — grows from left to right as pencil slides
+  for (let i = 0; i < 14; i++) {
+    const segStart = lineStart + (i / 14) * (lineEnd - lineStart);
+    const segEnd = lineStart + ((i + 1) / 14) * (lineEnd - lineStart);
+    const cx = (segStart + segEnd) / 2;
+    const segW = segEnd - segStart;
+    // reveal timing matches pencil slide (16 → 80)
+    const t0 = 16 + (i / 14) * 64;
+    layers.push(layer(
+      `seg${i}`,
+      ks({
+        o: fadeLoop(t0, t0 + 3),
+        p: posStatic(cx, lineY),
+      }),
+      [grp([rc(segW + 1, 1.8, 0.8), fl(A, 90)])]
+    ));
+  }
+  // paper
+  layers.push(layer(
+    "paper",
+    ks({
+      o: fadeLoop(0, 8),
+      p: posStatic(CX, CY),
+      s: popScale(0, 8, 14, 100),
+    }),
+    [grp([rc(paperW, paperH, 4), fl([1, 1, 0.98, 1], 100), stk([0, 0, 0, 1], 20, 1)])]
+  ));
+  // subtle ruled lines under the drawn line
+  [CY - 18, CY + 26].forEach((ly, i) => {
+    layers.push(layer(
+      `rule${i}`,
+      ks({ o: fadeLoop(0, 12), p: posStatic(CX, ly) }),
+      [grp([rc(paperW - 24, 0.6, 0), fl([0, 0, 0, 1], 15)])]
+    ));
+  });
+  return layers;
+}
+
+// ─── storefront: 軒下の縞テント + ドア + "OPEN" 看板 ───────────────────────
+function buildStorefront() {
+  resetInd();
+  const { a: A, s: S } = PAL.storefront;
+  const layers = [];
+  const bldW = 130, bldH = 86;
+  const bx = CX, by = CY + 4; // building center
+  // awning stripes (alternating navy/amber)
+  const awH = 16, awW = bldW + 6;
+  const stripes = 7;
+  const stripeW = awW / stripes;
+  const awY = by - bldH / 2 - awH / 2 - 2;
+  for (let i = 0; i < stripes; i++) {
+    const sxPos = bx - awW / 2 + stripeW / 2 + i * stripeW;
+    const t0 = 10 + i * 2;
+    layers.push(layer(
+      `stripe${i}`,
+      ks({
+        o: fadeLoop(t0, t0 + 8),
+        p: posStatic(sxPos, awY),
+        s: growY(t0, t0 + 8),
+      }),
+      [grp([rc(stripeW - 0.5, awH, 0), fl(i % 2 === 0 ? A : S, 100)])]
+    ));
+  }
+  // awning front edge (scalloped bottom) — simplified as rectangle with slight wave
+  layers.push(layer(
+    "awEdge",
+    ks({ o: fadeLoop(26, 34), p: posStatic(bx, awY + awH / 2 + 3), s: growX(26, 36) }),
+    [grp([rc(awW, 4, 2), fl(A, 90)])]
+  ));
+  // OPEN sign swings gently
+  const signY = by - 8;
+  layers.push(layer(
+    "sign",
+    ks({
+      o: fadeLoop(36, 46),
+      r: anim([k(46, [-6]), k(66, [6]), k(86, [-6]), { t: DUR - 12, s: [0] }], 10),
+      p: posStatic(bx, signY),
+    }),
+    [
+      grp([rc(28, 14, 2, [0, 4]), fl(S, 100), stk(A, 100, 1)], "board"),
+      // "OPEN" represented as 4 short bars (glyph-less icon)
+      ...[-9, -3, 3, 9].map((dx, i) =>
+        grp([rc(3, 4, 0.5, [dx, 4]), fl(A, 100)], `letter${i}`)
+      ),
+      grp([rc(1.2, 8, 0, [0, -4]), fl([0.25, 0.20, 0.14, 1], 100)], "rope"),
+    ]
+  ));
+  // door
+  layers.push(layer(
+    "door",
+    ks({ o: fadeLoop(14, 22), p: posStatic(bx, by + bldH / 2 - 22), s: growY(14, 26) }),
+    [
+      grp([rc(24, 44, 1, [0, 0]), fl([0.30, 0.20, 0.14, 1], 100), stk(A, 100, 1)], "frame"),
+      grp([el(1.2, 1.2, [6, 0]), fl([0.92, 0.75, 0.35, 1], 100)], "knob"),
+    ]
+  ));
+  // 2 windows on the sides of door
+  [-38, 38].forEach((dx, i) => {
+    layers.push(layer(
+      `win${i}`,
+      ks({
+        o: fadeLoop(18 + i * 3, 26 + i * 3),
+        p: posStatic(bx + dx, by + 4),
+        s: popScale(18 + i * 3, 26 + i * 3, 32 + i * 3, 100),
+      }),
+      [
+        grp([rc(28, 30, 2, [0, 0]), fl([0.85, 0.92, 0.96, 1], 100), stk(A, 100, 1.2)], "pane"),
+        grp([rc(28, 1, 0, [0, 0]), fl(A, 100)], "mullionH"),
+        grp([rc(1, 30, 0, [0, 0]), fl(A, 100)], "mullionV"),
+      ]
+    ));
+  });
+  // building body
+  layers.push(layer(
+    "body",
+    ks({
+      o: fadeLoop(0, 8),
+      p: posStatic(bx, by),
+      s: popScale(0, 8, 14, 100),
+    }),
+    [grp([rc(bldW, bldH, 4), fl([0.96, 0.94, 0.90, 1], 100), stk(A, 100, 1.2)])]
+  ));
+  return layers;
+}
+
+// ─── cameraFlash: カメラ本体 + レンズ + フラッシュバースト ─────────────────
+function buildCameraFlash() {
+  resetInd();
+  const { a: A, s: S } = PAL.cameraFlash;
+  const bodyW = 128, bodyH = 84;
+  const layers = [];
+  // flash burst rays (fire at t=40, again at t=86)
+  const fireTimes = [40, 86];
+  fireTimes.forEach((t0, fi) => {
+    for (let i = 0; i < 8; i++) {
+      const rad = (i * 360) / 8;
+      const rd = (rad * Math.PI) / 180;
+      const r1 = 22, r2 = 40;
+      layers.push(layer(
+        `ray_${fi}_${i}`,
+        ks({
+          o: anim([k(t0, [0]), k(t0 + 4, [85]), k(t0 + 14, [0]), { t: DUR, s: [0] }], 11),
+          p: posStatic(CX, CY + 4),
+          s: popScale(t0, t0 + 4, t0 + 10, 130),
+        }),
+        [grp([sh([
+          [r1 * Math.cos(rd), r1 * Math.sin(rd)],
+          [r2 * Math.cos(rd), r2 * Math.sin(rd)],
+        ], false), stk(S, 100, 3)])]
+      ));
+    }
+  });
+  // lens highlight flash (central white circle)
+  fireTimes.forEach((t0, fi) => {
+    layers.push(layer(
+      `lensFlash${fi}`,
+      ks({
+        o: anim([k(t0, [0]), k(t0 + 3, [85]), k(t0 + 12, [0]), { t: DUR, s: [0] }], 11),
+        p: posStatic(CX, CY + 4),
+        s: popScale(t0, t0 + 3, t0 + 8, 110),
+      }),
+      [grp([el(18, 18), fl(S, 100)])]
+    ));
+  });
+  // lens (glass ring + inner)
+  layers.push(layer(
+    "lensInner",
+    ks({ o: fadeLoop(14, 22), p: posStatic(CX, CY + 4), s: popScale(14, 22, 30, 100) }),
+    [grp([el(14, 14), fl([0.08, 0.10, 0.16, 1], 100)])]
+  ));
+  layers.push(layer(
+    "lensRing",
+    ks({ o: fadeLoop(10, 18), p: posStatic(CX, CY + 4), s: popScale(10, 18, 26, 100) }),
+    [grp([el(20, 20), fl([0.24, 0.26, 0.32, 1], 100), stk([0.60, 0.62, 0.66, 1], 100, 1.5)])]
+  ));
+  // viewfinder (small rectangle top-right)
+  layers.push(layer(
+    "viewfinder",
+    ks({ o: fadeLoop(6, 14), p: posStatic(CX + 34, CY - 32), s: popScale(6, 14, 22, 100) }),
+    [grp([rc(16, 10, 1.5), fl([0.12, 0.14, 0.20, 1], 100), stk(A, 100, 0.8)])]
+  ));
+  // flash bulb (top-left small rectangle)
+  layers.push(layer(
+    "flashBulb",
+    ks({
+      o: anim([
+        k(0, [100]), k(36, [100]), k(40, [60]), k(46, [100]),
+        k(82, [100]), k(86, [60]), k(92, [100]),
+        { t: DUR - 12, s: [100] }, { t: DUR, s: [0] }
+      ], 11),
+      p: posStatic(CX - 34, CY - 32),
+      s: popScale(6, 14, 22, 100),
+    }),
+    [grp([rc(14, 10, 2, [0, 0]), fl(S, 100), stk(A, 100, 1)])]
+  ));
+  // camera body
+  layers.push(layer(
+    "body",
+    ks({
+      o: fadeLoop(0, 8),
+      p: posStatic(CX, CY + 4),
+      s: popScale(0, 8, 14, 100),
+    }),
+    [grp([rc(bodyW, bodyH, 8), fl(A, 100), stk([0.10, 0.14, 0.24, 1], 100, 1.2)])]
+  ));
+  // top bump (hump above body for viewfinder area)
+  layers.push(layer(
+    "bump",
+    ks({ o: fadeLoop(0, 8), p: posStatic(CX, CY - bodyH / 2 - 2) }),
+    [grp([rc(60, 12, 3), fl(A, 100)])]
+  ));
+  return layers;
+}
+
+// ─── saw: のこぎりが往復しながら板を切る (cut の軽量版) ──────────────────────
+function buildSaw() {
+  resetInd();
+  const { a: A, s: S } = PAL.saw;
+  const boardW = 132, boardH = 32;
+  const boardY = CY + 18;
+  const cutX = CX;
+  const layers = [];
+  // sawdust puffs
+  for (let i = 0; i < 5; i++) {
+    const dx = -8 + i * 4;
+    layers.push(layer(
+      `dust${i}`,
+      ks({
+        o: anim([k(24 + i * 2, [0]), k(36 + i * 2, [75]), k(DUR - 14, [75]), { t: DUR, s: [0] }], 11),
+        p: posStatic(cutX + dx, boardY + boardH / 2 + 4 + (i % 2) * 4),
+        s: popScale(24 + i * 2, 36 + i * 2, 42 + i * 2),
+      }),
+      [grp([el(2.5, 1.5), fl(S, 85)])]
+    ));
+  }
+  // saw — moves back and forth horizontally above board (angled slightly)
+  layers.push(layer(
+    "saw",
+    ks({
+      o: fadeLoop(14, 22),
+      r: rotStatic(-8),
+      p: anim([
+        k(22, [cutX - 14, boardY - 26, 0], 3),
+        k(46, [cutX + 10, boardY - 22, 0], 3),
+        k(70, [cutX - 14, boardY - 26, 0], 3),
+        k(94, [cutX + 10, boardY - 22, 0], 3),
+        { t: DUR - 12, s: [cutX - 2, boardY - 24, 0] },
+      ], 2),
+    }),
+    [
+      // blade
+      grp([rc(54, 8, 1, [0, 0]), fl([0.72, 0.74, 0.78, 1], 100), stk([0.50, 0.52, 0.56, 1], 100, 0.8)], "blade"),
+      // spine (darker)
+      grp([rc(54, 2, 0, [0, -5]), fl([0.40, 0.42, 0.45, 1], 100)], "spine"),
+      // teeth
+      ...Array.from({ length: 10 }, (_, i) =>
+        grp([sh([[-25 + i * 5.5, 4], [-22 + i * 5.5, 10], [-19 + i * 5.5, 4]]), fl([0.55, 0.57, 0.60, 1], 100)], `tooth${i}`)
+      ),
+      // handle (wooden D-shape)
+      grp([rc(16, 22, 3, [-32, -6]), fl([0.50, 0.32, 0.18, 1], 100), stk([0.30, 0.20, 0.12, 1], 100, 1)], "handle"),
+      grp([el(5, 5, [-32, -6]), fl([1, 1, 1, 1], 0), stk([0.30, 0.20, 0.12, 1], 100, 1)], "grip"),
+    ]
+  ));
+  // cut line
+  layers.push(layer(
+    "cutLine",
+    ks({
+      o: anim([k(14, [0]), k(22, [100]), k(DUR - 12, [100]), { t: DUR, s: [0] }], 11),
+      p: posStatic(cutX, boardY),
+    }),
+    [grp([rc(2.5, boardH + 16, 1), fl(A, 100)])]
+  ));
+  // board
+  layers.push(boardLayer(A, { y: boardY, w: boardW, h: boardH, fillOp: 35, strokeOp: 70, t0: 0, t1: 10 }));
+  return layers;
+}
+
+// ─── photoEmpty: 破線の写真枠 + 中央カメラアイコン (息づく) ──────────────────
+function buildPhotoEmpty() {
+  resetInd();
+  const { a: A } = PAL.photoEmpty;
+  const frameW = 112, frameH = 82;
+  const layers = [];
+  // camera icon inside frame (small)
+  // body
+  layers.push(layer(
+    "camBody",
+    ks({
+      o: fadeLoop(18, 28),
+      p: posStatic(CX, CY + 4),
+      s: anim([
+        k(28, [96, 96, 100], 3),
+        k(62, [108, 108, 100], 3),
+        k(96, [96, 96, 100], 3),
+        { t: DUR - 12, s: [100, 100, 100] },
+      ], 6),
+    }),
+    [grp([rc(40, 26, 4), fl(A, 90)])]
+  ));
+  // body top bump
+  layers.push(layer(
+    "camBump",
+    ks({
+      o: fadeLoop(18, 28),
+      p: posStatic(CX, CY + 4 - 13 - 2),
+      s: anim([
+        k(28, [96, 96, 100], 3),
+        k(62, [108, 108, 100], 3),
+        k(96, [96, 96, 100], 3),
+        { t: DUR - 12, s: [100, 100, 100] },
+      ], 6),
+    }),
+    [grp([rc(16, 4, 1.5), fl(A, 90)])]
+  ));
+  // lens
+  layers.push(layer(
+    "camLens",
+    ks({
+      o: fadeLoop(22, 32),
+      p: posStatic(CX, CY + 4),
+    }),
+    [
+      grp([el(7, 7), fl([1, 1, 1, 1], 100)], "glass"),
+      grp([el(4, 4), fl(A, 100)], "inner"),
+    ]
+  ));
+  // dashed frame — approximated by 20 small segments around rect perimeter
+  const frameCx = CX, frameCy = CY + 4;
+  const corners = [
+    [frameCx - frameW / 2, frameCy - frameH / 2],
+    [frameCx + frameW / 2, frameCy - frameH / 2],
+    [frameCx + frameW / 2, frameCy + frameH / 2],
+    [frameCx - frameW / 2, frameCy + frameH / 2],
+  ];
+  // build dashed rectangle with strokes + dashPattern
+  layers.push(layer(
+    "frame",
+    ks({
+      o: fadeLoop(0, 10),
+      p: posStatic(frameCx, frameCy),
+      s: popScale(0, 10, 18, 100),
+    }),
+    [grp([rc(frameW, frameH, 8), stk(A, 100, 2, [6, 6, 0])])]
+  ));
+  return layers;
+}
+
 // ─── register + write ────────────────────────────────────────────────────────
 const BUILDERS = {
   measure: buildMeasure,
@@ -1193,6 +1632,12 @@ const BUILDERS = {
   complete: buildComplete,
   assemble: buildAssemble,
   install: buildInstall,
+  ruler: buildRuler,
+  pencil: buildPencil,
+  storefront: buildStorefront,
+  cameraFlash: buildCameraFlash,
+  saw: buildSaw,
+  photoEmpty: buildPhotoEmpty,
 };
 
 fs.mkdirSync(OUT_DIR, { recursive: true });

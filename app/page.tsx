@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
+import LottieIcon from "@/components/LottieIcon";
 import { categories } from "@/lib/data";
 import { fetchUseCases, fetchFeaturedUseCases } from "@/lib/firestore";
 
@@ -107,25 +108,25 @@ const categoryIcon: Record<string, string> = {
   "看板・インテリア": "🪧",
 };
 
-const features = [
+const features: Array<{ lottie: string; title: string; desc: string; appOnly?: boolean }> = [
   {
-    icon: "📐",
+    lottie: "ruler",
     title: "22種の設計図",
     desc: "棚・ベンチ・デッキなど、厳選されたプロ品質の設計図を無料公開。",
   },
   {
-    icon: "✏️",
+    lottie: "pencil",
     title: "カスタム設計",
     desc: "幅・高さを入力するだけで最適な材料構成と費用を自動算出。アプリ限定機能。",
     appOnly: true,
   },
   {
-    icon: "🏪",
+    lottie: "storefront",
     title: "ホームセンター別リスト",
     desc: "カインズ・コメリ別に最適な材料と価格を自動選定。",
   },
   {
-    icon: "📸",
+    lottie: "cameraFlash",
     title: "作例ギャラリー",
     desc: "実際に作った人のコスト・写真・サイズを参考にできる。",
   },
@@ -259,7 +260,9 @@ export default async function HomePage() {
                 className="zumen-card p-6 flex gap-4 items-start"
                 style={f.appOnly ? { borderColor: "rgba(217,123,42,0.35)" } : {}}
               >
-                <span className="text-3xl shrink-0">{f.icon}</span>
+                <div className="shrink-0 flex items-center justify-center" style={{ width: 64, height: 50 }}>
+                  <LottieIcon name={f.lottie} size={64} ariaLabel={f.title} />
+                </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-bold" style={{ color: "var(--navy-deep)" }}>{f.title}</p>

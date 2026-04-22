@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import LottieIcon from "@/components/LottieIcon";
 import { fetchExamples, formatTime } from "@/lib/examples";
 
 // 5分ごとに再検証（新しい投稿を反映）
@@ -75,7 +76,9 @@ export default async function ExampleListPage() {
       {/* グリッド */}
       {examples.length === 0 ? (
         <div className="text-center py-20" style={{ color: "var(--text-tertiary)" }}>
-          <p className="text-5xl mb-4">📷</p>
+          <div className="flex justify-center mb-4">
+            <LottieIcon name="photoEmpty" size={180} ariaLabel="作例はまだありません" />
+          </div>
           <p>まだ作例がありません</p>
           <p className="text-sm mt-2">アプリから最初の作品を投稿してみましょう</p>
         </div>

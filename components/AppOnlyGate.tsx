@@ -5,6 +5,8 @@
  * App Store への誘導CTAを重ねてアプリへ流す。
  */
 
+import LottieIcon from "./LottieIcon";
+
 const APP_STORE_URL =
   "https://apps.apple.com/us/app/zumen-diy%E8%A8%AD%E8%A8%88%E5%9B%B3-%E6%9C%A8%E6%9D%90%E3%83%AA%E3%82%B9%E3%83%88/id6762496625";
 
@@ -51,10 +53,10 @@ export default function AppOnlyGate({
       >
         {/* クラウンバッジ */}
         <div
-          className="w-12 h-12 rounded-2xl flex items-center justify-center"
+          className="w-14 h-14 rounded-2xl flex items-center justify-center"
           style={{ background: "var(--amber-pale)" }}
         >
-          <span className="text-2xl" aria-hidden="true">✏️</span>
+          <LottieIcon name="pencil" size={44} ariaLabel="カスタム設計" />
         </div>
 
         <div>

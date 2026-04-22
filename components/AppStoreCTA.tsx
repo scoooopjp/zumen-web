@@ -1,3 +1,5 @@
+import LottieIcon from "./LottieIcon";
+
 interface AppStoreCTAProps {
   variant?: "primary" | "banner" | "inline";
   title?: string;
@@ -61,10 +63,10 @@ export default function AppStoreCTA({
         className="zumen-card flex items-center gap-4 p-5"
       >
         <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+          className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: "var(--amber-pale)" }}
         >
-          <span className="text-2xl">✏️</span>
+          <LottieIcon name="pencil" size={44} ariaLabel={title} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-bold" style={{ color: "var(--navy-deep)" }}>{title}</p>

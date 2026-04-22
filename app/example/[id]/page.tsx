@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import LottieIcon from "@/components/LottieIcon";
 import { fetchExamples, formatTime } from "@/lib/examples";
 
 interface Props {
@@ -58,7 +59,7 @@ export default async function ExampleDetailPage({ params }: Props) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={ex.imageURL} alt={`${ex.authorName}さんの${ex.useCaseName}`} className="w-full h-full object-cover" />
         ) : (
-          <span className="text-5xl">📷</span>
+          <LottieIcon name="photoEmpty" size={160} ariaLabel="画像なし" />
         )}
       </div>
 

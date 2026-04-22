@@ -8,6 +8,7 @@ import StepIllustration from "@/components/StepIllustration";
 import BlueprintCard from "@/components/BlueprintCard";
 import PartPriceTag from "@/components/PartPriceTag";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import LottieIcon from "@/components/LottieIcon";
 import {
   getBlueprintBySlug,
   getBlueprintByTemplateID,
@@ -184,7 +185,7 @@ export default async function BlueprintPage({ params }: Props) {
         ) : (
           <div className="aspect-video rounded-2xl flex items-center justify-center mb-6"
             style={{ background: "var(--canvas)" }}>
-            <span className="text-6xl" aria-hidden="true">🪚</span>
+            <LottieIcon name="saw" size={160} ariaLabel="設計図を準備中" />
           </div>
         )}
 
