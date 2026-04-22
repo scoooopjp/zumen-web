@@ -32,6 +32,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const storeRoutes: MetadataRoute.Sitemap = [
     { url: `${BASE}/store/cainz`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/store/komeri`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/store/kohnan`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/store/dcm`,    lastModified: now, changeFrequency: "monthly", priority: 0.7 },
   ];
 
   // 作例は審査済みのものだけ index 対象（現状モックはすべて除外）

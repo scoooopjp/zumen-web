@@ -20,6 +20,8 @@ export default function Footer() {
               <p className="font-medium text-gray-900">ホームセンター</p>
               <Link href="/store/cainz" className="hover:text-gray-900">カインズ</Link>
               <Link href="/store/komeri" className="hover:text-gray-900">コメリ</Link>
+              <Link href="/store/kohnan" className="hover:text-gray-900">コーナン</Link>
+              <Link href="/store/dcm" className="hover:text-gray-900">DCM</Link>
             </div>
           </div>
         </div>

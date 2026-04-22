@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import type { Retailer } from "@/lib/data";
 import { fetchUseCases } from "@/lib/firestore";
 
@@ -40,14 +40,34 @@ export default async function StorePage({ params }: Props) {
   const allUseCases = await fetchUseCases();
   const items = allUseCases.filter((uc) => uc.supportedRetailers.includes(store.name));
 
+  const BASE = "https://zumen.scoooop.com";
+  const collectionLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `${store.name}で買えるDIY設計図`,
+    description: store.desc,
+    url: `${BASE}/store/${retailer}`,
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: items.length,
+      itemListElement: items.map((uc, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `${BASE}/blueprint/${uc.slug}`,
+        name: uc.name,
+      })),
+    },
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* パンくず */}
-      <nav className="text-sm text-gray-400 mb-6 flex items-center gap-1.5">
-        <Link href="/" className="hover:text-gray-600">TOP</Link>
-        <span>/</span>
-        <span className="text-gray-600">{store.name}</span>
-      </nav>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+      />
+      <Breadcrumbs
+        items={[{ name: "TOP", href: "/" }, { name: store.name }]}
+      />
 
       <h1 className="text-3xl font-bold text-gray-900 mb-2">
         {store.name}で買えるDIY設計図

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AppOnlyGate from "@/components/AppOnlyGate";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { fetchExamples, formatTime } from "@/lib/examples";
 
 interface Props {
@@ -40,22 +41,16 @@ export default async function ExampleDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
-      {/* パンくず */}
-      <nav className="text-sm text-gray-400 mb-6 flex items-center gap-1.5 flex-wrap">
-        <Link href="/" className="hover:text-gray-600">TOP</Link>
-        <span>/</span>
-        <Link href="/example" className="hover:text-gray-600">作例ギャラリー</Link>
-        <span>/</span>
-        {ex.useCaseSlug && (
-          <>
-            <Link href={`/blueprint/${ex.useCaseSlug}`} className="hover:text-gray-600">
-              {ex.useCaseName}
-            </Link>
-            <span>/</span>
-          </>
-        )}
-        <span className="text-gray-600">作例</span>
-      </nav>
+      <Breadcrumbs
+        items={[
+          { name: "TOP", href: "/" },
+          { name: "作例ギャラリー", href: "/example" },
+          ...(ex.useCaseSlug
+            ? [{ name: ex.useCaseName, href: `/blueprint/${ex.useCaseSlug}` }]
+            : []),
+          { name: "作例" },
+        ]}
+      />
 
       {/* 画像 */}
       <div className="aspect-video bg-gray-100 rounded-2xl flex items-center justify-center mb-6 overflow-hidden">

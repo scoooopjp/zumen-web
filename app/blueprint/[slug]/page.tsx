@@ -7,6 +7,7 @@ import SaveButton from "@/components/SaveButton";
 import StepIllustration from "@/components/StepIllustration";
 import BlueprintCard from "@/components/BlueprintCard";
 import PartPriceTag from "@/components/PartPriceTag";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import {
   getBlueprintBySlug,
   getBlueprintByTemplateID,
@@ -117,11 +118,13 @@ export default async function BlueprintPage({ params }: Props) {
     .filter(Boolean) as typeof useCases;
 
   // 構造化データ (HowTo schema)
+  const heroImage = uc?.imageURL ?? getCategoryThumbnailURL(uc?.category ?? bp.category);
   const howToSchema = {
     "@context": "https://schema.org",
     "@type": "HowTo",
     name: `${name}の作り方`,
     description,
+    ...(heroImage ? { image: heroImage } : {}),
     estimatedCost: {
       "@type": "MonetaryAmount",
       currency: "JPY",
@@ -150,41 +153,40 @@ export default async function BlueprintPage({ params }: Props) {
       />
 
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* パンくず */}
-        <nav className="text-sm text-gray-400 mb-6 flex items-center gap-1.5">
-          <Link href="/" className="hover:text-gray-600">TOP</Link>
-          <span>/</span>
-          <Link href="/category" className="hover:text-gray-600">設計図一覧</Link>
-          <span>/</span>
-          <Link href={`/category/${uc?.categorySlug ?? bp.categorySlug}`} className="hover:text-gray-600">
-            {uc?.category ?? bp.category}
-          </Link>
-          <span>/</span>
-          <span className="text-gray-600">{name}</span>
-        </nav>
+        <Breadcrumbs
+          items={[
+            { name: "TOP", href: "/" },
+            { name: "設計図一覧", href: "/category" },
+            {
+              name: uc?.category ?? bp.category,
+              href: `/category/${uc?.categorySlug ?? bp.categorySlug}`,
+            },
+            { name },
+          ]}
+        />
 
         {/* ヒーロー */}
-        {(() => {
-          // useCaseID固有 → カテゴリ共通 の優先順
-          const thumbURL = uc?.imageURL ?? getCategoryThumbnailURL(uc?.category ?? bp.category);
-          return thumbURL ? (
-            <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "3/2" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={thumbURL} alt={uc?.imageAlt ?? bp.imageAlt} className="w-full h-full object-cover" />
-              <span
-                className="absolute bottom-3 right-3 text-[11px] px-2 py-1 rounded"
-                style={{ background: "rgba(0,0,0,0.45)", color: "rgba(255,255,255,0.92)" }}
-              >
-                ※完成イメージ
-              </span>
-            </div>
-          ) : (
-            <div className="aspect-video rounded-2xl flex items-center justify-center mb-6"
-              style={{ background: "var(--canvas)" }}>
-              <span className="text-6xl">🪚</span>
-            </div>
-          );
-        })()}
+        {heroImage ? (
+          <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "3/2" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImage}
+              alt={uc?.imageAlt || bp.imageAlt || `${name}の完成イメージ — ${uc?.category ?? bp.category}DIY設計図`}
+              className="w-full h-full object-cover"
+            />
+            <span
+              className="absolute bottom-3 right-3 text-[11px] px-2 py-1 rounded"
+              style={{ background: "rgba(0,0,0,0.45)", color: "rgba(255,255,255,0.92)" }}
+            >
+              ※完成イメージ
+            </span>
+          </div>
+        ) : (
+          <div className="aspect-video rounded-2xl flex items-center justify-center mb-6"
+            style={{ background: "var(--canvas)" }}>
+            <span className="text-6xl" aria-hidden="true">🪚</span>
+          </div>
+        )}
 
         {/* タイトル・バッジ・保存ボタン */}
         <div className="flex items-start justify-between gap-3 mb-1">

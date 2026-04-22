@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import AppOnlyGate from "@/components/AppOnlyGate";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { fetchExamples, formatTime } from "@/lib/examples";
 
 // 5分ごとに再検証（新しい投稿を反映）
@@ -19,12 +20,9 @@ export default async function ExampleListPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      {/* パンくず */}
-      <nav className="text-sm mb-6 flex items-center gap-1.5" style={{ color: "var(--text-tertiary)" }}>
-        <Link href="/" className="hover:opacity-70">TOP</Link>
-        <span>/</span>
-        <span style={{ color: "var(--text-secondary)" }}>作例ギャラリー</span>
-      </nav>
+      <Breadcrumbs
+        items={[{ name: "TOP", href: "/" }, { name: "作例ギャラリー" }]}
+      />
 
       {/* ヘッダー */}
       <div className="mb-8">
