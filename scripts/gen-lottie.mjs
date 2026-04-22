@@ -144,6 +144,8 @@ const PAL = {
   inspect:    { a: [0.45, 0.18, 0.72, 1], s: [0.72, 0.55, 0.92, 1] },
   screw:      { a: [0.28, 0.38, 0.55, 1], s: [0.55, 0.65, 0.80, 1] },
   complete:   { a: [0.65, 0.48, 0.05, 1], s: [0.90, 0.72, 0.20, 1] },
+  assemble:   { a: [0.72, 0.20, 0.18, 1], s: [0.92, 0.60, 0.55, 1] }, // iOS StepTheme と同色 (frame legacy)
+  install:    { a: [0.18, 0.55, 0.32, 1], s: [0.50, 0.80, 0.60, 1] }, // iOS StepTheme と同色 (wallMount legacy)
 };
 
 // ─── per-type scene builders (all 14) ────────────────────────────────────────
@@ -999,6 +1001,180 @@ function buildComplete() {
   return layers;
 }
 
+// ─── assemble: 2 枚の板が寄ってきて直角に接合 + 留めビス ───────────────────────
+function buildAssemble() {
+  resetInd();
+  const { a: A } = PAL.assemble;
+  const layers = [];
+  const thick = 14;
+  const hLen = 70, vLen = 58;
+  // Horizontal board slides in from the left, settles along CY.
+  const hFinalX = CX - 8;
+  layers.push(layer(
+    "boardH",
+    ks({
+      o: fadeLoop(0, 10),
+      p: anim([
+        k(0, [-40, CY, 0], 3),
+        k(28, [hFinalX, CY, 0], 3),
+        { t: DUR, s: [hFinalX, CY, 0] },
+      ], 2),
+    }),
+    [grp([rc(hLen, thick, 2), fl(A, 55), stk(A, 100, 1.2)])]
+  ));
+  // Vertical board drops in from above, settles at the corner.
+  const vFinalX = CX - 8 - hLen / 2 + thick / 2;
+  const vFinalY = CY - thick / 2 - vLen / 2;
+  layers.push(layer(
+    "boardV",
+    ks({
+      o: fadeLoop(6, 16),
+      p: anim([
+        k(6, [vFinalX, -40, 0], 3),
+        k(34, [vFinalX, vFinalY, 0], 3),
+        { t: DUR, s: [vFinalX, vFinalY, 0] },
+      ], 2),
+    }),
+    [grp([rc(thick, vLen, 2), fl(A, 55), stk(A, 100, 1.2)])]
+  ));
+  // Joint highlight: a small pulse square at the corner.
+  layers.push(layer(
+    "joint",
+    ks({
+      o: anim([k(34, [0]), k(42, [85]), k(52, [0]), { t: DUR, s: [0] }], 11),
+      p: posStatic(vFinalX, CY - thick / 2),
+      s: popScale(34, 42, 50, 140),
+    }),
+    [grp([rc(thick + 4, thick + 4, 3), fl(PAL.assemble.s, 70)])]
+  ));
+  // 2 screws pop in along the joint (driven from outside).
+  const screws = [[vFinalX, CY - thick - 4], [vFinalX, CY + 2]];
+  screws.forEach(([sx, sy], i) => {
+    const t0 = 54 + i * 6;
+    layers.push(layer(
+      `screw${i}`,
+      ks({
+        o: fadeLoop(t0, t0 + 6),
+        p: posStatic(sx, sy),
+        s: popScale(t0, t0 + 6, t0 + 12, 140),
+        r: rotAnim(-90, 90, t0, t0 + 16),
+      }),
+      [
+        grp([el(3.5, 3.5), fl([0.62, 0.65, 0.70, 1], 100)], "head"),
+        grp([rc(4.5, 1, 0, [0, 0]), fl([1, 1, 1, 1], 85)], "slot"),
+      ]
+    ));
+  });
+  // Motion arrows indicating the slide direction (fade early, guide the eye).
+  layers.push(layer(
+    "arrowH",
+    ks({
+      o: anim([k(0, [0]), k(8, [85]), k(26, [85]), k(32, [0]), { t: DUR, s: [0] }], 11),
+      p: posStatic(CX - 40, CY),
+    }),
+    [grp([sh([[0, 0], [8, -5], [8, 5]]), fl(A, 100)])]
+  ));
+  layers.push(layer(
+    "arrowV",
+    ks({
+      o: anim([k(6, [0]), k(14, [85]), k(32, [85]), k(38, [0]), { t: DUR, s: [0] }], 11),
+      p: posStatic(vFinalX, CY - 38),
+    }),
+    [grp([sh([[0, 0], [-5, -8], [5, -8]]), fl(A, 100)])]
+  ));
+  return layers;
+}
+
+// ─── install: 壁 + ブラケット装着 + 板載せ + 確認 ────────────────────────────
+function buildInstall() {
+  resetInd();
+  const { a: A, s: S } = PAL.install;
+  const layers = [];
+  const wallX = 22;
+  // Wall stripe on the left (full height).
+  layers.push(layer(
+    "wall",
+    ks({
+      o: fadeLoop(0, 8),
+      p: posStatic(wallX - 6, CY),
+      s: popScale(0, 8, 14, 100),
+    }),
+    [grp([rc(12, H - 20, 1), fl([0.58, 0.60, 0.62, 1], 35), stk([0.58, 0.60, 0.62, 1], 60, 0.8)])]
+  ));
+  // Hatching on wall (2 diagonal lines) — signals "wall surface".
+  [-14, 14].forEach((dy, i) => {
+    layers.push(layer(
+      `hatch${i}`,
+      ks({
+        o: fadeLoop(4 + i * 2, 12 + i * 2),
+        p: posStatic(wallX - 6, CY + dy),
+      }),
+      [grp([sh([[-4, -3], [4, 3]], false), stk([0.40, 0.42, 0.46, 1], 70, 1)])]
+    ));
+  });
+  // L-bracket snaps onto the wall.
+  const bracketX = wallX + 10, bracketY = CY - 2;
+  layers.push(layer(
+    "bracketV",
+    ks({
+      o: fadeLoop(14, 24),
+      p: posStatic(bracketX, bracketY),
+      s: popScale(14, 24, 32, 130),
+    }),
+    [grp([rc(3, 32, 1, [0, 0]), fl(A, 100)])]
+  ));
+  layers.push(layer(
+    "bracketH",
+    ks({
+      o: fadeLoop(18, 28),
+      p: posStatic(bracketX + 10, bracketY + 14),
+      s: popScale(18, 28, 36, 130),
+    }),
+    [grp([rc(22, 3, 1, [0, 0]), fl(A, 100)])]
+  ));
+  // Board slides in from the right, lands on the bracket.
+  const boardFinalX = CX + 10, boardY = bracketY + 4;
+  layers.push(layer(
+    "board",
+    ks({
+      o: fadeLoop(30, 40),
+      p: anim([
+        k(30, [W + 40, boardY, 0], 3),
+        k(60, [boardFinalX, boardY, 0], 3),
+        { t: DUR, s: [boardFinalX, boardY, 0] },
+      ], 2),
+    }),
+    [grp([rc(110, 14, 2), fl(A, 55), stk(A, 100, 1.2)])]
+  ));
+  // 2 screws drive into the wall anchoring the bracket.
+  [bracketY - 10, bracketY + 18].forEach((ay, i) => {
+    const t0 = 24 + i * 4;
+    layers.push(layer(
+      `screw${i}`,
+      ks({
+        o: fadeLoop(t0, t0 + 6),
+        p: posStatic(bracketX + 2, ay),
+        s: popScale(t0, t0 + 6, t0 + 12, 140),
+      }),
+      [
+        grp([el(3, 3), fl([0.62, 0.65, 0.70, 1], 100)], "head"),
+        grp([rc(4, 1, 0, [0, 0]), fl([1, 1, 1, 1], 85)], "slot"),
+      ]
+    ));
+  });
+  // Final checkmark flashes on the board end.
+  layers.push(layer(
+    "check",
+    ks({
+      o: anim([k(74, [0]), k(82, [85]), k(DUR - 12, [85]), { t: DUR, s: [0] }], 11),
+      p: posStatic(boardFinalX + 44, boardY - 12),
+      s: popScale(74, 82, 90, 140),
+    }),
+    [grp([sh([[-5, 1], [-1, 5], [6, -5]], false), stk(S, 100, 2.4)])]
+  ));
+  return layers;
+}
+
 // ─── register + write ────────────────────────────────────────────────────────
 const BUILDERS = {
   measure: buildMeasure,
@@ -1015,6 +1191,8 @@ const BUILDERS = {
   inspect: buildInspect,
   screw: buildScrew,
   complete: buildComplete,
+  assemble: buildAssemble,
+  install: buildInstall,
 };
 
 fs.mkdirSync(OUT_DIR, { recursive: true });

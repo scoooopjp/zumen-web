@@ -15,6 +15,7 @@ import { sandGrit, drillDiameter, spacingLabel, screwLabel } from "@/lib/stepLab
 const LOTTIE_AVAILABLE: ReadonlySet<string> = new Set([
   "measure", "markLine", "cut", "sand", "drill", "foundation", "levelCheck",
   "topBoard", "frame", "wallMount", "waterproof", "paint", "inspect", "screw", "complete",
+  "assemble", "install",
 ]);
 
 /**
@@ -41,6 +42,8 @@ function resolveCaption(
     case "inspect":    return "ぐらつきなし ✓";
     case "screw":      return screwLabel(stepDescription);
     case "complete":   return "完成！おめでとう";
+    case "assemble":   return "接合部をしっかり";
+    case "install":    return "下地に固定";
     default:           return undefined;
   }
 }
