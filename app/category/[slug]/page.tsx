@@ -18,10 +18,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const cat = categories.find((c) => c.slug === slug);
   if (!cat) return {};
+  const ogUrl = `/og?title=${encodeURIComponent(`${cat.name} DIY 設計図`)}&category=${encodeURIComponent("カテゴリ")}&icon=${encodeURIComponent("📐")}`;
   return {
     title: `${cat.name} DIY 設計図一覧`,
     description: `${cat.name}のDIY設計図を一覧で探せます。ホームセンター別の材料リスト付き。`,
     alternates: { canonical: `/category/${slug}` },
+    openGraph: {
+      title: `${cat.name} DIY 設計図 | ZUMEN`,
+      description: `${cat.name}のDIY設計図。${cat.description}`,
+      images: [{ url: ogUrl, width: 1200, height: 630 }],
+    },
+    twitter: { card: "summary_large_image", images: [ogUrl] },
   };
 }
 

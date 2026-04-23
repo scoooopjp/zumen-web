@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   const category = searchParams.get("category") ?? "";
   const difficulty = searchParams.get("difficulty") ?? "";
   const budget = searchParams.get("budget") ?? "";
+  const icon = searchParams.get("icon") ?? "🪚";
 
   return new ImageResponse(
     (
@@ -104,7 +105,7 @@ export async function GET(req: NextRequest) {
             opacity: 0.06,
           }}
         >
-          🪚
+          {icon}
         </div>
       </div>
     ),

@@ -25,10 +25,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { retailer } = await params;
   const store = storeMap[retailer];
   if (!store) return {};
+  const ogUrl = `/og?title=${encodeURIComponent(`${store.name}で買えるDIY設計図`)}&category=${encodeURIComponent("ホームセンター")}&icon=${encodeURIComponent("🏬")}`;
   return {
     title: `${store.name}で買えるDIY設計図`,
     description: `${store.name}で材料が揃うDIY設計図一覧。棚・プランター台・コンポストなど。`,
     alternates: { canonical: `/store/${retailer}` },
+    openGraph: {
+      title: `${store.name}で買えるDIY設計図 | ZUMEN`,
+      description: store.desc,
+      images: [{ url: ogUrl, width: 1200, height: 630 }],
+    },
+    twitter: { card: "summary_large_image", images: [ogUrl] },
   };
 }
 

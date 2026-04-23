@@ -7,11 +7,20 @@ import { fetchUseCases } from "@/lib/firestore";
 
 export const dynamic = "force-dynamic";
 
+const ogUrl = `/og?title=${encodeURIComponent("DIY設計図一覧")}&category=${encodeURIComponent("カテゴリ別")}&icon=${encodeURIComponent("📐")}`;
+
 export const metadata: Metadata = {
   title: "DIY設計図一覧",
   description:
     "棚・プランター台・コンポストなどのDIY設計図を一覧で探せます。ホームセンター別の材料リスト付き。",
   alternates: { canonical: "/category" },
+  openGraph: {
+    title: "DIY設計図一覧 | ZUMEN",
+    description:
+      "棚・プランター台・コンポストなどのDIY設計図を一覧で探せます。ホームセンター別の材料リスト付き。",
+    images: [{ url: ogUrl, width: 1200, height: 630 }],
+  },
+  twitter: { card: "summary_large_image", images: [ogUrl] },
 };
 
 export default async function CategoryListPage() {
