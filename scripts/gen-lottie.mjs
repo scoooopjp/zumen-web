@@ -153,6 +153,12 @@ const PAL = {
   cameraFlash:{ a: [0.22, 0.35, 0.68, 1], s: [0.98, 0.94, 0.78, 1] }, // navy + flash cream
   saw:        { a: [0.85, 0.38, 0.063, 1], s: [0.98, 0.72, 0.42, 1] }, // cut orange
   photoEmpty: { a: [0.58, 0.60, 0.66, 1], s: [0.80, 0.82, 0.86, 1] }, // neutral gray
+  // ─ state feedback icons ─
+  loading:    { a: [0.91, 0.63, 0.23, 1], s: [0.96, 0.82, 0.55, 1] }, // amber spinner
+  celebrate:  { a: [0.91, 0.63, 0.23, 1], s: [0.72, 0.20, 0.18, 1] }, // amber + crimson confetti
+  notFound:   { a: [0.22, 0.35, 0.68, 1], s: [0.80, 0.82, 0.86, 1] }, // navy + gray
+  searching:  { a: [0.22, 0.35, 0.68, 1], s: [0.91, 0.63, 0.23, 1] }, // navy + amber
+  postSuccess:{ a: [0.18, 0.55, 0.32, 1], s: [0.91, 0.63, 0.23, 1] }, // green check + amber burst
 };
 
 // ─── per-type scene builders (all 14) ────────────────────────────────────────
@@ -1614,6 +1620,235 @@ function buildPhotoEmpty() {
   return layers;
 }
 
+// ─── loading: 8個のドットが円環状に回転するスピナー ──────────────────────────
+function buildLoading() {
+  resetInd();
+  const { a: A } = PAL.loading;
+  const layers = [];
+  const R = 28;
+  const N = 8;
+  for (let i = 0; i < N; i++) {
+    const theta = (i / N) * Math.PI * 2 - Math.PI / 2;
+    const x = CX + Math.cos(theta) * R;
+    const y = CY + Math.sin(theta) * R;
+    // stagger fade: each dot brightens in sequence, producing a chasing effect
+    const offset = Math.round((i / N) * DUR);
+    const t0 = offset;
+    const t1 = (offset + 8) % DUR;
+    const t2 = (offset + 40) % DUR;
+    // build keyframes respecting wrap-around
+    const kfs = [];
+    kfs.push(k(0, [i === 0 ? 100 : 30]));
+    for (let step = 0; step < N; step++) {
+      const tt = Math.round(((step + 1) / N) * DUR);
+      const active = ((step + 1) % N) === ((i + 1) % N);
+      kfs.push(k(tt, [active ? 100 : 30]));
+    }
+    // deduplicate t values
+    const seen = new Set();
+    const filtered = [];
+    for (const kf of kfs) {
+      if (seen.has(kf.t)) continue;
+      seen.add(kf.t);
+      filtered.push(kf);
+    }
+    filtered[filtered.length - 1] = { t: DUR, s: [i === 0 ? 100 : 30] };
+    layers.push(layer(
+      `dot${i}`,
+      ks({
+        o: anim(filtered, 11),
+        p: posStatic(x, y),
+      }),
+      [grp([el(4.5, 4.5), fl(A, 100)])]
+    ));
+  }
+  return layers;
+}
+
+// ─── celebrate: 中央から12色の紙吹雪が拡散 ────────────────────────────────────
+function buildCelebrate() {
+  resetInd();
+  const { a: A, s: S } = PAL.celebrate;
+  const layers = [];
+  const PALETTE = [
+    A,                              // amber
+    S,                              // crimson
+    [0.22, 0.35, 0.68, 1],          // navy
+    [0.18, 0.55, 0.32, 1],          // green
+    [0.98, 0.82, 0.42, 1],          // pale amber
+  ];
+  const N = 14;
+  for (let i = 0; i < N; i++) {
+    const theta = (i / N) * Math.PI * 2;
+    const dist = 42 + (i % 3) * 6;
+    const xTo = CX + Math.cos(theta) * dist;
+    const yTo = CY + Math.sin(theta) * dist + 6 * (i % 2); // slight gravity asymmetry
+    const t0 = 4 + (i % 5) * 2;
+    const t1 = 28 + (i % 4) * 3;
+    const color = PALETTE[i % PALETTE.length];
+    layers.push(layer(
+      `confetti${i}`,
+      ks({
+        o: anim([k(t0, [0]), k(t0 + 4, [100]), k(DUR - 14, [100]), { t: DUR, s: [0] }], 11),
+        r: spin(0.8 + (i % 3) * 0.3, t0, DUR),
+        p: posSlide([CX, CY], [xTo, yTo], t0, t1),
+        s: popScale(t0, t0 + 4, t1, 110),
+      }),
+      [grp([rc(6, 3, 1), fl(color, 100)])]
+    ));
+  }
+  // center burst ring
+  layers.push(layer(
+    "burst",
+    ks({
+      o: anim([k(0, [0]), k(6, [80]), k(22, [0]), { t: DUR, s: [0] }], 11),
+      p: posStatic(CX, CY),
+      s: anim([k(0, [0, 0, 100], 3), k(22, [220, 220, 100], 3), { t: DUR, s: [220, 220, 100] }], 6),
+    }),
+    [grp([el(12, 12), fl([1, 1, 1, 0], 0), stk(A, 100, 3)])]
+  ));
+  return layers;
+}
+
+// ─── notFound: 「?」を抱えた虫めがねが困り顔で揺れる ──────────────────────────
+function buildNotFound() {
+  resetInd();
+  const { a: A, s: S } = PAL.notFound;
+  const layers = [];
+  // magnifier lens circle
+  layers.push(layer(
+    "lens",
+    ks({
+      o: fadeLoop(0, 10),
+      p: posStatic(CX - 6, CY - 4),
+      r: anim([k(0, [-6]), k(30, [6]), k(60, [-6]), k(90, [6]), { t: DUR, s: [-6] }], 10),
+      s: popScale(0, 10, 18, 100),
+    }),
+    [
+      grp([el(26, 26), fl([1, 1, 1, 1], 100), stk(A, 100, 4)], "ring"),
+      // inner "?" — built from a small dot and an arc-ish rect
+      grp([rc(3.2, 3.2, 1.6, [0, 10]), fl(A, 100)], "qDot"),
+      grp([rc(3.2, 12, 1.6, [0, 0]), fl(A, 100)], "qStem"),
+      grp([rc(10, 3.2, 1.6, [2, -7]), fl(A, 100)], "qTop"),
+      grp([rc(3.2, 6, 1.6, [6, -4]), fl(A, 100)], "qRight"),
+    ]
+  ));
+  // handle
+  layers.push(layer(
+    "handle",
+    ks({
+      o: fadeLoop(6, 16),
+      p: posStatic(CX + 18, CY + 18),
+      r: rotStatic(45),
+      s: popScale(6, 16, 22, 100),
+    }),
+    [grp([rc(28, 7, 3), fl(S, 100), stk(A, 100, 1)])]
+  ));
+  return layers;
+}
+
+// ─── searching: 虫めがねが円軌道を描きながら対象を探す ────────────────────────
+function buildSearching() {
+  resetInd();
+  const { a: A, s: S } = PAL.searching;
+  const layers = [];
+  // scanning target (dots to find)
+  for (let i = 0; i < 5; i++) {
+    const x = CX - 30 + i * 15;
+    layers.push(layer(
+      `target${i}`,
+      ks({
+        o: anim([k(0, [30]), k(20 + i * 14, [30]), k(26 + i * 14, [100]), k(DUR - 6, [100]), { t: DUR, s: [30] }], 11),
+        p: posStatic(x, CY + 12),
+      }),
+      [grp([el(3, 3), fl(A, 100)])]
+    ));
+  }
+  // magnifier moves along sinusoidal path scanning targets
+  const path = [];
+  const steps = 6;
+  for (let i = 0; i <= steps; i++) {
+    const t = Math.round((i / steps) * DUR);
+    const x = CX - 34 + (i / steps) * 68;
+    const y = CY - 8 + Math.sin((i / steps) * Math.PI * 2) * 10;
+    path.push(i === steps ? { t: DUR, s: [x, y, 0] } : k(t, [x, y, 0], 3));
+  }
+  layers.push(layer(
+    "magnifier",
+    ks({
+      o: fadeLoop(0, 6),
+      p: anim(path, 2),
+      s: popScale(0, 8, 14, 100),
+    }),
+    [
+      grp([el(18, 18), fl([1, 1, 1, 1], 100), stk(A, 100, 3.5)], "ring"),
+      grp([el(13, 13), fl(S, 25)], "tint"),
+      grp([rc(18, 5, 2, [16, 16]), fl(A, 100)], "handle"),
+    ]
+  ));
+  return layers;
+}
+
+// ─── postSuccess: 緑のチェックマークが描画され、光線がバースト ───────────────
+function buildPostSuccess() {
+  resetInd();
+  const { a: A, s: S } = PAL.postSuccess;
+  const layers = [];
+  // burst rays
+  for (let i = 0; i < 10; i++) {
+    const theta = (i / 10) * Math.PI * 2;
+    const r0 = 30, r1 = 52;
+    const x0 = CX + Math.cos(theta) * r0;
+    const y0 = CY + Math.sin(theta) * r0;
+    const x1 = CX + Math.cos(theta) * r1;
+    const y1 = CY + Math.sin(theta) * r1;
+    layers.push(layer(
+      `ray${i}`,
+      ks({
+        o: anim([k(0, [0]), k(22, [0]), k(32, [100]), k(50, [0]), { t: DUR, s: [0] }], 11),
+        p: anim([
+          k(22, [(x0 + x1) / 2, (y0 + y1) / 2, 0], 3),
+          { t: 50, s: [(x0 + x1) / 2, (y0 + y1) / 2, 0] },
+        ], 2),
+        r: rotStatic((theta * 180) / Math.PI),
+      }),
+      [grp([rc(12, 2.5, 1), fl(S, 100)])]
+    ));
+  }
+  // check circle background
+  layers.push(layer(
+    "circle",
+    ks({
+      o: fadeLoop(0, 10),
+      p: posStatic(CX, CY),
+      s: popScale(0, 10, 20, 110),
+    }),
+    [grp([el(28, 28), fl(A, 100)])]
+  ));
+  // checkmark stroke (two segments)
+  layers.push(layer(
+    "checkShort",
+    ks({
+      o: anim([k(0, [0]), k(14, [0]), k(20, [100]), { t: DUR, s: [100] }], 11),
+      p: posStatic(CX - 8, CY + 4),
+      r: rotStatic(45),
+      s: anim([k(14, [0, 100, 100], 3), { t: 22, s: [100, 100, 100] }], 6),
+    }),
+    [grp([rc(10, 4, 2), fl([1, 1, 1, 1], 100)])]
+  ));
+  layers.push(layer(
+    "checkLong",
+    ks({
+      o: anim([k(0, [0]), k(20, [0]), k(26, [100]), { t: DUR, s: [100] }], 11),
+      p: posStatic(CX + 3, CY - 2),
+      r: rotStatic(-50),
+      s: anim([k(20, [0, 100, 100], 3), { t: 30, s: [100, 100, 100] }], 6),
+    }),
+    [grp([rc(20, 4, 2), fl([1, 1, 1, 1], 100)])]
+  ));
+  return layers;
+}
+
 // ─── register + write ────────────────────────────────────────────────────────
 const BUILDERS = {
   measure: buildMeasure,
@@ -1638,6 +1873,11 @@ const BUILDERS = {
   cameraFlash: buildCameraFlash,
   saw: buildSaw,
   photoEmpty: buildPhotoEmpty,
+  loading: buildLoading,
+  celebrate: buildCelebrate,
+  notFound: buildNotFound,
+  searching: buildSearching,
+  postSuccess: buildPostSuccess,
 };
 
 fs.mkdirSync(OUT_DIR, { recursive: true });

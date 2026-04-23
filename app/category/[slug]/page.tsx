@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import LottieIcon from "@/components/LottieIcon";
 import { categories } from "@/lib/data";
 import { fetchUseCases } from "@/lib/firestore";
 
@@ -75,7 +76,12 @@ export default async function CategoryDetailPage({ params }: Props) {
           ))}
         </div>
       ) : (
-        <p className="text-gray-400 mb-12">設計図を準備中です。</p>
+        <div className="text-center py-16 mb-12">
+          <div className="flex justify-center mb-4">
+            <LottieIcon name="searching" size={180} ariaLabel="設計図を準備中" />
+          </div>
+          <p className="text-gray-500">設計図を準備中です。</p>
+        </div>
       )}
 
       <AppStoreCTA
