@@ -159,6 +159,7 @@ const PAL = {
   notFound:   { a: [0.22, 0.35, 0.68, 1], s: [0.80, 0.82, 0.86, 1] }, // navy + gray
   searching:  { a: [0.22, 0.35, 0.68, 1], s: [0.91, 0.63, 0.23, 1] }, // navy + amber
   postSuccess:{ a: [0.18, 0.55, 0.32, 1], s: [0.91, 0.63, 0.23, 1] }, // green check + amber burst
+  bookmarkEmpty:{ a: [0.58, 0.60, 0.66, 1], s: [0.91, 0.63, 0.23, 1] }, // gray outline + amber sparkle
 };
 
 // ─── per-type scene builders (all 14) ────────────────────────────────────────
@@ -1849,6 +1850,74 @@ function buildPostSuccess() {
   return layers;
 }
 
+// ─── bookmarkEmpty: しおり外形 + 中央にキラッと光る星 (息づく) ──────────────
+function buildBookmarkEmpty() {
+  resetInd();
+  const { a: A, s: S } = PAL.bookmarkEmpty;
+  const layers = [];
+  const bw = 56, bh = 80;
+  const tipDrop = 18;
+  // Bookmark outline path (pentagon: top-left → top-right → bottom-right → center-notch → bottom-left)
+  const cx = CX, cy = CY + 2;
+  const verts = [
+    [cx - bw / 2, cy - bh / 2],
+    [cx + bw / 2, cy - bh / 2],
+    [cx + bw / 2, cy + bh / 2],
+    [cx,          cy + bh / 2 - tipDrop],
+    [cx - bw / 2, cy + bh / 2],
+  ];
+  layers.push(layer(
+    "bookmark",
+    ks({
+      o: staticFull,
+      p: posStatic(cx, cy),
+      a: anchorStatic(cx, cy),
+      s: anim([
+        k(0, [96, 96, 100], 3),
+        k(45, [104, 104, 100], 3),
+        k(90, [96, 96, 100], 3),
+        { t: DUR, s: [100, 100, 100] },
+      ], 6),
+    }),
+    [grp([sh(verts, true), stk(A, 100, 2.4), fl(A, 10)])]
+  ));
+  // ✨ sparkle — 4-pointed star pulsing inside
+  const sparkleVerts = [
+    [cx,      cy - 10],
+    [cx + 2,  cy - 2],
+    [cx + 10, cy],
+    [cx + 2,  cy + 2],
+    [cx,      cy + 10],
+    [cx - 2,  cy + 2],
+    [cx - 10, cy],
+    [cx - 2,  cy - 2],
+  ];
+  layers.push(layer(
+    "sparkle",
+    ks({
+      o: anim([
+        k(0, [0]),
+        k(30, [100]),
+        k(60, [60]),
+        k(90, [100]),
+        { t: DUR, s: [0] },
+      ], 11),
+      p: posStatic(cx, cy),
+      a: anchorStatic(cx, cy),
+      s: anim([
+        k(0, [60, 60, 100], 3),
+        k(30, [110, 110, 100], 3),
+        k(60, [80, 80, 100], 3),
+        k(90, [110, 110, 100], 3),
+        { t: DUR, s: [60, 60, 100] },
+      ], 6),
+      r: spin(0.5, 0, DUR),
+    }),
+    [grp([sh(sparkleVerts, true), fl(S, 100)])]
+  ));
+  return layers;
+}
+
 // ─── register + write ────────────────────────────────────────────────────────
 const BUILDERS = {
   measure: buildMeasure,
@@ -1878,6 +1947,7 @@ const BUILDERS = {
   notFound: buildNotFound,
   searching: buildSearching,
   postSuccess: buildPostSuccess,
+  bookmarkEmpty: buildBookmarkEmpty,
 };
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
