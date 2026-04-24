@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const BASE_URL = "https://zumen.scoooop.com";
 const APP_STORE_ID = "6762496625";
@@ -62,6 +63,7 @@ export default function RootLayout({
   return (
     <html lang="ja" className="h-full">
       <body className="min-h-full flex flex-col bg-white text-gray-900">
+        <GoogleAnalytics />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
