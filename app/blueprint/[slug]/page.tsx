@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import AppOnlyGate from "@/components/AppOnlyGate";
+import CustomDesignPreview from "@/components/CustomDesignPreview";
 import SaveButton from "@/components/SaveButton";
 import StepIllustration from "@/components/StepIllustration";
 import BlueprintCard from "@/components/BlueprintCard";
@@ -192,7 +193,7 @@ export default async function BlueprintPage({ params }: Props) {
         {/* タイトル・バッジ・保存ボタン */}
         <div className="flex items-start justify-between gap-3 mb-1">
           <p className="text-sm text-gray-400">{uc?.category ?? bp.category}</p>
-          <SaveButton />
+          <SaveButton slug={slug} />
         </div>
         <h1 className="text-3xl font-bold text-gray-900">{name}</h1>
         <p className="text-gray-500 mt-3 leading-relaxed">{description}</p>
@@ -467,59 +468,32 @@ export default async function BlueprintPage({ params }: Props) {
           </section>
         )}
 
-        {/* カスタム設計 — App 限定ゲート */}
+        {/* カスタム設計 — 寸法プレビュー */}
         <section className="mt-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">カスタム設計</h2>
-          <AppOnlyGate
-            title="自分のサイズで設計図を生成"
-            description="幅・奥行・高さを入力するだけでカインズ・コメリ別の材料リストと費用を自動計算します。"
-            ctaLabel="アプリで試す（無料）"
-          >
-            {/* プレビューUI — app と同じレイアウト */}
-            <div className="p-5 space-y-4" style={{ background: "var(--surface)" }}>
-              <div>
-                <p className="text-sm font-semibold mb-2" style={{ color: "var(--navy-deep)" }}>
-                  寸法を入力してください (mm)
-                </p>
-                <div className="grid grid-cols-3 gap-3">
-                  {["幅 W", "奥行 D", "高さ H"].map((label) => (
-                    <div key={label}>
-                      <p className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
-                      <div
-                        className="rounded-lg px-3 py-2 text-sm"
-                        style={{ background: "var(--canvas)", color: "var(--text-tertiary)", border: "1px solid var(--border)" }}
-                      >
-                        例: 900
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-xs mt-2" style={{ color: "var(--text-tertiary)" }}>
-                  参考: ベーシック寸法 {dimensions.width}×{dimensions.depth}×{dimensions.height} mm
+          <h2 className="text-xl font-bold text-gray-900 mb-1">カスタム設計</h2>
+          <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
+            寸法を変えるとカット図がざっくりスケールします。正確な計算はアプリで。
+          </p>
+          {cutItems.length > 0 ? (
+            <CustomDesignPreview
+              slug={slug}
+              baseDimensions={dimensions}
+              cutItems={cutItems}
+              retailers={retailers}
+            />
+          ) : (
+            <AppOnlyGate
+              title="自分のサイズで設計図を生成"
+              description="幅・奥行・高さを入力するだけでカインズ・コメリ別の材料リストと費用を自動計算します。"
+              ctaLabel="アプリで試す（無料）"
+            >
+              <div className="p-5" style={{ background: "var(--surface)" }}>
+                <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                  ベーシック寸法 {dimensions.width}×{dimensions.depth}×{dimensions.height} mm
                 </p>
               </div>
-              <div>
-                <p className="text-sm font-semibold mb-2" style={{ color: "var(--navy-deep)" }}>優先ホームセンター</p>
-                <div className="flex gap-2">
-                  {retailers.map((r) => (
-                    <span
-                      key={r}
-                      className="text-sm px-4 py-1.5 rounded-full"
-                      style={{ background: "var(--canvas)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
-                    >
-                      {r}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div
-                className="w-full py-3 rounded-xl text-center font-bold text-sm text-white"
-                style={{ background: "var(--navy-deep)" }}
-              >
-                設計図を生成する
-              </div>
-            </div>
-          </AppOnlyGate>
+            </AppOnlyGate>
+          )}
         </section>
 
         {/* 作例 */}
