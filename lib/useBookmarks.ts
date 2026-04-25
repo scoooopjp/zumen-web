@@ -5,35 +5,62 @@ import { useCallback, useSyncExternalStore } from "react";
 const KEY = "zumen-bookmarks-v1";
 const EVENT = "zumen-bookmarks-changed";
 
-function read(): string[] {
-  if (typeof window === "undefined") return [];
+const EMPTY: string[] = [];
+
+let cached: string[] | null = null;
+
+function readFresh(): string[] {
+  if (typeof window === "undefined") return EMPTY;
   try {
     const raw = window.localStorage.getItem(KEY);
-    if (!raw) return [];
+    if (!raw) return EMPTY;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((s) => typeof s === "string") : [];
+    if (!Array.isArray(parsed)) return EMPTY;
+    const filtered = parsed.filter((s): s is string => typeof s === "string");
+    return filtered.length === 0 ? EMPTY : filtered;
   } catch {
-    return [];
+    return EMPTY;
   }
 }
 
+function getSnapshot(): string[] {
+  if (cached === null) cached = readFresh();
+  return cached;
+}
+
+function getServerSnapshot(): string[] {
+  return EMPTY;
+}
+
+function invalidate() {
+  cached = null;
+}
+
 function write(next: string[]) {
-  window.localStorage.setItem(KEY, JSON.stringify(next));
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(next));
+  } catch {
+    // private mode quota or disabled storage — fail silently
+  }
+  invalidate();
   window.dispatchEvent(new CustomEvent(EVENT));
 }
 
 function subscribe(onChange: () => void) {
-  const h = () => onChange();
-  window.addEventListener(EVENT, h);
-  window.addEventListener("storage", h);
+  const handler = () => {
+    invalidate();
+    onChange();
+  };
+  window.addEventListener(EVENT, handler);
+  window.addEventListener("storage", handler);
   return () => {
-    window.removeEventListener(EVENT, h);
-    window.removeEventListener("storage", h);
+    window.removeEventListener(EVENT, handler);
+    window.removeEventListener("storage", handler);
   };
 }
 
 export function useBookmarks(): string[] {
-  return useSyncExternalStore(subscribe, read, () => []);
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 export function useIsBookmarked(slug: string): boolean {
@@ -43,7 +70,7 @@ export function useIsBookmarked(slug: string): boolean {
 
 export function useToggleBookmark(slug: string): () => void {
   return useCallback(() => {
-    const current = read();
+    const current = readFresh();
     const next = current.includes(slug)
       ? current.filter((s) => s !== slug)
       : [...current, slug];
