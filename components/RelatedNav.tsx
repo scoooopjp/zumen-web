@@ -24,7 +24,7 @@ export default function RelatedNav({ title, items }: Props) {
             href={it.href}
             className="text-sm px-4 py-1.5 rounded-full transition-colors hover:opacity-80"
             style={{
-              background: "var(--canvas)",
+              background: "var(--surface)",
               color: "var(--text-secondary)",
               border: "1px solid var(--border)",
             }}

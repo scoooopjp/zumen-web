@@ -84,7 +84,7 @@ export default async function SearchPage({ searchParams }: Props) {
       {query && results.length === 0 && (
         <div
           className="rounded-2xl px-6 py-12 text-center"
-          style={{ background: "var(--canvas)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           <p className="font-bold mb-2" style={{ color: "var(--navy-deep)" }}>
             一致する設計図が見つかりませんでした
@@ -122,7 +122,7 @@ export default async function SearchPage({ searchParams }: Props) {
                   href={`/search?q=${encodeURIComponent(kw)}`}
                   className="text-sm px-4 py-1.5 rounded-full transition-colors"
                   style={{
-                    background: "var(--canvas)",
+                    background: "var(--surface)",
                     color: "var(--text-secondary)",
                     border: "1px solid var(--border)",
                   }}

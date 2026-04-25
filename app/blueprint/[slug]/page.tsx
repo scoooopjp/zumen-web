@@ -212,20 +212,49 @@ export default async function BlueprintPage({ params }: Props) {
           <span className={`text-sm px-3 py-1 rounded-full font-medium ${difficultyColor[difficulty]}`}>
             {difficulty}
           </span>
-          <span className="text-sm px-3 py-1 rounded-full bg-gray-100 text-gray-600">
+          <span
+            className="text-sm px-3 py-1 rounded-full"
+            style={{
+              background: "var(--surface)",
+              color: "var(--text-secondary)",
+              border: "1px solid var(--border)",
+            }}
+          >
             {formatBudget(budgetMin, budgetMax)}
           </span>
-          <span className="text-sm px-3 py-1 rounded-full bg-gray-100 text-gray-600">
+          <span
+            className="text-sm px-3 py-1 rounded-full"
+            style={{
+              background: "var(--surface)",
+              color: "var(--text-secondary)",
+              border: "1px solid var(--border)",
+            }}
+          >
             {formatTime(time)}
           </span>
-          <span className="text-sm px-3 py-1 rounded-full bg-gray-100 text-gray-600">
+          <span
+            className="text-sm px-3 py-1 rounded-full"
+            style={{
+              background: "var(--surface)",
+              color: "var(--text-secondary)",
+              border: "1px solid var(--border)",
+            }}
+          >
             {indoor}
           </span>
         </div>
 
         <div className="flex gap-2 mt-3">
           {retailers.map((r) => (
-            <span key={r} className="text-xs px-2 py-1 border border-gray-200 rounded-full text-gray-500">
+            <span
+              key={r}
+              className="text-xs px-2 py-1 rounded-full"
+              style={{
+                background: "var(--surface)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border)",
+              }}
+            >
               {r}
             </span>
           ))}
