@@ -723,6 +723,13 @@ export const blueprintDetails: BlueprintDetail[] = [
   },
 ];
 
+export const retailerSlugs: Record<Retailer, string> = {
+  カインズ: "cainz",
+  コメリ: "komeri",
+  コーナン: "kohnan",
+  DCM: "dcm",
+};
+
 export const categories = [
   { slug: "tana",             name: "棚",             description: "壁面棚・ディスプレイ棚など",        count: 1 },
   { slug: "bookshelf",        name: "本棚",            description: "文庫からA4まで対応する本棚",         count: 1 },

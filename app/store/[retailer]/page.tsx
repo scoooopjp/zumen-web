@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import RelatedNav from "@/components/RelatedNav";
 import type { Retailer } from "@/lib/data";
 import { fetchUseCases } from "@/lib/firestore";
 
@@ -91,6 +92,13 @@ export default async function StorePage({ params }: Props) {
         variant="banner"
         title={`${store.name}の材料リストをアプリで確認`}
         description="商品リンク付きの買い物リストをその場で生成。店舗での買い物がスムーズに。"
+      />
+
+      <RelatedNav
+        title="他のホームセンターも見る"
+        items={Object.entries(storeMap)
+          .filter(([slug]) => slug !== retailer)
+          .map(([slug, s]) => ({ href: `/store/${slug}`, label: s.name }))}
       />
     </div>
   );

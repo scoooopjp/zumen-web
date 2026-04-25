@@ -4,6 +4,7 @@ import BlueprintFilters from "@/components/BlueprintFilters";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import LottieIcon from "@/components/LottieIcon";
+import RelatedNav from "@/components/RelatedNav";
 import { categories } from "@/lib/data";
 import { fetchUseCases } from "@/lib/firestore";
 
@@ -91,6 +92,14 @@ export default async function CategoryDetailPage({ params }: Props) {
         variant="banner"
         title={`${cat.name}をカスタムサイズで作る`}
         description="アプリでは幅・奥行・高さを入力するだけで設計図と材料リストを自動生成。"
+      />
+
+      <RelatedNav
+        title="他のカテゴリも探す"
+        items={categories
+          .filter((c) => c.slug !== slug)
+          .slice(0, 12)
+          .map((c) => ({ href: `/category/${c.slug}`, label: c.name }))}
       />
     </div>
   );
