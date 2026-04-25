@@ -6,11 +6,14 @@ import AppOnlyGate from "@/components/AppOnlyGate";
 import CustomDesignPreview from "@/components/CustomDesignPreview";
 import PrintButton from "@/components/PrintButton";
 import SaveButton from "@/components/SaveButton";
+import ShareButton from "@/components/ShareButton";
+import ViewRecorder from "@/components/ViewRecorder";
 import StepIllustration from "@/components/StepIllustration";
 import BlueprintCard from "@/components/BlueprintCard";
 import PartPriceTag from "@/components/PartPriceTag";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import LottieIcon from "@/components/LottieIcon";
+import RelatedNav from "@/components/RelatedNav";
 import {
   getBlueprintBySlug,
   getBlueprintByTemplateID,
@@ -21,6 +24,7 @@ import {
   blueprintDetails,
   getCategoryThumbnailURL,
   enrichPartWithRetailerURLs,
+  retailerSlugs,
 } from "@/lib/data";
 import { fetchUseCaseById, fetchBlueprintByUseCaseID } from "@/lib/firestore";
 import type { FSBlueprintDetail } from "@/lib/firestore";
@@ -154,6 +158,7 @@ export default async function BlueprintPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
       />
+      <ViewRecorder slug={slug} />
 
       <div className="max-w-3xl mx-auto px-4 py-8">
         <Breadcrumbs
@@ -195,6 +200,7 @@ export default async function BlueprintPage({ params }: Props) {
         <div className="flex items-start justify-between gap-3 mb-1">
           <p className="text-sm text-gray-400">{uc?.category ?? bp.category}</p>
           <div className="flex items-center gap-2 no-print">
+            <ShareButton title={`${name} DIY 設計図`} text={description} />
             <PrintButton />
             <SaveButton slug={slug} />
           </div>
@@ -526,6 +532,21 @@ export default async function BlueprintPage({ params }: Props) {
             description="アプリでは幅・奥行・高さを入力するだけで設計図と材料リストを自動生成。"
           />
         </div>
+
+        {/* 内部リンク — カテゴリ・対応店舗への動線 */}
+        <RelatedNav
+          title="このカテゴリ・店舗で他の設計図を探す"
+          items={[
+            {
+              href: `/category/${uc?.categorySlug ?? bp.categorySlug}`,
+              label: `📐 ${uc?.category ?? bp.category}を全部見る`,
+            },
+            ...retailers.map((r) => ({
+              href: `/store/${retailerSlugs[r]}`,
+              label: `🏬 ${r}で買える設計図`,
+            })),
+          ]}
+        />
 
         {/* 関連設計図 */}
         {relatedUseCases.length > 0 && (

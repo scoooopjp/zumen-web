@@ -3,6 +3,7 @@ import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import LottieIcon from "@/components/LottieIcon";
+import RecentlyViewed from "@/components/RecentlyViewed";
 import { categories } from "@/lib/data";
 import { fetchUseCases, fetchFeaturedUseCases } from "@/lib/firestore";
 
@@ -244,6 +245,8 @@ export default async function HomePage() {
             <BlueprintCard key={uc.id} useCase={uc} />
           ))}
         </div>
+
+        <RecentlyViewed useCases={useCasesData} />
       </section>
 
       {/* ── 機能紹介 ──────────────────────────────────────── */}

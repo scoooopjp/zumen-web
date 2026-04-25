@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import RecentlyViewed from "@/components/RecentlyViewed";
 import SearchInput from "@/components/SearchInput";
 import { fetchUseCases } from "@/lib/firestore";
 import type { UseCase } from "@/lib/data";
@@ -109,27 +110,30 @@ export default async function SearchPage({ searchParams }: Props) {
       )}
 
       {!query && (
-        <div className="mt-2">
-          <p className="text-sm font-semibold mb-3" style={{ color: "var(--navy-deep)" }}>
-            人気のキーワード
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {["棚", "ベンチ", "ウッドデッキ", "シューズラック", "コンポスト", "プランター台"].map((kw) => (
-              <Link
-                key={kw}
-                href={`/search?q=${encodeURIComponent(kw)}`}
-                className="text-sm px-4 py-1.5 rounded-full transition-colors"
-                style={{
-                  background: "var(--canvas)",
-                  color: "var(--text-secondary)",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                {kw}
-              </Link>
-            ))}
+        <>
+          <div className="mt-2">
+            <p className="text-sm font-semibold mb-3" style={{ color: "var(--navy-deep)" }}>
+              人気のキーワード
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {["棚", "ベンチ", "ウッドデッキ", "シューズラック", "コンポスト", "プランター台"].map((kw) => (
+                <Link
+                  key={kw}
+                  href={`/search?q=${encodeURIComponent(kw)}`}
+                  className="text-sm px-4 py-1.5 rounded-full transition-colors"
+                  style={{
+                    background: "var(--canvas)",
+                    color: "var(--text-secondary)",
+                    border: "1px solid var(--border)",
+                  }}
+                >
+                  {kw}
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
+          <RecentlyViewed useCases={all} />
+        </>
       )}
     </div>
   );

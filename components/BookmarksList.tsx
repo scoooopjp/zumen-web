@@ -3,6 +3,7 @@
 import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import LottieIcon from "@/components/LottieIcon";
+import RecentlyViewed from "@/components/RecentlyViewed";
 import { useBookmarks } from "@/lib/useBookmarks";
 import type { UseCase } from "@/lib/data";
 
@@ -18,20 +19,23 @@ export default function BookmarksList({ useCases }: Props) {
 
   if (bookmarked.length === 0) {
     return (
-      <div className="text-center py-16">
-        <div className="flex justify-center mb-4">
-          <LottieIcon name="bookmarkEmpty" size={180} ariaLabel="ブックマーク未登録" />
+      <>
+        <div className="text-center py-16">
+          <div className="flex justify-center mb-4">
+            <LottieIcon name="bookmarkEmpty" size={180} ariaLabel="ブックマーク未登録" />
+          </div>
+          <p className="text-gray-500 mb-6">
+            まだブックマークした設計図はありません。
+          </p>
+          <Link
+            href="/category"
+            className="btn-primary text-sm inline-flex items-center gap-1.5"
+          >
+            設計図を探す
+          </Link>
         </div>
-        <p className="text-gray-500 mb-6">
-          まだブックマークした設計図はありません。
-        </p>
-        <Link
-          href="/category"
-          className="btn-primary text-sm inline-flex items-center gap-1.5"
-        >
-          設計図を探す
-        </Link>
-      </div>
+        <RecentlyViewed useCases={useCases} />
+      </>
     );
   }
 
