@@ -45,3 +45,6 @@ serviceAccountKey.json
 /.seed-out
 /scripts/enriched
 /scripts/backups
+
+# Claude Code project state
+/.claude/

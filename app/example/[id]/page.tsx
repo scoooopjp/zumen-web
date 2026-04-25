@@ -97,12 +97,21 @@ export default async function ExampleDetailPage({ params }: Props) {
 
       {/* 投稿者・日付 */}
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--amber-pale)" }}>
-            <span className="text-sm">👤</span>
+        {ex.authorUID ? (
+          <Link href={`/user/${ex.authorUID}`} className="flex items-center gap-2 hover:opacity-80">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--amber-pale)" }}>
+              <span className="text-sm">👤</span>
+            </div>
+            <span className="font-medium text-gray-900">{ex.authorName}</span>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--amber-pale)" }}>
+              <span className="text-sm">👤</span>
+            </div>
+            <span className="font-medium text-gray-900">{ex.authorName}</span>
           </div>
-          <span className="font-medium text-gray-900">{ex.authorName}</span>
-        </div>
+        )}
         <span className="text-sm text-gray-400">{ex.createdAt}</span>
       </div>
 

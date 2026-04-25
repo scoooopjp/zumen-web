@@ -15,6 +15,7 @@ export interface Example {
   actualTimeMinutes: number;
   retailer: string;
   comment: string;
+  authorUID: string;
   authorName: string;
   createdAt: string; // ISO date string
 }
@@ -33,6 +34,7 @@ export const mockExamples: Example[] = [
     actualTimeMinutes: 150,
     retailer: "カインズ",
     comment: "初めてのDIYでしたが、カットサービスを使ったら思ったより簡単でした。棚板の間隔を変えて本棚として使っています。",
+    authorUID: "mock-taro",
     authorName: "taro_diy",
     createdAt: "2025-03-15",
   },
@@ -49,6 +51,7 @@ export const mockExamples: Example[] = [
     actualTimeMinutes: 80,
     retailer: "コメリ",
     comment: "ベランダに置くためにオイルステインで仕上げました。思ったより頑丈で満足しています。",
+    authorUID: "mock-garden",
     authorName: "garden_life",
     createdAt: "2025-04-02",
   },

@@ -147,6 +147,7 @@ function fsExampleToModel(dto: FSExample): Example {
     actualTimeMinutes: dto.actualTimeMinutes,
     retailer: dto.retailer,
     comment: dto.comment,
+    authorUID: dto.authorUID,
     authorName: dto.authorName,
     createdAt: dto.createdAt.toDate().toISOString().slice(0, 10),
   };
@@ -307,5 +308,59 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
     return useCaseID
       ? mockExamples.filter((e) => e.useCaseID === useCaseID)
       : mockExamples;
+  }
+}
+
+export async function fetchExamplesByAuthor(authorUID: string): Promise<Example[]> {
+  const db = getAdminDb();
+  if (!db) return mockExamples.filter((e) => e.authorUID === authorUID);
+  try {
+    const snap = await db
+      .collection("examples")
+      .where("authorUID", "==", authorUID)
+      .orderBy("createdAt", "desc")
+      .get();
+    if (snap.empty) return [];
+    return snap.docs.map((d) =>
+      fsExampleToModel({ id: d.id, ...d.data() } as FSExample)
+    );
+  } catch (e) {
+    console.error(`[firestore] fetchExamplesByAuthor(${authorUID}) failed:`, e);
+    return [];
+  }
+}
+
+// ── Users ────────────────────────────────────────────────────
+
+export interface UserProfile {
+  uid: string;
+  displayName: string;
+  bio: string;
+  photoURL: string | null;
+  createdAt: string; // ISO date string
+  followingCount: number;
+  followerCount: number;
+}
+
+export async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
+  const db = getAdminDb();
+  if (!db) return null;
+  try {
+    const snap = await db.collection("users").doc(uid).get();
+    if (!snap.exists) return null;
+    const data = snap.data() ?? {};
+    const created = data.createdAt as FirebaseFirestore.Timestamp | undefined;
+    return {
+      uid,
+      displayName: (data.displayName as string) ?? "ユーザー",
+      bio: (data.bio as string) ?? "",
+      photoURL: (data.photoURL as string | null) ?? null,
+      createdAt: created ? created.toDate().toISOString().slice(0, 10) : "",
+      followingCount: (data.followingCount as number) ?? 0,
+      followerCount: (data.followerCount as number) ?? 0,
+    };
+  } catch (e) {
+    console.error(`[firestore] fetchUserProfile(${uid}) failed:`, e);
+    return null;
   }
 }
