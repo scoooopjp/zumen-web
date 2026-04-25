@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
+import ExampleCard from "@/components/ExampleCard";
 import LottieIcon from "@/components/LottieIcon";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { categories } from "@/lib/data";
+import { fetchExamples } from "@/lib/examples";
 import { fetchUseCases, fetchFeaturedUseCases } from "@/lib/firestore";
 
 export const dynamic = "force-dynamic";
@@ -134,10 +136,12 @@ const features: Array<{ lottie: string; title: string; desc: string; appOnly?: b
 ];
 
 export default async function HomePage() {
-  const [useCasesData, featuredUseCases] = await Promise.all([
+  const [useCasesData, featuredUseCases, allExamples] = await Promise.all([
     fetchUseCases(),
     fetchFeaturedUseCases(6),
+    fetchExamples(),
   ]);
+  const featuredExamples = allExamples.slice(0, 3);
   return (
     <>
       <script
@@ -248,6 +252,31 @@ export default async function HomePage() {
 
         <RecentlyViewed useCases={useCasesData} />
       </section>
+
+      {/* ── 作例ピックアップ ──────────────────────────────── */}
+      {featuredExamples.length > 0 && (
+        <section className="max-w-5xl mx-auto px-4 pb-16">
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="section-label mb-1">みんなの作品</p>
+              <h2 className="font-bold" style={{ fontSize: "1.375rem", color: "var(--navy-deep)" }}>
+                作例ピックアップ
+              </h2>
+            </div>
+            <Link href="/example" style={{ color: "var(--amber)", fontSize: "0.875rem", fontWeight: 600 }}>
+              すべて見る →
+            </Link>
+          </div>
+          <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+            ZUMENユーザーが実際に作った作品。実費・制作時間のリアルな参考に。
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {featuredExamples.map((ex) => (
+              <ExampleCard key={ex.id} example={ex} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── 機能紹介 ──────────────────────────────────────── */}
       <section style={{ background: "var(--parchment)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
