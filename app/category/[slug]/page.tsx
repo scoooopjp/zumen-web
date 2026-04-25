@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import BlueprintCard from "@/components/BlueprintCard";
+import BlueprintFilters from "@/components/BlueprintFilters";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import LottieIcon from "@/components/LottieIcon";
@@ -77,11 +77,7 @@ export default async function CategoryDetailPage({ params }: Props) {
       <p className="text-gray-500 mb-8">{cat.description}</p>
 
       {items.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
-          {items.map((uc) => (
-            <BlueprintCard key={uc.id} useCase={uc} />
-          ))}
-        </div>
+        <BlueprintFilters useCases={items} />
       ) : (
         <div className="text-center py-16 mb-12">
           <div className="flex justify-center mb-4">
