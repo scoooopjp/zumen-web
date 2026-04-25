@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const BASE_URL = "https://zumen.scoooop.com";
 const APP_STORE_ID = "6762496625";
@@ -64,6 +65,7 @@ export default function RootLayout({
     <html lang="ja" className="h-full">
       <body className="min-h-full flex flex-col bg-white text-gray-900">
         <GoogleAnalytics />
+        <SpeedInsights />
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
