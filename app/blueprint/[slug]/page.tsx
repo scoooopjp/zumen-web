@@ -234,7 +234,10 @@ export default async function BlueprintPage({ params }: Props) {
         {/* 基本寸法 */}
         <section className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 mb-3">基本寸法</h2>
-          <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
+          <div
+            className="rounded-xl p-4 grid grid-cols-3 gap-4 text-center"
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+          >
             {[
               { label: "幅 (W)", value: `${dimensions.width}mm` },
               { label: "奥行 (D)", value: `${dimensions.depth}mm` },
@@ -261,7 +264,7 @@ export default async function BlueprintPage({ params }: Props) {
                 className="grid text-xs font-bold px-4 py-2.5"
                 style={{
                   gridTemplateColumns: "1fr 120px 40px",
-                  background: "var(--canvas)",
+                  background: "var(--parchment)",
                   color: "var(--text-secondary)",
                   borderBottom: "1px solid var(--border)",
                 }}

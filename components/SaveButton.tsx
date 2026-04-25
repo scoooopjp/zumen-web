@@ -25,7 +25,7 @@ export default function SaveButton({ slug }: Props) {
       aria-pressed={saved}
       className="flex items-center justify-center w-9 h-9 rounded-xl transition-colors"
       style={{
-        background: saved ? "var(--amber-pale)" : "var(--canvas)",
+        background: saved ? "var(--amber-pale)" : "var(--surface)",
         border: `1px solid ${saved ? "var(--amber)" : "var(--border)"}`,
         color: saved ? "var(--amber)" : "var(--text-secondary)",
       }}

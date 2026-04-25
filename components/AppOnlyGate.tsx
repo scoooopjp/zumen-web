@@ -33,7 +33,10 @@ export default function AppOnlyGate({
   children,
 }: AppOnlyGateProps) {
   return (
-    <div className="relative rounded-2xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+    <div
+      className="relative rounded-2xl overflow-hidden"
+      style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
+    >
       {/* コンテンツのプレビュー（操作不可） */}
       <div
         className="pointer-events-none select-none"

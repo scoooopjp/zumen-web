@@ -14,7 +14,7 @@ export default function PrintButton() {
       onClick={onClick}
       className="text-sm inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
       style={{
-        background: "var(--canvas)",
+        background: "var(--surface)",
         color: "var(--text-secondary)",
         border: "1px solid var(--border)",
       }}
