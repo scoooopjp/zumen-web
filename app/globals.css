@@ -153,3 +153,39 @@ h1, h2, h3, h4, h5, h6 {
   outline: 2.5px solid var(--amber);
   outline-offset: 3px;
 }
+
+/* ─── Print stylesheet — ホームセンターに持参用 ─── */
+@media print {
+  @page { margin: 14mm; }
+
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11pt;
+  }
+
+  /* ナビ/CTA/装飾を完全に隠す */
+  header, footer, .no-print, .no-print * { display: none !important; }
+
+  /* レイアウトを印刷向けに広げる */
+  .max-w-3xl, .max-w-5xl { max-width: 100% !important; padding-left: 0 !important; padding-right: 0 !important; }
+
+  /* リンクは下線なし黒文字 — URLを末尾に出さない */
+  a { color: #000 !important; text-decoration: none !important; }
+
+  /* 表/ステップ/部材は途中で改ページしない */
+  li, tr, ol li, .print-keep { page-break-inside: avoid; break-inside: avoid; }
+
+  /* 見出しの孤立を回避 */
+  h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
+
+  /* 画像の縮小と境界 */
+  img { max-width: 100% !important; height: auto !important; }
+
+  /* 影/グラデーション/角丸の簡略化 */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    background-image: none !important;
+  }
+}

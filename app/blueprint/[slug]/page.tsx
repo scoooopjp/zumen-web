@@ -4,6 +4,7 @@ import Link from "next/link";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import CustomDesignPreview from "@/components/CustomDesignPreview";
+import PrintButton from "@/components/PrintButton";
 import SaveButton from "@/components/SaveButton";
 import StepIllustration from "@/components/StepIllustration";
 import BlueprintCard from "@/components/BlueprintCard";
@@ -193,7 +194,10 @@ export default async function BlueprintPage({ params }: Props) {
         {/* タイトル・バッジ・保存ボタン */}
         <div className="flex items-start justify-between gap-3 mb-1">
           <p className="text-sm text-gray-400">{uc?.category ?? bp.category}</p>
-          <SaveButton slug={slug} />
+          <div className="flex items-center gap-2 no-print">
+            <PrintButton />
+            <SaveButton slug={slug} />
+          </div>
         </div>
         <h1 className="text-3xl font-bold text-gray-900">{name}</h1>
         <p className="text-gray-500 mt-3 leading-relaxed">{description}</p>
@@ -469,7 +473,7 @@ export default async function BlueprintPage({ params }: Props) {
         )}
 
         {/* カスタム設計 — 寸法プレビュー */}
-        <section className="mt-10">
+        <section className="mt-10 no-print">
           <h2 className="text-xl font-bold text-gray-900 mb-1">カスタム設計</h2>
           <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
             寸法を変えるとカット図がざっくりスケールします。正確な計算はアプリで。
@@ -497,7 +501,7 @@ export default async function BlueprintPage({ params }: Props) {
         </section>
 
         {/* 作例 */}
-        <div className="mt-10">
+        <div className="mt-10 no-print">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-bold text-gray-900">作例</h2>
             <Link
@@ -516,7 +520,7 @@ export default async function BlueprintPage({ params }: Props) {
         </div>
 
         {/* App CTA */}
-        <div className="mt-12">
+        <div className="mt-12 no-print">
           <AppStoreCTA
             title="サイズを変えてカスタム設計"
             description="アプリでは幅・奥行・高さを入力するだけで設計図と材料リストを自動生成。"
@@ -525,7 +529,7 @@ export default async function BlueprintPage({ params }: Props) {
 
         {/* 関連設計図 */}
         {relatedUseCases.length > 0 && (
-          <section className="mt-12">
+          <section className="mt-12 no-print">
             <h2 className="text-xl font-bold text-gray-900 mb-4">関連設計図</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {relatedUseCases.map((uc) => (
