@@ -4,6 +4,8 @@ import Link from "next/link";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import LottieIcon from "@/components/LottieIcon";
+import SaveButton from "@/components/SaveButton";
+import ShareButton from "@/components/ShareButton";
 import { fetchExamples, formatTime } from "@/lib/examples";
 
 interface Props {
@@ -104,7 +106,13 @@ export default async function ExampleDetailPage({ params }: Props) {
         <span className="text-sm text-gray-400">{ex.createdAt}</span>
       </div>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-1">{ex.useCaseName}</h1>
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="text-2xl font-bold text-gray-900 mb-1 flex-1 min-w-0">{ex.useCaseName}</h1>
+        <div className="flex items-center gap-2 shrink-0 no-print">
+          <ShareButton title={`${ex.authorName}さんの${ex.useCaseName}作例`} text={ex.comment} />
+          <SaveButton kind="example" />
+        </div>
+      </div>
       {ex.useCaseSlug && (
         <Link href={`/blueprint/${ex.useCaseSlug}`} className="text-sm font-semibold" style={{ color: "var(--amber)" }}>
           設計図を見る →

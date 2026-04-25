@@ -37,18 +37,18 @@ export default function AppOnlyGate({
       className="relative rounded-2xl overflow-hidden"
       style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
     >
-      {/* コンテンツのプレビュー（操作不可） */}
+      {/* コンテンツのプレビュー（操作不可・背面） */}
       <div
-        className="pointer-events-none select-none"
+        className="absolute inset-0 pointer-events-none select-none"
         style={{ opacity: 0.35, filter: "blur(1.5px)" }}
         aria-hidden="true"
       >
         {children}
       </div>
 
-      {/* ゲートオーバーレイ */}
+      {/* ゲートオーバーレイ — 高さを決める前面 */}
       <div
-        className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center"
+        className="relative flex flex-col items-center justify-center gap-4 px-6 py-10 text-center"
         style={{
           background:
             "linear-gradient(180deg, rgba(255,252,247,0.55) 0%, rgba(255,252,247,0.92) 40%)",

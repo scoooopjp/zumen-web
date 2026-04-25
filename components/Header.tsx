@@ -62,26 +62,6 @@ export default function Header() {
               <path d="m21 21-4.3-4.3" />
             </svg>
           </Link>
-          <Link
-            href="/bookmarks"
-            className="font-medium transition-colors hover:opacity-70 whitespace-nowrap"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="ブックマーク"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-            </svg>
-          </Link>
           <a
             href="https://apps.apple.com/us/app/zumen-diy%E8%A8%AD%E8%A8%88%E5%9B%B3-%E6%9C%A8%E6%9D%90%E3%83%AA%E3%82%B9%E3%83%88/id6762496625"
             className="btn-primary text-sm whitespace-nowrap inline-flex items-center gap-1.5"

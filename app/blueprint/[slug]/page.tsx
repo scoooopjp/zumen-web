@@ -202,7 +202,7 @@ export default async function BlueprintPage({ params }: Props) {
           <div className="flex items-center gap-2 no-print">
             <ShareButton title={`${name} DIY 設計図`} text={description} />
             <PrintButton />
-            <SaveButton slug={slug} />
+            <SaveButton kind="blueprint" />
           </div>
         </div>
         <h1 className="text-3xl font-bold text-gray-900">{name}</h1>
