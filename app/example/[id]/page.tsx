@@ -40,8 +40,38 @@ export default async function ExampleDetailPage({ params }: Props) {
       ? `W${ex.actualWidth} × D${ex.actualDepth} × H${ex.actualHeight} mm`
       : null;
 
+  const BASE = "https://zumen.scoooop.com";
+  const articleLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: `${ex.authorName}さんの${ex.useCaseName}作例`,
+    description: ex.comment,
+    ...(ex.imageURL ? { image: ex.imageURL } : {}),
+    datePublished: ex.createdAt,
+    author: { "@type": "Person", name: ex.authorName },
+    publisher: {
+      "@type": "Organization",
+      name: "ZUMEN",
+      logo: {
+        "@type": "ImageObject",
+        url: `${BASE}/images/zumen_logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${BASE}/example/${ex.id}`,
+    },
+    ...(ex.useCaseSlug
+      ? { about: { "@type": "Thing", name: ex.useCaseName, url: `${BASE}/blueprint/${ex.useCaseSlug}` } }
+      : {}),
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }}
+      />
       <Breadcrumbs
         items={[
           { name: "TOP", href: "/" },
