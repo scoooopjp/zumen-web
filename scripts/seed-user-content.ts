@@ -392,10 +392,214 @@ function buildSeeds(
   });
 }
 
+// ---- 追加 procedural ユーザー (gen-m-31〜, gen-f-31〜, gen-n-31〜) ----
+// 100 → 500 への拡充用。既存 30+30+30=90 に対して 130+130+140=400 を追加。
+// バイオは「居住・材料・経験・趣向・ペット/家族」の各 pool から決定論的に組み合わせる。
+
+const RESIDENCE_POOL: readonly string[] = [
+  "築20年戸建て住まい", "都内マンション3F", "賃貸ワンルーム", "中古一軒家リノベ中",
+  "築60年の古民家暮らし", "札幌の戸建て", "長野で田舎暮らし", "大阪のマンション",
+  "ベランダ付き2LDK", "築40年の実家を改修中", "名古屋の戸建て", "横浜の賃貸",
+  "千葉のニュータウン在住", "京都の町屋住まい", "九州で平屋", "築15年マンション",
+  "湘南エリアの戸建て", "ワンルーム賃貸6畳", "都市近郊の戸建て", "都内ワンルーム",
+];
+
+const MATERIAL_POOL: readonly string[] = [
+  "SPFを多用しています", "SPF1x4と2x4が好きです", "集成材中心で作ります",
+  "ハードウッド一筋", "イタウバを愛用してます", "ウリンとイペを使い分け",
+  "無垢材の質感が好き", "杉板での製作が多い", "桧と杉の組み合わせ派",
+  "1x6で棚モノ中心", "2x4で骨組み、SPFで化粧する派", "OSB合板も使います",
+  "MDFは下地用、表面は無垢", "コンパネを工夫して使う派", "竹と木のハイブリッド",
+];
+
+const EXPERIENCE_POOL: readonly string[] = [
+  "DIY歴3ヶ月の新参", "始めて1年です", "DIY 3年目", "DIY歴5年", "10年以上 DIY やってます",
+  "退職してから始めました", "学生時代から木工", "大工歴8年", "建築学科出身",
+  "工学部出身で計算重視", "本業大工ですが趣味で家のものは自分で",
+  "DIY 半年、毎週末没頭中", "始めて2年、まだまだ初心者", "DIY歴12年、ベテラン勢",
+  "30代から始めました", "20代女子DIYer", "シニアDIYer 60代",
+];
+
+const PROJECT_POOL: readonly string[] = [
+  "棚モノが好き", "本棚を作るのが好きです", "デスク周りに凝ってます",
+  "ベンチばかり作ってる", "プランター台を量産中", "ガーデンフェンス自作",
+  "ウッドデッキ製作中", "工房の設備を増設中", "玄関収納を改善中",
+  "キッチン収納にハマってる", "アウトドア家具中心", "雑貨と小物中心",
+  "看板やサインも作る", "椅子とスツールが好き", "テーブル系を集中的に",
+  "壁面収納が得意", "薪棚作ってます", "コンポストも自作",
+];
+
+const QUIRK_POOL: readonly string[] = [
+  "工具沼の住人", "マキタ派", "HiKOKI 押しです", "手鋸派、電動工具最小限",
+  "オイルフィニッシュ研究中", "塗装の比較記録つけてます", "図面ソフトで設計から",
+  "Fusion360 で図面引いてます", "アプリ参考にしてます", "YouTube投稿してます",
+  "Instagramで作品共有", "ブログでDIY記録", "ホームセンター店員と仲良し",
+  "カット精度に命かけてる", "ブライワックス愛用者", "ワトコオイル一辺倒",
+  "鉋削りの練習中", "ノコギリは縦挽き派", "墨付けは差し金派",
+];
+
+const FAMILY_PET_POOL: readonly string[] = [
+  "", "", "", // 空 weight
+  " 子供と一緒に作ってます。", " 2児の母です。", " 3児の父です。",
+  " 子育ての合間にDIY。", " 猫2匹と暮らしてます。", " 猫3匹の人生。",
+  " 犬と暮らしてます。", " 老犬との生活。",
+  " 妻と二人で取り組んでます。", " 夫と意見が合わないので3案出します。",
+  " 娘と一緒にDIY。", " 息子と工具シェア。", " 一人暮らしです。",
+];
+
+function rngHash(seed: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return () => {
+    h ^= h << 13; h ^= h >>> 17; h ^= h << 5;
+    return ((h >>> 0) % 1_000_000) / 1_000_000;
+  };
+}
+function pickFromPool<T>(rng: () => number, pool: readonly T[]): T {
+  return pool[Math.floor(rng() * pool.length)];
+}
+function buildBio(seed: string): string {
+  const rng = rngHash(seed);
+  const parts = [
+    pickFromPool(rng, RESIDENCE_POOL),
+    pickFromPool(rng, MATERIAL_POOL),
+    pickFromPool(rng, EXPERIENCE_POOL),
+    pickFromPool(rng, PROJECT_POOL),
+    pickFromPool(rng, QUIRK_POOL),
+  ];
+  // ランダムに 3〜4 要素だけ採用してバラつかせる
+  const keep = rng() < 0.5 ? 3 : 4;
+  const picked = parts.slice(0, keep);
+  const family = pickFromPool(rng, FAMILY_PET_POOL);
+  return picked.join("。") + "。" + family.trim();
+}
+
+const MALE_FIRST_NAMES: readonly string[] = [
+  "Takeshi", "Hiroshi", "Naoto", "Kenji", "Shota", "Yuto", "Daisuke", "Kazuya",
+  "Tatsuro", "Akihiko", "Junpei", "Yuya", "Sho", "Kohei", "Takumi", "Kazuki",
+  "Hiroki", "Tomoki", "Naoya", "Hideki", "Masaru", "Tomohiro", "Genta",
+  "Toshiya", "Yasushi", "Kaito", "Soma", "Ren", "Yusei", "Riku", "Haruto",
+  "Sosuke", "Tatsuki", "Itsuki", "Hayate", "Souta", "Ryota", "Keita", "Shoma",
+  "Hayato",
+];
+const MALE_SUFFIX: readonly string[] = [
+  "@DIY", "@木工", "_woodshop", "_atelier", "/SPF派", "@週末DIY", "_diy",
+  "@iemori", "_lab", "@庭づくり", "/工具沼", "@田舎暮らし", "_kobo",
+  "@リフォーム", "_factory", "/木工歴N年", "@ハードウッド", "@道具沼", "_workshop",
+  "/週末作家",
+];
+
+const FEMALE_FIRST_NAMES: readonly string[] = [
+  "Yumi", "Akiko", "Mika", "Saori", "Naoko", "Eri", "Asuka", "Mizuho", "Kana",
+  "Yuki", "Aya", "Nana", "Reika", "Sachiko", "Madoka", "Tomomi", "Risa",
+  "Yuna", "Hikari", "Misaki", "Kaori", "Mami", "Ayaka", "Reiko", "Maki",
+  "Sayaka", "Nozomi", "Wakana", "Marina", "Asami", "Yuriko", "Junko",
+  "Tamami", "Nanami", "Kotone", "Riko", "Mei", "Suzuka", "Honami", "Nodoka",
+];
+const FEMALE_SUFFIX: readonly string[] = [
+  "@インテリア", "_handmade", "_diy_jp", "/木工女子", "@DIY", "_atelier",
+  "/賃貸DIY", "@子育てDIY", "_studio", "@雑貨制作", "_diy_log", "/木工3年",
+  "@手作り部", "_kobo", "/古民家", "@庭づくり", "_log", "@手作り日記",
+  "/北欧好き", "_works",
+];
+
+const NEUTRAL_SEEDS_EXTRA: readonly UserSeedTuple[] = [
+  ["wood_diary", "wood_diary", "DIY 日記をひっそり書いてます。"],
+  ["mokkou_pdf", "mokkou_pdf", "図面PDF整理アカウント。実測データを共有。"],
+  ["DIY道", "diy_dou", "DIYの道を究めるために淡々と更新中。"],
+  ["素人大工", "shirouto_daiku", "プロには及ばないけど楽しくやってます。"],
+  ["二畳工房", "nijo_kobo", "畳2畳の工房スペースで限界DIY中。"],
+  ["weekend_maker", "weekend_maker", "週末だけがマイ工房タイム。"],
+  ["木のあんこ", "kinoanko", "木の質感が大好きで、見るだけで日が暮れる。"],
+  ["板の道", "ita_no_michi", "板を切って磨いて穴あけて。それだけで満足。"],
+  ["wood.archive", "wood_archive", "失敗作も含めて記録するアーカイブアカウント。"],
+  ["庭まわりラボ", "niwa_lab2", "庭まわりのDIY実験記。"],
+  ["DIY備忘録", "diy_bibou", "今日やったことを書き留めるだけのアカウント。"],
+  ["板場メモ", "itaba_memo", "板を扱う場所=板場、のメモ。"],
+  ["クレヨン工房", "crayon_kobo", "色塗り中心のDIY。仕上げ命です。"],
+  ["DIY夫婦", "diy_couple", "夫婦でゆるくDIY。喧嘩しない方法を模索中。"],
+  ["父子DIY", "fathersson_diy", "父と息子のDIY記録。"],
+  ["MAKERS_jp", "makers_jp", "メイカーズのJPアカウント。木工と電子工作の融合。"],
+  ["古道具と木", "kodougu_to_ki", "古道具を活かしたリメイク中心。"],
+  ["DIY読書中", "diy_dokusho", "DIY本を読んで実践するアカウント。"],
+  ["焼き杉派", "yakisugi_ha", "焼き杉の表現を研究中。"],
+  ["ノミと鑿", "nomi_to_nomi", "手道具中心のDIY。鑿と鉋しか勝たん。"],
+];
+
+function buildExtraSeeds(
+  category: "m" | "f" | "n",
+  startIdx: number,
+  count: number,
+  firstNames: readonly string[],
+  suffixes: readonly string[],
+  avatar: (seedKey: string, idx: number) => string,
+): SeedUser[] {
+  const out: SeedUser[] = [];
+  for (let i = 0; i < count; i++) {
+    const idx = startIdx + i; // 1-based index
+    const seedKey = `gen-${category}-${String(idx).padStart(2, "0")}`;
+    const fn = firstNames[i % firstNames.length];
+    const suf = suffixes[(i * 7 + 3) % suffixes.length];
+    // 表記ゆれ: half / full mix と suffix 連結スタイルを多様化
+    const styleIdx = i % 5;
+    const name =
+      styleIdx === 0 ? `${fn}${suf}` :
+      styleIdx === 1 ? `${fn} ${suf.replace(/^[@/_]/, " ")}`.trim() :
+      styleIdx === 2 ? `${fn.toLowerCase()}${suf.toLowerCase().replace(/^[@/]/, "_")}` :
+      styleIdx === 3 ? `${fn}` :
+      `${fn}${suf.replace(/^[@/_]/, "")}`;
+    const username = `${fn.toLowerCase()}_${category}${idx}`;
+    out.push({
+      seedKey,
+      username,
+      name,
+      bio: buildBio(seedKey),
+      photoURL: avatar(seedKey, idx - 1),
+    });
+  }
+  return out;
+}
+
+function buildExtraNeutral(
+  startIdx: number,
+  tuples: readonly UserSeedTuple[],
+  count: number,
+): SeedUser[] {
+  const out: SeedUser[] = [];
+  for (let i = 0; i < count; i++) {
+    const idx = startIdx + i;
+    const seedKey = `gen-n-${String(idx).padStart(2, "0")}`;
+    const tupleIdx = i % tuples.length;
+    const [baseName, baseUser, baseBio] = tuples[tupleIdx];
+    // 同じ tuple が再利用されると bio が被るので, seedKey で再合成
+    const synthesized = i < tuples.length ? baseBio : buildBio(seedKey);
+    const dedupName = i < tuples.length ? baseName : `${baseName}_${i}`;
+    const dedupUser = i < tuples.length ? baseUser : `${baseUser}_${i}`;
+    out.push({
+      seedKey,
+      username: dedupUser,
+      name: dedupName,
+      bio: synthesized,
+      photoURL: neutralAvatar(seedKey, idx - 1),
+    });
+  }
+  return out;
+}
+
+const EXTRA_USERS: SeedUser[] = [
+  ...buildExtraSeeds("m", 31, 130, MALE_FIRST_NAMES, MALE_SUFFIX, maleAvatar),
+  ...buildExtraSeeds("f", 31, 130, FEMALE_FIRST_NAMES, FEMALE_SUFFIX, femaleAvatar),
+  ...buildExtraNeutral(31, NEUTRAL_SEEDS_EXTRA, 140),
+];
+
 const GENERATED_USERS: SeedUser[] = [
   ...buildSeeds("m", MALE_SEEDS, maleAvatar),
   ...buildSeeds("f", FEMALE_SEEDS, femaleAvatar),
   ...buildSeeds("n", NEUTRAL_SEEDS, neutralAvatar),
+  ...EXTRA_USERS,
 ];
 
 const USERS: SeedUser[] = [...HAND_CURATED_USERS, ...GENERATED_USERS];
