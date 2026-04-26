@@ -6,7 +6,9 @@
         "components": [
           { "/": "/blueprint/*", "comment": "Blueprint detail deep link" },
           { "/": "/usecase/*",   "comment": "Use case deep link" },
-          { "/": "/example/*",  "comment": "Example deep link" }
+          { "/": "/example/*",   "comment": "Example deep link" },
+          { "/": "/user/*",      "comment": "User profile by UID deep link" },
+          { "/": "/u/*",         "comment": "User profile by username (handle) deep link" }
         ]
       }
     ]
