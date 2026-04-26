@@ -69,15 +69,11 @@ function dicebear(
   return `https://api.dicebear.com/9.x/${style}/png?${search.toString()}`;
 }
 
-/** randomuser.me の写真ライクなアイコン（性別を URL で指定できる）。 */
-function randomUser(gender: "men" | "women", num: number): string {
-  return `https://randomuser.me/api/portraits/${gender}/${num}.jpg`;
-}
-
 // ---- ユーザー (synthetic) ----
 // テストデータの統一感を抑えるため:
 //  - 名前は @ / _ / スラッシュ / 数字 / 日英混在 で表記ゆれを意図的に作る
-//  - アイコンは DiceBear (イラスト) と randomuser.me (写真) を混在させる
+//  - アイコンは DiceBear のイラスト中心 + 「日本の SNS で典型的な物・ペット写真」を一部混入
+//    (ペット写真は Unsplash の固定 photo-id を直接参照)
 //  - 名前から推測される性別と、アイコンの性別表現を一致させる
 //  - bio はベテラン/初心者/賃貸/戸建てなど属性を散らし、長さもバラつかせる
 //  - username は 8 名に設定、2 名 (mari, ryo) は未設定で fallback (/user/{uid}) を確認できるよう敢えて空
@@ -96,7 +92,7 @@ const USERS: SeedUser[] = [
     seedKey: "takashi-zumen",
     username: "takashi_spf",
     name: "タカシ@SPF愛好家",
-    photoURL: randomUser("men", 32),
+    photoURL: dicebear("adventurer", "takashi-male-v3", "bae6fd,e0f2fe"),
     bio: "築40年の戸建て住まい。SPF1x4と1x6があれば大体のものは作れる、が口癖。先週はキッチンに吊り棚を増設しました。",
   },
   {
@@ -127,7 +123,7 @@ const USERS: SeedUser[] = [
     seedKey: "shota-zumen",
     username: "shota_wfh",
     name: "ショウタ@在宅勤務",
-    photoURL: randomUser("men", 47),
+    photoURL: dicebear("personas", "shota-male", "fef3c7,fde68a"),
     bio: "在宅4年目。デスクまわりにだけは妥協しない。配線を全部裏に通す方法を試行錯誤中。",
   },
   {
@@ -159,14 +155,15 @@ const USERS: SeedUser[] = [
     seedKey: "ryo-zumen",
     username: null, // ハンドル未設定
     name: "ryo_ハードウッド派",
-    photoURL: randomUser("men", 75),
+    photoURL: dicebear("notionists", "ryo-zumen-mature", "d4d4d8,a1a1aa"),
     bio: "イタウバ・ウリン・セランガンバツを使い分けて庭まわりを整備中。SPFは下地用にしか使いません。",
   },
   {
     seedKey: "emi-zumen",
     username: "emi_3cats",
     name: "emi_猫3匹",
-    photoURL: randomUser("women", 23),
+    // 「飼い猫を SNS アイコンにする」は日本では定番。emi 本人の bio (猫3匹) と整合させる。
+    photoURL: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=240&h=240&fit=crop&crop=faces",
     bio: "猫と暮らして10年。市販のキャットタワーが1度倒れてからは全部自作してます。",
   },
 ];
