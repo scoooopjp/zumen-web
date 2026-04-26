@@ -172,27 +172,35 @@ function fsExampleToModel(
   dto: FSExample,
   metaMap: Record<string, AuthorMeta> = {},
 ): Example {
-  const useCaseSlug = getUseCaseById(dto.useCaseID)?.slug ?? dto.useCaseID;
-  const meta = metaMap[dto.authorUID];
+  const useCaseID = dto.useCaseID ?? "";
+  const useCaseSlug = getUseCaseById(useCaseID)?.slug ?? useCaseID;
+  const authorUID = dto.authorUID ?? "";
+  const meta = metaMap[authorUID];
+  const createdAtTs = dto.createdAt;
+  const createdAt =
+    createdAtTs && typeof createdAtTs.toDate === "function"
+      ? createdAtTs.toDate().toISOString().slice(0, 10)
+      : "";
 
   return {
     id: dto.id,
-    useCaseID: dto.useCaseID,
-    useCaseName: dto.useCaseName,
+    useCaseID,
+    useCaseName: dto.useCaseName ?? "",
     useCaseSlug,
-    imageURL: dto.imageURL,
-    actualWidth: dto.actualWidth,
-    actualDepth: dto.actualDepth,
-    actualHeight: dto.actualHeight,
-    actualCost: dto.actualCost,
-    actualTimeMinutes: dto.actualTimeMinutes,
-    retailer: dto.retailer,
-    comment: dto.comment,
-    authorUID: dto.authorUID,
-    authorName: dto.authorName,
+    imageURL: dto.imageURL ?? null,
+    actualWidth: dto.actualWidth ?? null,
+    actualDepth: dto.actualDepth ?? null,
+    actualHeight: dto.actualHeight ?? null,
+    actualCost: typeof dto.actualCost === "number" ? dto.actualCost : 0,
+    actualTimeMinutes:
+      typeof dto.actualTimeMinutes === "number" ? dto.actualTimeMinutes : 0,
+    retailer: dto.retailer ?? "",
+    comment: dto.comment ?? "",
+    authorUID,
+    authorName: dto.authorName ?? "",
     authorPhotoURL: meta?.photoURL ?? null,
     authorUsername: meta?.username ?? null,
-    createdAt: dto.createdAt.toDate().toISOString().slice(0, 10),
+    createdAt,
     steps: fsExampleStepsToModel(dto.steps),
   };
 }
