@@ -26,7 +26,11 @@ import {
   enrichPartWithRetailerURLs,
   retailerSlugs,
 } from "@/lib/data";
-import { fetchUseCaseById, fetchBlueprintByUseCaseID } from "@/lib/firestore";
+import {
+  fetchUseCaseById,
+  fetchBlueprintByUseCaseID,
+  fetchExampleCountsByUseCase,
+} from "@/lib/firestore";
 import type { FSBlueprintDetail } from "@/lib/firestore";
 
 interface Props {
@@ -98,6 +102,8 @@ export default async function BlueprintPage({ params }: Props) {
   if (!data) notFound();
 
   const { bp, uc, fsBp } = data;
+  const exampleCounts = await fetchExampleCountsByUseCase();
+  const exampleCount = uc ? exampleCounts[uc.id] ?? 0 : 0;
   // use case 固有の値を優先、なければテンプレートの値にフォールバック
   const name        = uc?.name ?? fsBp?.name ?? bp.name;
   const description = uc?.description ?? bp.description;
@@ -242,6 +248,24 @@ export default async function BlueprintPage({ params }: Props) {
           >
             {indoor}
           </span>
+          {exampleCount > 0 && (
+            <span
+              className="text-sm px-3 py-1 rounded-full inline-flex items-center gap-1"
+              style={{
+                background: "var(--surface)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border)",
+              }}
+              aria-label={`作例 ${exampleCount} 件`}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+              </svg>
+              作例 {exampleCount}
+            </span>
+          )}
         </div>
 
         <div className="flex gap-2 mt-3">
@@ -586,7 +610,7 @@ export default async function BlueprintPage({ params }: Props) {
             <h2 className="text-xl font-bold text-gray-900 mb-4">関連設計図</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {relatedUseCases.map((uc) => (
-                <BlueprintCard key={uc.id} useCase={uc} />
+                <BlueprintCard key={uc.id} useCase={uc} exampleCount={exampleCounts[uc.id] ?? 0} />
               ))}
             </div>
           </section>

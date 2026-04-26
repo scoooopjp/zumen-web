@@ -1,30 +1,27 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import UserProfileView from "@/components/UserProfileView";
-import { fetchExamplesByAuthor, fetchUserProfile } from "@/lib/firestore";
+import { fetchExamplesByAuthor, fetchUserProfileByUsername } from "@/lib/firestore";
 
 interface Props {
-  params: Promise<{ uid: string }>;
+  params: Promise<{ handle: string }>;
 }
 
-// UGC は動的に Fetch、UGC のため検索エンジンには noindex
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { uid } = await params;
-  const profile = await fetchUserProfile(uid);
+  const { handle } = await params;
+  const profile = await fetchUserProfileByUsername(handle);
   if (!profile) return { robots: { index: false } };
   const description =
     profile.bio.trim().length > 0
       ? profile.bio.slice(0, 120)
       : `${profile.displayName} さんの ZUMEN プロフィール`;
-  // username が設定済みなら /u/{handle} を canonical に向ける
-  const canonical = profile.username ? `/u/${profile.username}` : `/user/${uid}`;
   return {
-    title: `${profile.displayName}さんのプロフィール`,
+    title: `${profile.displayName}さん（@${handle}）のプロフィール`,
     description,
     robots: { index: false },
-    alternates: { canonical },
+    alternates: { canonical: `/u/${handle}` },
     openGraph: {
       title: `${profile.displayName} | ZUMEN`,
       description,
@@ -33,12 +30,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function UserProfilePage({ params }: Props) {
-  const { uid } = await params;
-  const [profile, examples] = await Promise.all([
-    fetchUserProfile(uid),
-    fetchExamplesByAuthor(uid),
-  ]);
+export default async function UserHandlePage({ params }: Props) {
+  const { handle } = await params;
+  const profile = await fetchUserProfileByUsername(handle);
   if (!profile) notFound();
+  const examples = await fetchExamplesByAuthor(profile.uid);
   return <UserProfileView profile={profile} examples={examples} />;
 }

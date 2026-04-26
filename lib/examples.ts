@@ -2,6 +2,15 @@
 // 実際は Firestore から動的取得
 export { fetchExamples } from "./firestore";
 
+export interface ExampleStep {
+  id: string;
+  order: number;
+  text: string;
+  imageURL: string | null;
+  /** IllType rawValue (例: "measure", "cut", "screw"). iOS 側と一致 */
+  illustrationType: string | null;
+}
+
 export interface Example {
   id: string;
   useCaseID: string;
@@ -17,7 +26,11 @@ export interface Example {
   comment: string;
   authorUID: string;
   authorName: string;
+  // 投稿時に denormalize されないので fetch 時に users から join
+  authorPhotoURL: string | null;
+  authorUsername: string | null;
   createdAt: string; // ISO date string
+  steps: ExampleStep[];
 }
 
 export const mockExamples: Example[] = [
@@ -36,7 +49,10 @@ export const mockExamples: Example[] = [
     comment: "初めてのDIYでしたが、カットサービスを使ったら思ったより簡単でした。棚板の間隔を変えて本棚として使っています。",
     authorUID: "mock-taro",
     authorName: "taro_diy",
+    authorPhotoURL: null,
+    authorUsername: null,
     createdAt: "2025-03-15",
+    steps: [],
   },
   {
     id: "ex-002",
@@ -53,7 +69,10 @@ export const mockExamples: Example[] = [
     comment: "ベランダに置くためにオイルステインで仕上げました。思ったより頑丈で満足しています。",
     authorUID: "mock-garden",
     authorName: "garden_life",
+    authorPhotoURL: null,
+    authorUsername: null,
     createdAt: "2025-04-02",
+    steps: [],
   },
 ];
 

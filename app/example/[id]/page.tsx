@@ -6,7 +6,9 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import LottieIcon from "@/components/LottieIcon";
 import SaveButton from "@/components/SaveButton";
 import ShareButton from "@/components/ShareButton";
+import StepIllustration from "@/components/StepIllustration";
 import { fetchExamples, formatTime } from "@/lib/examples";
+import { userProfilePath } from "@/lib/userPath";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -97,21 +99,37 @@ export default async function ExampleDetailPage({ params }: Props) {
 
       {/* 投稿者・日付 */}
       <div className="flex items-center justify-between mb-4">
-        {ex.authorUID ? (
-          <Link href={`/user/${ex.authorUID}`} className="flex items-center gap-2 hover:opacity-80">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--amber-pale)" }}>
-              <span className="text-sm">👤</span>
+        {(() => {
+          const avatar = (
+            <div
+              className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0"
+              style={{ background: "var(--amber-pale)" }}
+            >
+              {ex.authorPhotoURL ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={ex.authorPhotoURL}
+                  alt={`${ex.authorName} のアバター`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-sm" aria-hidden="true">👤</span>
+              )}
             </div>
-            <span className="font-medium text-gray-900">{ex.authorName}</span>
-          </Link>
-        ) : (
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--amber-pale)" }}>
-              <span className="text-sm">👤</span>
+          );
+          const name = <span className="font-medium text-gray-900">{ex.authorName}</span>;
+          return ex.authorUID ? (
+            <Link href={userProfilePath(ex.authorUID, ex.authorUsername)} className="flex items-center gap-2 hover:opacity-80">
+              {avatar}
+              {name}
+            </Link>
+          ) : (
+            <div className="flex items-center gap-2">
+              {avatar}
+              {name}
             </div>
-            <span className="font-medium text-gray-900">{ex.authorName}</span>
-          </div>
-        )}
+          );
+        })()}
         <span className="text-sm text-gray-400">{ex.createdAt}</span>
       </div>
 
@@ -160,6 +178,46 @@ export default async function ExampleDetailPage({ params }: Props) {
         <h2 className="font-bold text-gray-900 mb-2">コメント</h2>
         <p className="text-gray-600 leading-relaxed">{ex.comment}</p>
       </div>
+
+      {/* 工程 */}
+      {ex.steps.length > 0 && (() => {
+        const stepDimensions =
+          ex.actualWidth && ex.actualDepth && ex.actualHeight
+            ? { width: ex.actualWidth, depth: ex.actualDepth, height: ex.actualHeight }
+            : undefined;
+        return (
+          <div className="mt-8">
+            <h2 className="font-bold text-gray-900 mb-3">工程</h2>
+            <div className="space-y-5">
+              {ex.steps.map((step) => (
+                <div key={step.id} className="space-y-2">
+                  <StepIllustration
+                    stepTitle={`工程 ${step.order}`}
+                    stepDescription={step.text}
+                    stepOrder={step.order}
+                    totalSteps={ex.steps.length}
+                    illustrationType={step.illustrationType}
+                    dimensions={stepDimensions}
+                  />
+                  {step.imageURL && (
+                    <div className="rounded-xl overflow-hidden bg-gray-100">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={step.imageURL}
+                        alt={`工程 ${step.order} の写真`}
+                        className="w-full h-auto object-cover"
+                      />
+                    </div>
+                  )}
+                  {step.text && (
+                    <p className="text-gray-700 leading-relaxed text-sm">{step.text}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 作例の投稿ゲート */}
       <div className="mt-10">

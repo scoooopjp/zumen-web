@@ -5,7 +5,7 @@ import AppStoreCTA from "@/components/AppStoreCTA";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import RelatedNav from "@/components/RelatedNav";
 import type { Retailer } from "@/lib/data";
-import { fetchUseCases } from "@/lib/firestore";
+import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 
 interface Props {
   params: Promise<{ retailer: string }>;
@@ -45,7 +45,10 @@ export default async function StorePage({ params }: Props) {
   const store = storeMap[retailer];
   if (!store) notFound();
 
-  const allUseCases = await fetchUseCases();
+  const [allUseCases, exampleCounts] = await Promise.all([
+    fetchUseCases(),
+    fetchExampleCountsByUseCase(),
+  ]);
   const items = allUseCases.filter((uc) => uc.supportedRetailers.includes(store.name));
 
   const BASE = "https://zumen.scoooop.com";
@@ -84,7 +87,7 @@ export default async function StorePage({ params }: Props) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
         {items.map((uc) => (
-          <BlueprintCard key={uc.id} useCase={uc} />
+          <BlueprintCard key={uc.id} useCase={uc} exampleCount={exampleCounts[uc.id] ?? 0} />
         ))}
       </div>
 

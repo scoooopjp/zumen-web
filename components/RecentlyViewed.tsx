@@ -7,6 +7,8 @@ import type { UseCase } from "@/lib/data";
 interface Props {
   /** All known useCases. The component looks up viewed slugs against this list. */
   useCases: UseCase[];
+  /** useCaseID → 作例件数。BlueprintCard のバッジ表示に使う。 */
+  exampleCounts?: Record<string, number>;
   /** Optional title override (defaults to "最近見た設計図"). */
   title?: string;
   /** Slug to exclude (e.g. the current blueprint when used on the detail page). */
@@ -17,6 +19,7 @@ interface Props {
 
 export default function RecentlyViewed({
   useCases,
+  exampleCounts,
   title = "最近見た設計図",
   excludeSlug,
   hideWhenEmpty = true,
@@ -35,7 +38,7 @@ export default function RecentlyViewed({
       <h2 className="text-xl font-bold text-gray-900 mb-4">{title}</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {items.map((uc) => (
-          <BlueprintCard key={uc.id} useCase={uc} />
+          <BlueprintCard key={uc.id} useCase={uc} exampleCount={exampleCounts?.[uc.id] ?? 0} />
         ))}
       </div>
     </section>

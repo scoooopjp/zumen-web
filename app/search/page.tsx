@@ -4,7 +4,7 @@ import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import SearchInput from "@/components/SearchInput";
-import { fetchUseCases } from "@/lib/firestore";
+import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 import type { UseCase } from "@/lib/data";
 
 interface Props {
@@ -56,7 +56,10 @@ export default async function SearchPage({ searchParams }: Props) {
   const query = (q ?? "").trim();
   const tokens = tokenize(query);
 
-  const all = await fetchUseCases();
+  const [all, exampleCounts] = await Promise.all([
+    fetchUseCases(),
+    fetchExampleCountsByUseCase(),
+  ]);
   const results = tokens.length === 0 ? [] : all.filter((uc) => matches(uc, tokens));
 
   return (
@@ -104,7 +107,7 @@ export default async function SearchPage({ searchParams }: Props) {
       {results.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {results.map((uc) => (
-            <BlueprintCard key={uc.id} useCase={uc} />
+            <BlueprintCard key={uc.id} useCase={uc} exampleCount={exampleCounts[uc.id] ?? 0} />
           ))}
         </div>
       )}
@@ -132,7 +135,7 @@ export default async function SearchPage({ searchParams }: Props) {
               ))}
             </div>
           </div>
-          <RecentlyViewed useCases={all} />
+          <RecentlyViewed useCases={all} exampleCounts={exampleCounts} />
         </>
       )}
     </div>

@@ -9,6 +9,7 @@ function resolveThumbURL(useCase: UseCase): string | null {
 
 interface BlueprintCardProps {
   useCase: UseCase;
+  exampleCount?: number;
 }
 
 const difficultyClass: Record<string, string> = {
@@ -43,7 +44,7 @@ const categoryIcon: Record<string, string> = {
   "看板・インテリア": "🪧",
 };
 
-export default function BlueprintCard({ useCase }: BlueprintCardProps) {
+export default function BlueprintCard({ useCase, exampleCount = 0 }: BlueprintCardProps) {
   const thumbURL = resolveThumbURL(useCase);
 
   return (
@@ -95,6 +96,26 @@ export default function BlueprintCard({ useCase }: BlueprintCardProps) {
         >
           {useCase.category}
         </span>
+
+        {/* 作例件数バッジ — iOS の UseCaseGridCard と揃える */}
+        {exampleCount > 0 && (
+          <span
+            className="absolute top-3 right-3 inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full z-10"
+            style={{
+              background: "rgba(255,255,255,0.80)",
+              color: "var(--navy-deep)",
+              backdropFilter: "blur(4px)",
+            }}
+            aria-label={`作例 ${exampleCount} 件`}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <circle cx="9" cy="9" r="2" />
+              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+            </svg>
+            {exampleCount}
+          </span>
+        )}
 
         {/* 完成イメージ label */}
         {thumbURL && (

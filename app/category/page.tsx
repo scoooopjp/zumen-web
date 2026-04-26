@@ -3,7 +3,7 @@ import Link from "next/link";
 import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { categories } from "@/lib/data";
-import { fetchUseCases } from "@/lib/firestore";
+import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,10 @@ export const metadata: Metadata = {
 };
 
 export default async function CategoryListPage() {
-  const useCasesData = await fetchUseCases();
+  const [useCasesData, exampleCounts] = await Promise.all([
+    fetchUseCases(),
+    fetchExampleCountsByUseCase(),
+  ]);
 
   const BASE = "https://zumen.scoooop.com";
   const collectionLd = {
@@ -75,7 +78,7 @@ export default async function CategoryListPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {items.map((uc) => (
-                <BlueprintCard key={uc.id} useCase={uc} />
+                <BlueprintCard key={uc.id} useCase={uc} exampleCount={exampleCounts[uc.id] ?? 0} />
               ))}
             </div>
           </section>

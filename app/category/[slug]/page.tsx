@@ -6,7 +6,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import LottieIcon from "@/components/LottieIcon";
 import RelatedNav from "@/components/RelatedNav";
 import { categories } from "@/lib/data";
-import { fetchUseCases } from "@/lib/firestore";
+import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 
 export const dynamic = "force-dynamic";
 export const dynamicParams = true;
@@ -38,7 +38,10 @@ export default async function CategoryDetailPage({ params }: Props) {
   const cat = categories.find((c) => c.slug === slug);
   if (!cat) notFound();
 
-  const allUseCases = await fetchUseCases();
+  const [allUseCases, exampleCounts] = await Promise.all([
+    fetchUseCases(),
+    fetchExampleCountsByUseCase(),
+  ]);
   const items = allUseCases.filter((uc) => uc.categorySlug === slug);
 
   const BASE = "https://zumen.scoooop.com";
@@ -78,7 +81,7 @@ export default async function CategoryDetailPage({ params }: Props) {
       <p className="text-gray-500 mb-8">{cat.description}</p>
 
       {items.length > 0 ? (
-        <BlueprintFilters useCases={items} />
+        <BlueprintFilters useCases={items} exampleCounts={exampleCounts} />
       ) : (
         <div className="text-center py-16 mb-12">
           <div className="flex justify-center mb-4">

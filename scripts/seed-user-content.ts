@@ -1,23 +1,29 @@
 /**
- * 作例 (examples) + コメント (comments) を Firestore に投入する seed スクリプト。
+ * ユーザー (users) + 作例 (examples) + コメント (comments) を Firestore に投入する seed スクリプト。
  *
  * 実行:
  *   GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json \
  *     npx ts-node --project tsconfig.seed.json scripts/seed-user-content.ts
  *
- * 既に投入済みの seed データを再投入する場合は --reset オプションで全削除→再投入。
- *   npx ts-node ... scripts/seed-user-content.ts -- --reset
+ * オプション:
+ *   --users-only  ユーザープロフィールだけを upsert（作例・コメントは触らない）
+ *   --reset       既存の seed examples / comments を全削除してから再投入
  *
  * 投入先 (本番 Firestore):
+ *   - users/{uid}                      ← ユーザープロフィール（displayName/bio/photoURL/username）
+ *   - usernames/{handle}               ← username 逆引き ({uid, seedTag})
  *   - examples/{auto}                  ← 作例
  *   - examples/{auto}/comments/{auto}  ← 各作例にぶら下がるコメント
  *
- * すべての seed ドキュメントは authorUID prefix が `seed-` で識別可能。
+ * シード判別:
+ *   v1 以降は doc に `seedTag: "zumen-seed-v1"` を付与し、UID は seedKey の sha256 で
+ *   ランダムに見える 20 文字へ。--reset はこの seedTag で絞り込んで削除する。
  */
 
 import { initializeApp, cert, ServiceAccount } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import * as path from "path";
+import * as crypto from "crypto";
 
 const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 if (!keyPath) {
@@ -29,21 +35,145 @@ initializeApp({ credential: cert(require(path.resolve(keyPath)) as ServiceAccoun
 const db = getFirestore();
 
 const RESET = process.argv.includes("--reset");
+const USERS_ONLY = process.argv.includes("--users-only");
+
+const SEED_TAG = "zumen-seed-v1";
+
+/**
+ * seedKey から決定論的な UID を生成。
+ * sha256 の先頭 20 文字を使うので、Firebase Auth の UID と見分けがつかない見た目になる。
+ * 同じ seedKey は常に同じ UID にマップされるため、再実行で同じ doc を更新できる。
+ */
+function deterministicUID(seedKey: string): string {
+  return crypto.createHash("sha256").update(`zumen-seed::${seedKey}`).digest("hex").slice(0, 20);
+}
+
+/**
+ * DiceBear で決定論的なイラストアバターを生成（PNG・240px）。
+ * 統一感を抑えるため、ユーザーごとに style と背景色を変える。
+ * params で facialHair / glasses など性別ヒントになるオプションを注入できる。
+ */
+function dicebear(
+  style: string,
+  seed: string,
+  bg: string,
+  params: Record<string, string> = {},
+): string {
+  const search = new URLSearchParams({
+    seed,
+    size: "240",
+    backgroundType: "gradientLinear",
+    backgroundColor: bg,
+    ...params,
+  });
+  return `https://api.dicebear.com/9.x/${style}/png?${search.toString()}`;
+}
+
+/** randomuser.me の写真ライクなアイコン（性別を URL で指定できる）。 */
+function randomUser(gender: "men" | "women", num: number): string {
+  return `https://randomuser.me/api/portraits/${gender}/${num}.jpg`;
+}
 
 // ---- ユーザー (synthetic) ----
-type SeedUser = { uid: string; name: string };
+// テストデータの統一感を抑えるため:
+//  - 名前は @ / _ / スラッシュ / 数字 / 日英混在 で表記ゆれを意図的に作る
+//  - アイコンは DiceBear (イラスト) と randomuser.me (写真) を混在させる
+//  - 名前から推測される性別と、アイコンの性別表現を一致させる
+//  - bio はベテラン/初心者/賃貸/戸建てなど属性を散らし、長さもバラつかせる
+//  - username は 8 名に設定、2 名 (mari, ryo) は未設定で fallback (/user/{uid}) を確認できるよう敢えて空
+type SeedUser = {
+  /** 内部識別子。UID 生成と作例の固定割当に使う。 */
+  seedKey: string;
+  /** 公開ハンドル（任意）。設定済みなら /u/{username} で公開される */
+  username: string | null;
+  name: string;
+  bio: string;
+  photoURL: string;
+};
+
 const USERS: SeedUser[] = [
-  { uid: "seed-user-takashi", name: "タカシ" },
-  { uid: "seed-user-yuko",    name: "ゆうこ" },
-  { uid: "seed-user-kenji",   name: "kenji_diy" },
-  { uid: "seed-user-mari",    name: "Mari@木工歴3年" },
-  { uid: "seed-user-shota",   name: "ショウタ" },
-  { uid: "seed-user-aiko",    name: "あいこ" },
-  { uid: "seed-user-hideo",   name: "Hideo" },
-  { uid: "seed-user-saya",    name: "さや" },
-  { uid: "seed-user-ryo",     name: "りょう" },
-  { uid: "seed-user-emi",     name: "えみ" },
+  {
+    seedKey: "takashi-zumen",
+    username: "takashi_spf",
+    name: "タカシ@SPF愛好家",
+    photoURL: randomUser("men", 32),
+    bio: "築40年の戸建て住まい。SPF1x4と1x6があれば大体のものは作れる、が口癖。先週はキッチンに吊り棚を増設しました。",
+  },
+  {
+    seedKey: "yuko-zumen",
+    username: "yuko_balcony",
+    name: "yuko_ベランダ部",
+    photoURL: dicebear("lorelei", "yuko-zumen", "fce7f3,fef3c7"),
+    bio: "都内マンション7F。狭いベランダで植物育てつつ小物を作ります。鉢スタンドの3作目を製作中。",
+  },
+  {
+    seedKey: "kenji-zumen",
+    username: "kenji_diy_lab",
+    name: "kenji_diy_lab",
+    photoURL: dicebear("avataaars", "kenji-zumen", "dbeafe,e0e7ff", {
+      facialHair: "beardMedium",
+      facialHairProbability: "100",
+    }),
+    bio: "工具沼の住人。マキタの新機種が出ると衝動買いしてしまう。インパクト3台所持。情報共有歓迎です。",
+  },
+  {
+    seedKey: "mari-zumen",
+    username: null, // ハンドル未設定 → /user/{uid} fallback の確認用
+    name: "Mari / 木工歴3年",
+    photoURL: dicebear("notionists", "mari-zumen", "fde68a,fed7aa"),
+    bio: "もとは家具職人志望でした。今はオイルフィニッシュの研究で半年。失敗作もそのまま投稿してます。",
+  },
+  {
+    seedKey: "shota-zumen",
+    username: "shota_wfh",
+    name: "ショウタ@在宅勤務",
+    photoURL: randomUser("men", 47),
+    bio: "在宅4年目。デスクまわりにだけは妥協しない。配線を全部裏に通す方法を試行錯誤中。",
+  },
+  {
+    seedKey: "aiko-zumen",
+    username: "aiko_2kids",
+    name: "aiko_2児ママ",
+    photoURL: dicebear("personas", "aiko-zumen", "f5d0fe,fbcfe8"),
+    bio: "DIY歴1年の新参です。子供がいるので塗料は食品衛生法適合のものを使ってます。角は必ず丸める派。",
+  },
+  {
+    seedKey: "hideo-zumen",
+    username: "hideo_woodshop",
+    name: "Hideo / 退職後DIY",
+    photoURL: dicebear("micah", "hideo-zumen", "d1fae5,a7f3d0", {
+      facialHair: "beard",
+      facialHairProbability: "100",
+      glassesProbability: "100",
+    }),
+    bio: "65歳で退職して工房始めました。週末はずっと木と向き合ってます。最近は鉋の扱いを練習中。",
+  },
+  {
+    seedKey: "saya-zumen",
+    username: "saya_rentaldiy",
+    name: "saya@賃貸OK",
+    photoURL: dicebear("big-smile", "saya-zumen", "ffe4e6,fecdd3"),
+    bio: "ワンルーム賃貸でDIY。穴あけ無し・両面テープ＋突っ張り棒で何とかする派です。",
+  },
+  {
+    seedKey: "ryo-zumen",
+    username: null, // ハンドル未設定
+    name: "ryo_ハードウッド派",
+    photoURL: randomUser("men", 75),
+    bio: "イタウバ・ウリン・セランガンバツを使い分けて庭まわりを整備中。SPFは下地用にしか使いません。",
+  },
+  {
+    seedKey: "emi-zumen",
+    username: "emi_3cats",
+    name: "emi_猫3匹",
+    photoURL: randomUser("women", 23),
+    bio: "猫と暮らして10年。市販のキャットタワーが1度倒れてからは全部自作してます。",
+  },
 ];
+
+// 派生情報（ループで毎回計算しないよう先に解決）
+type ResolvedUser = SeedUser & { uid: string };
+const RESOLVED_USERS: ResolvedUser[] = USERS.map((u) => ({ ...u, uid: deterministicUID(u.seedKey) }));
 
 const RETAILERS = ["カインズ", "コメリ", "コーナン", "DCM"] as const;
 
@@ -248,23 +378,99 @@ const SEEDS: ExampleSeed[] = [
   },
 ];
 
+/**
+ * users/{uid} を upsert する。
+ * - displayName / bio / photoURL / username / seedTag / seedKey は常に上書き
+ * - createdAt / followingCount / followerCount は新規作成時のみ初期化
+ * - usernames/{handle} 逆引きエントリも書き込む（ハンドル変更時は旧エントリを削除）
+ * - 既存 examples の authorName を最新の name に揃える（denormalized なので同期）
+ */
+async function upsertSeedUsers(): Promise<void> {
+  console.log(`👤  ${RESOLVED_USERS.length} 件のユーザープロフィールを upsert します...`);
+  for (const u of RESOLVED_USERS) {
+    const ref = db.collection("users").doc(u.uid);
+    const snap = await ref.get();
+    const prevUsername = (snap.data()?.username as string | null | undefined) ?? null;
+
+    const base = {
+      displayName: u.name,
+      bio: u.bio,
+      photoURL: u.photoURL,
+      username: u.username,
+      seedTag: SEED_TAG,
+      seedKey: u.seedKey,
+    };
+    if (snap.exists) {
+      await ref.set(base, { merge: true });
+      console.log(`  · ${u.uid} (${u.seedKey}): 更新`);
+    } else {
+      await ref.set({
+        ...base,
+        createdAt: Timestamp.now(),
+        followingCount: 0,
+        followerCount: 0,
+      });
+      console.log(`  · ${u.uid} (${u.seedKey}): 新規作成`);
+    }
+
+    // username 逆引き
+    if (prevUsername && prevUsername !== u.username) {
+      await db.collection("usernames").doc(prevUsername).delete().catch(() => undefined);
+    }
+    if (u.username) {
+      await db.collection("usernames").doc(u.username).set({
+        uid: u.uid,
+        seedTag: SEED_TAG,
+      });
+    }
+  }
+
+  // 作例側の denormalize 値を最新へ揃える
+  console.log("🔄  既存 examples の authorName を最新化します...");
+  let synced = 0;
+  for (const u of RESOLVED_USERS) {
+    const exSnap = await db.collection("examples").where("authorUID", "==", u.uid).get();
+    for (const doc of exSnap.docs) {
+      const data = doc.data();
+      if (data.authorName === u.name) continue;
+      await doc.ref.update({ authorName: u.name });
+      synced++;
+    }
+  }
+  console.log(`✅  ユーザー upsert 完了 (examples authorName を ${synced} 件更新)`);
+}
+
+/**
+ * 既存の v1 seed データ (seedTag === "zumen-seed-v1") を全削除する。
+ * users / examples / comments / usernames を網羅。
+ */
 async function clearSeedData(): Promise<void> {
-  console.log("🧹  既存の seed データを削除します...");
-  const exSnap = await db.collection("examples")
-    .where("authorUID", ">=", "seed-")
-    .where("authorUID", "<", "seed-zzzz") // 範囲クエリで seed- prefix を抽出
-    .get();
+  console.log("🧹  既存の seed データ (v1) を削除します...");
+
+  const exSnap = await db.collection("examples").where("seedTag", "==", SEED_TAG).get();
   console.log(`  対象 examples: ${exSnap.size} 件`);
   for (const doc of exSnap.docs) {
     const commentsSnap = await doc.ref.collection("comments").get();
     for (const c of commentsSnap.docs) await c.ref.delete();
     await doc.ref.delete();
   }
-  console.log("✅  削除完了");
+
+  const unameSnap = await db.collection("usernames").where("seedTag", "==", SEED_TAG).get();
+  console.log(`  対象 usernames: ${unameSnap.size} 件`);
+  for (const doc of unameSnap.docs) await doc.ref.delete();
+
+  console.log("✅  削除完了 (users はそのまま — upsert で上書きされます)");
 }
 
 async function main() {
   if (RESET) await clearSeedData();
+
+  await upsertSeedUsers();
+
+  if (USERS_ONLY) {
+    console.log("✅  --users-only 指定のため終了");
+    process.exit(0);
+  }
 
   console.log("📥  作例 + コメントを投入します...");
   let exampleCount = 0;
@@ -273,7 +479,7 @@ async function main() {
   for (let s = 0; s < SEEDS.length; s++) {
     const seed = SEEDS[s];
     for (let v = 0; v < seed.comments.length; v++) {
-      const author = pick(USERS, s * 7 + v * 3);
+      const author = pick(RESOLVED_USERS, s * 7 + v * 3);
       const cost = randInt(Math.floor(seed.budgetMax * 0.6), Math.floor(seed.budgetMax * 1.1), s * 11 + v);
       const time = randInt(Math.floor(seed.estTimeMinutes * 0.7), Math.floor(seed.estTimeMinutes * 1.4), s * 13 + v + 1);
       const retailer = pick(RETAILERS, s * 5 + v);
@@ -294,6 +500,7 @@ async function main() {
         authorName: author.name,
         createdAt: created,
         hidden: false,
+        seedTag: SEED_TAG,
       };
 
       const ref = await db.collection("examples").add(data);
@@ -302,7 +509,7 @@ async function main() {
       // 紐づくコメントスレッド
       const thread = seed.threadComments[v] ?? [];
       for (let c = 0; c < thread.length; c++) {
-        const cAuthor = pick(USERS, s * 19 + v * 5 + c * 3 + 1);
+        const cAuthor = pick(RESOLVED_USERS, s * 19 + v * 5 + c * 3 + 1);
         const cCreated = Timestamp.fromDate(
           new Date(created.toDate().getTime() + (c + 1) * 86400_000 * randInt(1, 5, s + v + c))
         );
@@ -311,6 +518,7 @@ async function main() {
           authorUID: cAuthor.uid,
           authorName: cAuthor.name,
           createdAt: cCreated,
+          seedTag: SEED_TAG,
         });
         commentCount++;
       }

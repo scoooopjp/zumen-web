@@ -41,10 +41,20 @@ export default function ExampleCard({ example: ex }: Props) {
       <div className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs shrink-0"
+            className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-xs shrink-0"
             style={{ background: "var(--canvas)" }}
           >
-            👤
+            {ex.authorPhotoURL ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={ex.authorPhotoURL}
+                alt={`${ex.authorName} のアバター`}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <span aria-hidden="true">👤</span>
+            )}
           </div>
           <span className="font-medium text-sm" style={{ color: "var(--navy-deep)" }}>
             {ex.authorName}

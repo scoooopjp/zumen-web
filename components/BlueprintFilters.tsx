@@ -7,6 +7,7 @@ import type { UseCase, Difficulty, IndoorOutdoor } from "@/lib/data";
 
 interface Props {
   useCases: UseCase[];
+  exampleCounts?: Record<string, number>;
 }
 
 type DifficultyFilter = Difficulty | "all";
@@ -58,7 +59,7 @@ function matchTime(uc: UseCase, tier: TimeTier): boolean {
   return t > 180;
 }
 
-export default function BlueprintFilters({ useCases }: Props) {
+export default function BlueprintFilters({ useCases, exampleCounts }: Props) {
   const [diff, setDiff] = useState<DifficultyFilter>("all");
   const [indoor, setIndoor] = useState<IndoorFilter>("all");
   const [budget, setBudget] = useState<BudgetTier>("all");
@@ -118,7 +119,7 @@ export default function BlueprintFilters({ useCases }: Props) {
       {filtered.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
           {filtered.map((uc) => (
-            <BlueprintCard key={uc.id} useCase={uc} />
+            <BlueprintCard key={uc.id} useCase={uc} exampleCount={exampleCounts?.[uc.id] ?? 0} />
           ))}
         </div>
       ) : (

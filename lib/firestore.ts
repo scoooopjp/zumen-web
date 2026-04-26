@@ -3,12 +3,13 @@
  * Firebase 未設定時はモックデータにフォールバック
  * iOS の FirestoreService.swift と DTO スキーマを合わせている
  */
+import { cache } from "react";
 import { getAdminDb } from "./firebase-admin";
 import { useCases as mockUseCases } from "./data";
 import { getUseCaseById } from "./data";
 import { mockExamples } from "./examples";
 import type { UseCase, Difficulty, IndoorOutdoor, Retailer } from "./data";
-import type { Example } from "./examples";
+import type { Example, ExampleStep } from "./examples";
 
 // ── Firestore DTOs (iOS の FSUseCase / FSExample と対応) ─────
 
@@ -29,6 +30,15 @@ interface FSUseCase {
   imageURL?: string;
 }
 
+interface FSExampleStep {
+  id?: string;
+  order: number;
+  text: string;
+  imageURL?: string | null;
+  /** IllType rawValue (iOS と一致) */
+  illustrationType?: string | null;
+}
+
 interface FSExample {
   id: string;
   useCaseID: string;
@@ -44,6 +54,7 @@ interface FSExample {
   authorUID: string;
   authorName: string;
   createdAt: FirebaseFirestore.Timestamp;
+  steps?: FSExampleStep[];
 }
 
 // ── Storage URL ベース（リサイズ済み） ────────────────────────
@@ -131,8 +142,30 @@ function fsUseCaseToModel(dto: FSUseCase): UseCase | null {
   };
 }
 
-function fsExampleToModel(dto: FSExample): Example {
+function fsExampleStepsToModel(steps: FSExampleStep[] | undefined): ExampleStep[] {
+  if (!Array.isArray(steps) || steps.length === 0) return [];
+  return [...steps]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((s, idx) => ({
+      id: s.id ?? `step-${idx + 1}`,
+      order: typeof s.order === "number" ? s.order : idx + 1,
+      text: s.text ?? "",
+      imageURL: s.imageURL ?? null,
+      illustrationType: s.illustrationType ?? null,
+    }));
+}
+
+interface AuthorMeta {
+  photoURL: string | null;
+  username: string | null;
+}
+
+function fsExampleToModel(
+  dto: FSExample,
+  metaMap: Record<string, AuthorMeta> = {},
+): Example {
   const useCaseSlug = getUseCaseById(dto.useCaseID)?.slug ?? dto.useCaseID;
+  const meta = metaMap[dto.authorUID];
 
   return {
     id: dto.id,
@@ -149,8 +182,40 @@ function fsExampleToModel(dto: FSExample): Example {
     comment: dto.comment,
     authorUID: dto.authorUID,
     authorName: dto.authorName,
+    authorPhotoURL: meta?.photoURL ?? null,
+    authorUsername: meta?.username ?? null,
     createdAt: dto.createdAt.toDate().toISOString().slice(0, 10),
+    steps: fsExampleStepsToModel(dto.steps),
   };
+}
+
+/**
+ * 与えられた authorUID 群について users/{uid} の photoURL / username を 1 ラウンドトリップで取得する。
+ * Example を表示する画面で投稿者アイコン・公開ハンドルを表示するための join 用ヘルパー。
+ */
+async function fetchAuthorMetaMap(
+  db: FirebaseFirestore.Firestore,
+  uids: string[],
+): Promise<Record<string, AuthorMeta>> {
+  const unique = Array.from(new Set(uids.filter((u) => typeof u === "string" && u.length > 0)));
+  if (unique.length === 0) return {};
+  try {
+    const refs = unique.map((uid) => db.collection("users").doc(uid));
+    const docs = await db.getAll(...refs);
+    const map: Record<string, AuthorMeta> = {};
+    for (const d of docs) {
+      if (!d.exists) continue;
+      const data = d.data() ?? {};
+      map[d.id] = {
+        photoURL: (data.photoURL as string | null) ?? null,
+        username: (data.username as string | null) ?? null,
+      };
+    }
+    return map;
+  } catch (e) {
+    console.error("[firestore] fetchAuthorMetaMap failed:", e);
+    return {};
+  }
 }
 
 // ── UseCases ────────────────────────────────────────────────
@@ -300,9 +365,9 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
         ? mockExamples.filter((e) => e.useCaseID === useCaseID)
         : mockExamples;
     }
-    return snap.docs.map((d) =>
-      fsExampleToModel({ id: d.id, ...d.data() } as FSExample)
-    );
+    const dtos = snap.docs.map((d) => ({ id: d.id, ...d.data() } as FSExample));
+    const metaMap = await fetchAuthorMetaMap(db, dtos.map((e) => e.authorUID));
+    return dtos.map((dto) => fsExampleToModel(dto, metaMap));
   } catch (e) {
     console.error(`[firestore] fetchExamples(${useCaseID ?? "all"}) failed:`, e);
     return useCaseID
@@ -310,6 +375,40 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
       : mockExamples;
   }
 }
+
+/**
+ * useCaseID 別の作例件数を返す（hidden==true は除外）。
+ * iOS の FirestoreService.fetchExampleCountsByUseCase と同じく、
+ * 1 クエリで全件取得して呼び出し側で集計する単純実装。
+ * 同一リクエスト内で複数ページから呼ばれてもキャッシュで重複取得を防ぐ。
+ */
+export const fetchExampleCountsByUseCase = cache(
+  async (): Promise<Record<string, number>> => {
+    const db = getAdminDb();
+    if (!db) {
+      const counts: Record<string, number> = {};
+      for (const ex of mockExamples) {
+        counts[ex.useCaseID] = (counts[ex.useCaseID] ?? 0) + 1;
+      }
+      return counts;
+    }
+    try {
+      const snap = await db.collection("examples").get();
+      const counts: Record<string, number> = {};
+      for (const d of snap.docs) {
+        const data = d.data();
+        if (data.hidden === true) continue;
+        const id = data.useCaseID;
+        if (typeof id !== "string" || !id) continue;
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+      return counts;
+    } catch (e) {
+      console.error("[firestore] fetchExampleCountsByUseCase failed:", e);
+      return {};
+    }
+  }
+);
 
 export async function fetchExamplesByAuthor(authorUID: string): Promise<Example[]> {
   const db = getAdminDb();
@@ -321,8 +420,9 @@ export async function fetchExamplesByAuthor(authorUID: string): Promise<Example[
       .orderBy("createdAt", "desc")
       .get();
     if (snap.empty) return [];
+    const metaMap = await fetchAuthorMetaMap(db, [authorUID]);
     return snap.docs.map((d) =>
-      fsExampleToModel({ id: d.id, ...d.data() } as FSExample)
+      fsExampleToModel({ id: d.id, ...d.data() } as FSExample, metaMap)
     );
   } catch (e) {
     console.error(`[firestore] fetchExamplesByAuthor(${authorUID}) failed:`, e);
@@ -337,9 +437,25 @@ export interface UserProfile {
   displayName: string;
   bio: string;
   photoURL: string | null;
+  /** 公開ハンドル。null の場合は UID ベースの URL にフォールバックする */
+  username: string | null;
   createdAt: string; // ISO date string
   followingCount: number;
   followerCount: number;
+}
+
+function userDocToProfile(uid: string, data: FirebaseFirestore.DocumentData): UserProfile {
+  const created = data.createdAt as FirebaseFirestore.Timestamp | undefined;
+  return {
+    uid,
+    displayName: (data.displayName as string) ?? "ユーザー",
+    bio: (data.bio as string) ?? "",
+    photoURL: (data.photoURL as string | null) ?? null,
+    username: (data.username as string | null) ?? null,
+    createdAt: created ? created.toDate().toISOString().slice(0, 10) : "",
+    followingCount: (data.followingCount as number) ?? 0,
+    followerCount: (data.followerCount as number) ?? 0,
+  };
 }
 
 export async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
@@ -348,19 +464,30 @@ export async function fetchUserProfile(uid: string): Promise<UserProfile | null>
   try {
     const snap = await db.collection("users").doc(uid).get();
     if (!snap.exists) return null;
-    const data = snap.data() ?? {};
-    const created = data.createdAt as FirebaseFirestore.Timestamp | undefined;
-    return {
-      uid,
-      displayName: (data.displayName as string) ?? "ユーザー",
-      bio: (data.bio as string) ?? "",
-      photoURL: (data.photoURL as string | null) ?? null,
-      createdAt: created ? created.toDate().toISOString().slice(0, 10) : "",
-      followingCount: (data.followingCount as number) ?? 0,
-      followerCount: (data.followerCount as number) ?? 0,
-    };
+    return userDocToProfile(uid, snap.data() ?? {});
   } catch (e) {
     console.error(`[firestore] fetchUserProfile(${uid}) failed:`, e);
+    return null;
+  }
+}
+
+/**
+ * `usernames/{handle}` 逆引きから UID を解決し、users/{uid} を取得する。
+ * 二段読みになるが、ハンドルは変更可能なので逆引きを介すのが正しい運用。
+ */
+export async function fetchUserProfileByUsername(username: string): Promise<UserProfile | null> {
+  const db = getAdminDb();
+  if (!db) return null;
+  try {
+    const handleSnap = await db.collection("usernames").doc(username).get();
+    if (!handleSnap.exists) return null;
+    const uid = handleSnap.data()?.uid as string | undefined;
+    if (!uid) return null;
+    const userSnap = await db.collection("users").doc(uid).get();
+    if (!userSnap.exists) return null;
+    return userDocToProfile(uid, userSnap.data() ?? {});
+  } catch (e) {
+    console.error(`[firestore] fetchUserProfileByUsername(${username}) failed:`, e);
     return null;
   }
 }

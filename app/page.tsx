@@ -7,7 +7,7 @@ import LottieIcon from "@/components/LottieIcon";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { categories } from "@/lib/data";
 import { fetchExamples } from "@/lib/examples";
-import { fetchUseCases, fetchFeaturedUseCases } from "@/lib/firestore";
+import { fetchUseCases, fetchFeaturedUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 
 export const dynamic = "force-dynamic";
 
@@ -136,10 +136,11 @@ const features: Array<{ lottie: string; title: string; desc: string; appOnly?: b
 ];
 
 export default async function HomePage() {
-  const [useCasesData, featuredUseCases, allExamples] = await Promise.all([
+  const [useCasesData, featuredUseCases, allExamples, exampleCounts] = await Promise.all([
     fetchUseCases(),
     fetchFeaturedUseCases(6),
     fetchExamples(),
+    fetchExampleCountsByUseCase(),
   ]);
   const featuredExamples = allExamples.slice(0, 3);
   return (
@@ -246,11 +247,11 @@ export default async function HomePage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {featuredUseCases.map((uc) => (
-            <BlueprintCard key={uc.id} useCase={uc} />
+            <BlueprintCard key={uc.id} useCase={uc} exampleCount={exampleCounts[uc.id] ?? 0} />
           ))}
         </div>
 
-        <RecentlyViewed useCases={useCasesData} />
+        <RecentlyViewed useCases={useCasesData} exampleCounts={exampleCounts} />
       </section>
 
       {/* ── 作例ピックアップ ──────────────────────────────── */}
