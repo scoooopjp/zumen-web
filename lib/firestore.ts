@@ -606,16 +606,28 @@ export const fetchComments = cache(
   }
 );
 
+/**
+ * 評価集計を取得する。
+ * 1. `<parent>/<id>/aggregates/ratings` を優先で読む(Cloud Functions が再計算する集計 doc)。
+ * 2. 集計 doc が未生成のときだけ subcollection を全件スキャンしてフォールバック。
+ *    バックフィル後や新規評価が付き次第、自動で集計 doc が作られる。
+ */
 export const fetchRatingSummary = cache(
   async (target: ContentTarget): Promise<RatingSummary> => {
     const db = getAdminDb();
     if (!db) return { count: 0, average: 0 };
     try {
-      const snap = await db
-        .collection(targetCollection(target.kind))
-        .doc(target.id)
-        .collection("ratings")
-        .get();
+      const parentDoc = db.collection(targetCollection(target.kind)).doc(target.id);
+      const aggSnap = await parentDoc.collection("aggregates").doc("ratings").get();
+      if (aggSnap.exists) {
+        const data = aggSnap.data() ?? {};
+        const count = typeof data.count === "number" ? data.count : 0;
+        const average = typeof data.average === "number" ? data.average : 0;
+        return { count, average };
+      }
+
+      // フォールバック: 集計 doc 未生成 → subcollection 全件スキャン
+      const snap = await parentDoc.collection("ratings").get();
       let sum = 0;
       let count = 0;
       for (const d of snap.docs) {
