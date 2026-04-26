@@ -10,6 +10,7 @@ import ShareButton from "@/components/ShareButton";
 import ViewRecorder from "@/components/ViewRecorder";
 import StepIllustration from "@/components/StepIllustration";
 import BlueprintCard from "@/components/BlueprintCard";
+import ExampleCard from "@/components/ExampleCard";
 import PartPriceTag from "@/components/PartPriceTag";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import LottieIcon from "@/components/LottieIcon";
@@ -26,10 +27,14 @@ import {
   enrichPartWithRetailerURLs,
   retailerSlugs,
 } from "@/lib/data";
+import RatingsCommentsSection from "@/components/RatingsCommentsSection";
 import {
   fetchUseCaseById,
   fetchBlueprintByUseCaseID,
   fetchExampleCountsByUseCase,
+  fetchExamples,
+  fetchComments,
+  fetchRatingSummary,
 } from "@/lib/firestore";
 import type { FSBlueprintDetail } from "@/lib/firestore";
 
@@ -106,6 +111,15 @@ export default async function BlueprintPage({ params }: Props) {
   const { bp, uc, fsBp } = data;
   const exampleCounts = await fetchExampleCountsByUseCase();
   const exampleCount = uc ? exampleCounts[uc.id] ?? 0 : 0;
+  const [examples, rating, comments] = uc
+    ? await Promise.all([
+        exampleCount > 0 ? fetchExamples(uc.id) : Promise.resolve([]),
+        fetchRatingSummary({ kind: "useCase", id: uc.id }),
+        fetchComments({ kind: "useCase", id: uc.id }),
+      ])
+    : [[], { count: 0, average: 0 }, []];
+  const previewExamples = examples.slice(0, 6);
+
   // use case 固有の値を優先、なければテンプレートの値にフォールバック
   const name        = uc?.name ?? fsBp?.name ?? bp.name;
   const description = uc?.description ?? bp.description;
@@ -536,6 +550,9 @@ export default async function BlueprintPage({ params }: Props) {
           </section>
         )}
 
+        {/* 評価・コメント */}
+        {uc && <RatingsCommentsSection rating={rating} comments={comments} />}
+
         {/* カスタム設計 — 寸法プレビュー */}
         <section className="mt-10 no-print">
           <h2 className="text-xl font-bold text-gray-900 mb-1">カスタム設計</h2>
@@ -565,23 +582,56 @@ export default async function BlueprintPage({ params }: Props) {
         </section>
 
         {/* 作例 */}
-        <div className="mt-10 no-print">
+        <section className="mt-10 no-print">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-bold text-gray-900">作例</h2>
-            <Link
-              href="/example"
-              className="text-sm font-semibold"
-              style={{ color: "var(--amber)" }}
-            >
-              すべて見る →
-            </Link>
+            <h2 className="text-xl font-bold text-gray-900">
+              作例
+              {exampleCount > 0 && (
+                <span
+                  className="ml-2 text-sm font-medium"
+                  style={{ color: "var(--text-tertiary)" }}
+                >
+                  {exampleCount}件
+                </span>
+              )}
+            </h2>
+            {exampleCount > 0 && (
+              <Link
+                href="/example"
+                className="text-sm font-semibold"
+                style={{ color: "var(--amber)" }}
+              >
+                すべて見る →
+              </Link>
+            )}
           </div>
-          <AppStoreCTA
-            variant="inline"
-            title="作例を投稿するにはアプリから"
-            description="写真・実費・コメントをアプリで投稿するとここに掲載されます。"
-          />
-        </div>
+
+          {previewExamples.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {previewExamples.map((ex) => (
+                  <ExampleCard key={ex.id} example={ex} />
+                ))}
+              </div>
+              <div className="mt-6">
+                <AppStoreCTA
+                  variant="inline"
+                  title="あなたの作例を投稿"
+                  description="アプリから写真・実費・コメントを投稿するとここに掲載されます。"
+                />
+              </div>
+            </>
+          ) : (
+            <AppStoreCTA
+              variant="inline"
+              title="作例を投稿するにはアプリから"
+              description="写真・実費・コメントをアプリで投稿するとここに掲載されます。"
+            />
+          )}
+        </section>
+
+        {/* 評価・コメント (Read 専用、投稿はアプリから) */}
+        {uc && <RatingsCommentsSection rating={rating} comments={comments} />}
 
         {/* App CTA */}
         <div className="mt-12 no-print">

@@ -524,3 +524,111 @@ export async function fetchUserProfileByUsername(username: string): Promise<User
     return null;
   }
 }
+
+// ── Comments / Ratings ───────────────────────────────────────
+// iOS の ContentTarget(.example / .useCase) と対応。
+// 親コレクション配下の `comments` / `ratings` サブコレクションを参照する。
+
+export type ContentTargetKind = "example" | "useCase";
+
+export interface ContentTarget {
+  kind: ContentTargetKind;
+  id: string;
+}
+
+function targetCollection(kind: ContentTargetKind): "examples" | "useCases" {
+  return kind === "example" ? "examples" : "useCases";
+}
+
+export interface Comment {
+  id: string;
+  text: string;
+  authorUID: string;
+  authorName: string;
+  /** 投稿時点の投稿者プロフィール画像 URL。投稿後にプロフィール画像が更新されても遡及しない。 */
+  authorPhotoURL: string | null;
+  /** users/{uid}.username を join した値(投稿時点のスナップショットではなく現在値) */
+  authorUsername: string | null;
+  /** ISO 文字列 (Date オブジェクトはサーバー→クライアント境界で扱いづらいため文字列化) */
+  createdAt: string;
+}
+
+export interface RatingSummary {
+  count: number;
+  /** 1-5 の平均値。count==0 の場合は 0 */
+  average: number;
+}
+
+export const fetchComments = cache(
+  async (target: ContentTarget): Promise<Comment[]> => {
+    const db = getAdminDb();
+    if (!db) return [];
+    try {
+      const snap = await db
+        .collection(targetCollection(target.kind))
+        .doc(target.id)
+        .collection("comments")
+        .orderBy("createdAt", "asc")
+        .get();
+      if (snap.empty) return [];
+
+      const dtos = snap.docs
+        .map((d) => {
+          const data = d.data();
+          const text = data.text as string | undefined;
+          const authorUID = data.authorUID as string | undefined;
+          const authorName = data.authorName as string | undefined;
+          const ts = data.createdAt as FirebaseFirestore.Timestamp | undefined;
+          if (!text || !authorUID || !authorName || !ts) return null;
+          return {
+            id: d.id,
+            text,
+            authorUID,
+            authorName,
+            authorPhotoURL: (data.authorPhotoURL as string | null) ?? null,
+            createdAt: ts.toDate().toISOString(),
+          };
+        })
+        .filter((c): c is Omit<Comment, "authorUsername"> => c !== null);
+      if (dtos.length === 0) return [];
+
+      // username/photoURL を users から join。photoURL は投稿時点のスナップショット優先。
+      const metaMap = await fetchAuthorMetaMap(db, dtos.map((c) => c.authorUID));
+      return dtos.map((c) => ({
+        ...c,
+        authorPhotoURL: c.authorPhotoURL ?? metaMap[c.authorUID]?.photoURL ?? null,
+        authorUsername: metaMap[c.authorUID]?.username ?? null,
+      }));
+    } catch (e) {
+      console.error(`[firestore] fetchComments(${target.kind}/${target.id}) failed:`, e);
+      return [];
+    }
+  }
+);
+
+export const fetchRatingSummary = cache(
+  async (target: ContentTarget): Promise<RatingSummary> => {
+    const db = getAdminDb();
+    if (!db) return { count: 0, average: 0 };
+    try {
+      const snap = await db
+        .collection(targetCollection(target.kind))
+        .doc(target.id)
+        .collection("ratings")
+        .get();
+      let sum = 0;
+      let count = 0;
+      for (const d of snap.docs) {
+        const value = d.data().value as number | undefined;
+        if (typeof value !== "number" || value < 1 || value > 5) continue;
+        sum += value;
+        count += 1;
+      }
+      const average = count > 0 ? sum / count : 0;
+      return { count, average };
+    } catch (e) {
+      console.error(`[firestore] fetchRatingSummary(${target.kind}/${target.id}) failed:`, e);
+      return { count: 0, average: 0 };
+    }
+  }
+);

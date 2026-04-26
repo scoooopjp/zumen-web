@@ -7,7 +7,9 @@ import LottieIcon from "@/components/LottieIcon";
 import SaveButton from "@/components/SaveButton";
 import ShareButton from "@/components/ShareButton";
 import StepIllustration from "@/components/StepIllustration";
+import RatingsCommentsSection from "@/components/RatingsCommentsSection";
 import { fetchExampleById, formatTime } from "@/lib/examples";
+import { fetchComments, fetchRatingSummary } from "@/lib/firestore";
 import { userProfilePath } from "@/lib/userPath";
 
 interface Props {
@@ -36,6 +38,11 @@ export default async function ExampleDetailPage({ params }: Props) {
   const { id } = await params;
   const ex = await fetchExampleById(id);
   if (!ex) notFound();
+
+  const [rating, comments] = await Promise.all([
+    fetchRatingSummary({ kind: "example", id }),
+    fetchComments({ kind: "example", id }),
+  ]);
 
   const dimensionsLabel =
     ex.actualWidth && ex.actualDepth && ex.actualHeight
@@ -217,6 +224,9 @@ export default async function ExampleDetailPage({ params }: Props) {
           </div>
         );
       })()}
+
+      {/* 評価・コメント */}
+      <RatingsCommentsSection rating={rating} comments={comments} />
 
       {/* 作例の投稿ゲート */}
       <div className="mt-10">
