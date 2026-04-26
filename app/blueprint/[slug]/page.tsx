@@ -86,14 +86,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const time = uc?.estimatedTimeMinutes ?? bp.estimatedTimeMinutes;
   const category = uc?.category ?? bp.category;
   const ogUrl = `/og?title=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&difficulty=${encodeURIComponent(difficulty)}&budget=${encodeURIComponent(formatBudget(budgetMin, budgetMax))}`;
+  const description = `${name}のDIY設計図。難易度${difficulty}、予算${formatBudget(budgetMin, budgetMax)}、制作時間${formatTime(time)}。カインズ・コメリ対応の材料リスト付き。`;
+  const ogTitle = `${name} DIY 設計図 | ZUMEN`;
+  const ogDescription = uc?.description ?? bp.description;
   return {
     title: `${name} DIY 設計図`,
-    description: `${name}のDIY設計図。難易度${difficulty}、予算${formatBudget(budgetMin, budgetMax)}、制作時間${formatTime(time)}。カインズ・コメリ対応の材料リスト付き。`,
+    description,
     alternates: { canonical: `/blueprint/${slug}` },
     openGraph: {
-      title: `${name} DIY 設計図 | ZUMEN`,
-      description: uc?.description ?? bp.description,
-      images: [{ url: ogUrl, width: 1200, height: 630 }],
+      title: ogTitle,
+      description: ogDescription,
+      type: "article",
+      url: `/blueprint/${slug}`,
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: `${name} DIY 設計図` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description: ogDescription,
+      images: [ogUrl],
     },
   };
 }
@@ -173,6 +184,17 @@ export default async function BlueprintPage({ params }: Props) {
       name: s.title,
       text: s.description,
     })),
+    ...(rating.count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: rating.average.toFixed(1),
+            ratingCount: rating.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
+      : {}),
   };
 
   return (
@@ -494,9 +516,6 @@ export default async function BlueprintPage({ params }: Props) {
             </ul>
           </section>
         )}
-
-        {/* 評価・コメント */}
-        {uc && <RatingsCommentsSection rating={rating} comments={comments} />}
 
         {/* カスタム設計 — 寸法プレビュー */}
         <section className="mt-10 no-print">

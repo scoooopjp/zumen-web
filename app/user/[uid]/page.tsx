@@ -17,13 +17,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     profile.bio.trim().length > 0
       ? profile.bio.slice(0, 120)
       : `${profile.displayName} さんの ZUMEN プロフィール`;
+  const ogTitle = `${profile.displayName} | ZUMEN`;
   return {
     title: `${profile.displayName}さんのプロフィール`,
     description,
     robots: { index: false, follow: false },
     alternates: { canonical: `/u/${profile.username}` },
     openGraph: {
-      title: `${profile.displayName} | ZUMEN`,
+      title: ogTitle,
+      description,
+      type: "profile",
+      url: `/u/${profile.username}`,
+      ...(profile.photoURL ? { images: [profile.photoURL] } : {}),
+    },
+    twitter: {
+      card: profile.photoURL ? "summary" : "summary_large_image",
+      title: ogTitle,
       description,
       ...(profile.photoURL ? { images: [profile.photoURL] } : {}),
     },

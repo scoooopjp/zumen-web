@@ -23,13 +23,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const ex = await fetchExampleById(id);
   if (!ex) return {};
+  const flatComment = ex.comment.replace(/\s+/g, " ").trim();
+  const description = `実費¥${ex.actualCost.toLocaleString()}・制作時間${formatTime(ex.actualTimeMinutes)}。${flatComment.slice(0, 80)}`;
+  const ogTitle = `${ex.authorName}さんの${ex.useCaseName} | ZUMEN`;
+  const images = ex.imageURL ? [{ url: ex.imageURL, alt: `${ex.authorName}さんの${ex.useCaseName}` }] : undefined;
   return {
     title: `${ex.authorName}さんの${ex.useCaseName}作例`,
-    description: `実費¥${ex.actualCost.toLocaleString()}・制作時間${formatTime(ex.actualTimeMinutes)}。${ex.comment.slice(0, 80)}`,
+    description,
     robots: { index: false }, // UGC は審査後に個別で index 化
+    alternates: { canonical: `/example/${id}` },
     openGraph: {
-      title: `${ex.authorName}さんの${ex.useCaseName} | ZUMEN`,
-      description: ex.comment,
+      title: ogTitle,
+      description: flatComment.slice(0, 200),
+      type: "article",
+      url: `/example/${id}`,
+      ...(images ? { images } : {}),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description: flatComment.slice(0, 200),
+      ...(ex.imageURL ? { images: [ex.imageURL] } : {}),
     },
   };
 }
@@ -72,6 +86,17 @@ export default async function ExampleDetailPage({ params }: Props) {
     },
     ...(ex.useCaseSlug
       ? { about: { "@type": "Thing", name: ex.useCaseName, url: `${BASE}/blueprint/${ex.useCaseSlug}` } }
+      : {}),
+    ...(rating.count > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: rating.average.toFixed(1),
+            ratingCount: rating.count,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }
       : {}),
   };
 
