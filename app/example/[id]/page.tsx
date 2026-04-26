@@ -7,7 +7,7 @@ import LottieIcon from "@/components/LottieIcon";
 import SaveButton from "@/components/SaveButton";
 import ShareButton from "@/components/ShareButton";
 import StepIllustration from "@/components/StepIllustration";
-import { fetchExamples, formatTime } from "@/lib/examples";
+import { fetchExampleById, formatTime } from "@/lib/examples";
 import { userProfilePath } from "@/lib/userPath";
 
 interface Props {
@@ -19,8 +19,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const examples = await fetchExamples();
-  const ex = examples.find((e) => e.id === id);
+  const ex = await fetchExampleById(id);
   if (!ex) return {};
   return {
     title: `${ex.authorName}さんの${ex.useCaseName}作例`,
@@ -35,8 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ExampleDetailPage({ params }: Props) {
   const { id } = await params;
-  const examples = await fetchExamples();
-  const ex = examples.find((e) => e.id === id);
+  const ex = await fetchExampleById(id);
   if (!ex) notFound();
 
   const dimensionsLabel =
@@ -118,8 +116,9 @@ export default async function ExampleDetailPage({ params }: Props) {
             </div>
           );
           const name = <span className="font-medium text-gray-900">{ex.authorName}</span>;
-          return ex.authorUID ? (
-            <Link href={userProfilePath(ex.authorUID, ex.authorUsername)} className="flex items-center gap-2 hover:opacity-80">
+          const profileHref = userProfilePath(ex.authorUID, ex.authorUsername);
+          return profileHref ? (
+            <Link href={profileHref} className="flex items-center gap-2 hover:opacity-80">
               {avatar}
               {name}
             </Link>

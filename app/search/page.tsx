@@ -4,6 +4,7 @@ import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import SearchInput from "@/components/SearchInput";
+import { getBlueprintByTemplateID } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 import type { UseCase } from "@/lib/data";
 
@@ -27,16 +28,22 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 }
 
 function tokenize(q: string): string[] {
-  return q
-    .toLowerCase()
-    .normalize("NFKC")
+  return normalizeSearchText(q)
     .split(/\s+/)
     .map((s) => s.trim())
     .filter(Boolean);
 }
 
+function normalizeSearchText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/[×✕]/g, "x");
+}
+
 function matches(uc: UseCase, tokens: string[]): boolean {
   if (tokens.length === 0) return false;
+  const blueprint = getBlueprintByTemplateID(uc.templateID);
   const haystack = [
     uc.name,
     uc.description,
@@ -44,11 +51,15 @@ function matches(uc: UseCase, tokens: string[]): boolean {
     uc.difficulty,
     uc.indoorOutdoor,
     ...uc.supportedRetailers,
+    ...(blueprint?.tools ?? []),
+    ...(blueprint?.parts.flatMap((part) => [part.name, part.spec, part.note ?? ""]) ?? []),
+    ...(blueprint?.cutItems.map((item) => item.partName) ?? []),
+    ...(blueprint?.warnings ?? []),
   ]
     .join(" ")
-    .toLowerCase()
-    .normalize("NFKC");
-  return tokens.every((t) => haystack.includes(t));
+    .trim();
+  const normalizedHaystack = normalizeSearchText(haystack);
+  return tokens.every((t) => normalizedHaystack.includes(t));
 }
 
 export default async function SearchPage({ searchParams }: Props) {

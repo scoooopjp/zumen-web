@@ -11,7 +11,7 @@ interface Props {
 
 export default function UserProfileView({ profile, examples }: Props) {
   const BASE = "https://zumen.scoooop.com";
-  const canonicalPath = profile.username ? `/u/${profile.username}` : `/user/${profile.uid}`;
+  const canonicalPath = profile.username ? `/u/${profile.username}` : null;
   const personLd = {
     "@context": "https://schema.org",
     "@type": "ProfilePage",
@@ -21,7 +21,7 @@ export default function UserProfileView({ profile, examples }: Props) {
       ...(profile.username ? { alternateName: `@${profile.username}` } : {}),
       ...(profile.bio ? { description: profile.bio } : {}),
       ...(profile.photoURL ? { image: profile.photoURL } : {}),
-      url: `${BASE}${canonicalPath}`,
+      ...(canonicalPath ? { url: `${BASE}${canonicalPath}` } : {}),
     },
   };
 

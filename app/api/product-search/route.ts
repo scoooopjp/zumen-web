@@ -14,6 +14,50 @@ import { getAdminDb } from "@/lib/firebase-admin";
 
 const VALID_RETAILERS: RetailerKey[] = ["cainz", "komeri", "kohnan", "dcm"];
 const FRESH_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7日
+const KEYWORD_MAX_LENGTH = 80;
+const KEYWORD_MAX_TOKENS = 8;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 60;
+
+const rateLimitHits = new Map<string, number[]>();
+const inFlightRequests = new Map<string, Promise<ProductResult>>();
+
+function normalizeKeyword(keyword: string): string {
+  return keyword.replace(/\s+/g, " ").trim();
+}
+
+function isValidKeyword(keyword: string): boolean {
+  if (keyword.length === 0 || keyword.length > KEYWORD_MAX_LENGTH) return false;
+  if (/https?:\/\//i.test(keyword)) return false;
+  if (keyword.split(/\s+/).filter(Boolean).length > KEYWORD_MAX_TOKENS) return false;
+  return /^[\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\s×✕xX+\-.,/%()#&]+$/u.test(keyword);
+}
+
+function getClientKey(req: NextRequest): string | null {
+  const forwardedFor = req.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    const first = forwardedFor.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  return realIp || null;
+}
+
+function isRateLimited(clientKey: string): boolean {
+  const now = Date.now();
+  const recent = (rateLimitHits.get(clientKey) ?? []).filter(
+    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
+  );
+  recent.push(now);
+  rateLimitHits.set(clientKey, recent);
+  return recent.length > RATE_LIMIT_MAX_REQUESTS;
+}
+
+function shouldPersistResult(result: ProductResult, keyword: string): boolean {
+  if (!result.name || result.url.length === 0) return false;
+  if (result.price !== null) return true;
+  return normalizeKeyword(result.name).toLowerCase() !== keyword.toLowerCase();
+}
 
 function docIdFor(retailer: RetailerKey, keyword: string): string {
   // Firestore document ID はスラッシュ不可。keyword は日本語/記号を含むため percent-encode して
@@ -23,6 +67,11 @@ function docIdFor(retailer: RetailerKey, keyword: string): string {
 }
 
 async function getCachedOrScrape(retailer: RetailerKey, keyword: string): Promise<ProductResult> {
+  const requestKey = `${retailer}:${keyword}`;
+  const pending = inFlightRequests.get(requestKey);
+  if (pending) return pending;
+
+  const task = (async (): Promise<ProductResult> => {
   const db = getAdminDb();
   const docRef = db?.collection("productPrices").doc(docIdFor(retailer, keyword));
 
@@ -49,7 +98,7 @@ async function getCachedOrScrape(retailer: RetailerKey, keyword: string): Promis
 
   const result = await scrapeProduct(retailer, keyword);
 
-  if (docRef && result && result.name) {
+  if (docRef && shouldPersistResult(result, keyword)) {
     try {
       await docRef.set({
         retailer: result.retailer,
@@ -65,12 +114,20 @@ async function getCachedOrScrape(retailer: RetailerKey, keyword: string): Promis
   }
 
   return result;
+  })();
+
+  inFlightRequests.set(requestKey, task);
+  try {
+    return await task;
+  } finally {
+    inFlightRequests.delete(requestKey);
+  }
 }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const retailer = searchParams.get("retailer") as RetailerKey | null;
-  const keyword = searchParams.get("keyword");
+  const keyword = normalizeKeyword(searchParams.get("keyword") ?? "");
 
   if (!retailer || !VALID_RETAILERS.includes(retailer)) {
     return NextResponse.json(
@@ -78,11 +135,25 @@ export async function GET(req: NextRequest) {
       { status: 400 }
     );
   }
-  if (!keyword || keyword.trim().length === 0) {
-    return NextResponse.json({ error: "keyword is required" }, { status: 400 });
+  if (!isValidKeyword(keyword)) {
+    return NextResponse.json(
+      { error: `keyword must be 1-${KEYWORD_MAX_LENGTH} chars and use a supported format` },
+      { status: 400 }
+    );
   }
 
-  const result = await getCachedOrScrape(retailer, keyword.trim());
+  const clientKey = getClientKey(req);
+  if (clientKey && isRateLimited(clientKey)) {
+    return NextResponse.json(
+      { error: "rate limit exceeded" },
+      {
+        status: 429,
+        headers: { "Retry-After": "60" },
+      }
+    );
+  }
+
+  const result = await getCachedOrScrape(retailer, keyword);
   return NextResponse.json(result, {
     headers: { "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600" },
   });

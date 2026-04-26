@@ -1,15 +1,12 @@
 /**
  * ユーザープロフィール URL の生成ロジック。
  * - username が設定済み → `/u/{username}`（公開ハンドル）
- * - 未設定 → `/user/{uid}` にフォールバック
- *
- * 公開ハンドルが優先される設計だが、UID 直 URL は永続的に有効
- * （ハンドル削除 / 未設定ユーザーへの fallback パスとして）。
+ * - 未設定 → 公開 Web ではリンクしない
  */
 export function userProfilePath(
-  uid: string,
+  _uid: string,
   username: string | null | undefined,
-): string {
+): string | null {
   if (username && username.length > 0) return `/u/${username}`;
-  return `/user/${uid}`;
+  return null;
 }

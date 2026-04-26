@@ -54,6 +54,7 @@ interface FSExample {
   authorUID: string;
   authorName: string;
   createdAt: FirebaseFirestore.Timestamp;
+  hidden?: boolean;
   steps?: FSExampleStep[];
 }
 
@@ -62,7 +63,7 @@ const STORAGE_RESIZED_BASE =
   "https://firebasestorage.googleapis.com/v0/b/zumen-d0625.firebasestorage.app/o/usecase-thumbnails-resized%2F";
 
 /** UseCase 固有サムネイル URL — `{id}.jpg` を参照 */
-function useCaseThumbnailURL(id: string): string {
+function getUseCaseThumbnailURL(id: string): string {
   return `${STORAGE_RESIZED_BASE}${encodeURIComponent(id + ".jpg")}?alt=media`;
 }
 
@@ -73,7 +74,7 @@ function resolveImageURL(dto: FSUseCase): string {
       .replace("usecase-thumbnails%2F", "usecase-thumbnails-resized%2F")
       .replace(/\.png(\?|$)/, ".jpg$1");
   }
-  return useCaseThumbnailURL(dto.id);
+  return getUseCaseThumbnailURL(dto.id);
 }
 
 // ── DTO → Model 変換 ─────────────────────────────────────────
@@ -187,6 +188,10 @@ function fsExampleToModel(
     createdAt: dto.createdAt.toDate().toISOString().slice(0, 10),
     steps: fsExampleStepsToModel(dto.steps),
   };
+}
+
+function isPublicExample(dto: Pick<FSExample, "hidden">): boolean {
+  return dto.hidden !== true;
 }
 
 /**
@@ -360,12 +365,13 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
       ? col.where("useCaseID", "==", useCaseID).orderBy("createdAt", "desc")
       : col.orderBy("createdAt", "desc");
     const snap = await q.get();
-    if (snap.empty) {
-      return useCaseID
-        ? mockExamples.filter((e) => e.useCaseID === useCaseID)
-        : mockExamples;
-    }
-    const dtos = snap.docs.map((d) => ({ id: d.id, ...d.data() } as FSExample));
+    if (snap.empty) return [];
+
+    const dtos = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as FSExample))
+      .filter(isPublicExample);
+    if (dtos.length === 0) return [];
+
     const metaMap = await fetchAuthorMetaMap(db, dtos.map((e) => e.authorUID));
     return dtos.map((dto) => fsExampleToModel(dto, metaMap));
   } catch (e) {
@@ -375,6 +381,27 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
       : mockExamples;
   }
 }
+
+export const fetchExampleById = cache(
+  async (id: string): Promise<Example | null> => {
+    const db = getAdminDb();
+    if (!db) return mockExamples.find((e) => e.id === id) ?? null;
+
+    try {
+      const snap = await db.collection("examples").doc(id).get();
+      if (!snap.exists) return null;
+
+      const dto = { id: snap.id, ...snap.data() } as FSExample;
+      if (!isPublicExample(dto)) return null;
+
+      const metaMap = await fetchAuthorMetaMap(db, [dto.authorUID]);
+      return fsExampleToModel(dto, metaMap);
+    } catch (e) {
+      console.error(`[firestore] fetchExampleById(${id}) failed:`, e);
+      return mockExamples.find((e) => e.id === id) ?? null;
+    }
+  }
+);
 
 function buildExampleCounts(examples: Array<{ useCaseID: string }>): Record<string, number> {
   const counts: Record<string, number> = {};
@@ -423,10 +450,13 @@ export async function fetchExamplesByAuthor(authorUID: string): Promise<Example[
       .orderBy("createdAt", "desc")
       .get();
     if (snap.empty) return [];
+    const dtos = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as FSExample))
+      .filter(isPublicExample);
+    if (dtos.length === 0) return [];
+
     const metaMap = await fetchAuthorMetaMap(db, [authorUID]);
-    return snap.docs.map((d) =>
-      fsExampleToModel({ id: d.id, ...d.data() } as FSExample, metaMap)
-    );
+    return dtos.map((dto) => fsExampleToModel(dto, metaMap));
   } catch (e) {
     console.error(`[firestore] fetchExamplesByAuthor(${authorUID}) failed:`, e);
     return [];

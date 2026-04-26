@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 interface Props {
   placeholder?: string;
@@ -14,8 +14,13 @@ export default function SearchInput({
 }: Props) {
   const router = useRouter();
   const params = useSearchParams();
-  const [value, setValue] = useState(params.get("q") ?? "");
+  const query = params.get("q") ?? "";
+  const [value, setValue] = useState(query);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setValue(query);
+  }, [query]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();

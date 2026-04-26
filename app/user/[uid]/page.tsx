@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import UserProfileView from "@/components/UserProfileView";
-import { fetchExamplesByAuthor, fetchUserProfile } from "@/lib/firestore";
+import { notFound, redirect } from "next/navigation";
+import { fetchUserProfile } from "@/lib/firestore";
 
 interface Props {
   params: Promise<{ uid: string }>;
@@ -13,18 +12,16 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { uid } = await params;
   const profile = await fetchUserProfile(uid);
-  if (!profile) return { robots: { index: false } };
+  if (!profile?.username) return { robots: { index: false, follow: false } };
   const description =
     profile.bio.trim().length > 0
       ? profile.bio.slice(0, 120)
       : `${profile.displayName} さんの ZUMEN プロフィール`;
-  // username が設定済みなら /u/{handle} を canonical に向ける
-  const canonical = profile.username ? `/u/${profile.username}` : `/user/${uid}`;
   return {
     title: `${profile.displayName}さんのプロフィール`,
     description,
-    robots: { index: false },
-    alternates: { canonical },
+    robots: { index: false, follow: false },
+    alternates: { canonical: `/u/${profile.username}` },
     openGraph: {
       title: `${profile.displayName} | ZUMEN`,
       description,
@@ -35,10 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function UserProfilePage({ params }: Props) {
   const { uid } = await params;
-  const [profile, examples] = await Promise.all([
-    fetchUserProfile(uid),
-    fetchExamplesByAuthor(uid),
-  ]);
-  if (!profile) notFound();
-  return <UserProfileView profile={profile} examples={examples} />;
+  const profile = await fetchUserProfile(uid);
+  if (!profile?.username) notFound();
+  redirect(`/u/${profile.username}`);
 }
