@@ -22,6 +22,7 @@
 
 import { initializeApp, cert, ServiceAccount } from "firebase-admin/app";
 import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
 import * as path from "path";
 import * as crypto from "crypto";
 
@@ -31,11 +32,19 @@ if (!keyPath) {
   process.exit(1);
 }
 
-initializeApp({ credential: cert(require(path.resolve(keyPath)) as ServiceAccount) });
+const STORAGE_BUCKET_NAME = "zumen-d0625.firebasestorage.app";
+
+initializeApp({
+  credential: cert(require(path.resolve(keyPath)) as ServiceAccount),
+  storageBucket: STORAGE_BUCKET_NAME,
+});
 const db = getFirestore();
+const bucket = getStorage().bucket();
 
 const RESET = process.argv.includes("--reset");
 const USERS_ONLY = process.argv.includes("--users-only");
+// 既に Storage に置かれているアバターも強制的に再アップロードする（ソース画像差し替え時用）
+const FORCE_AVATAR_REUPLOAD = process.argv.includes("--force-avatars");
 
 const SEED_TAG = "zumen-seed-v1";
 
@@ -69,6 +78,41 @@ function dicebear(
   return `https://api.dicebear.com/9.x/${style}/png?${search.toString()}`;
 }
 
+/**
+ * 各 seed user の `photoURL` (DiceBear / Unsplash の URL) は「ソース画像」として扱い、
+ * Firebase Storage の `users/{uid}/avatar.jpg`（実ユーザーの保存先と同じ）にコピーする。
+ * Firestore に書き込む値は Storage の公開 URL に置き換える。
+ *
+ * - 既に Storage に存在するときはスキップ（`--force-avatars` で再取得）
+ * - DiceBear PNG / Unsplash JPEG とも `Content-Type` を保持して保存
+ */
+async function uploadAvatarFromSource(uid: string, sourceURL: string): Promise<string> {
+  const storagePath = `users/${uid}/avatar.jpg`;
+  const file = bucket.file(storagePath);
+  const publicURL =
+    `https://firebasestorage.googleapis.com/v0/b/${STORAGE_BUCKET_NAME}` +
+    `/o/${encodeURIComponent(storagePath)}?alt=media`;
+
+  if (!FORCE_AVATAR_REUPLOAD) {
+    const [exists] = await file.exists();
+    if (exists) return publicURL;
+  }
+
+  const res = await fetch(sourceURL);
+  if (!res.ok) {
+    throw new Error(`avatar fetch failed (${res.status}): ${sourceURL}`);
+  }
+  const buffer = Buffer.from(await res.arrayBuffer());
+  const contentType = res.headers.get("content-type") ?? "image/jpeg";
+
+  await file.save(buffer, {
+    contentType,
+    metadata: { cacheControl: "public, max-age=31536000" },
+  });
+
+  return publicURL;
+}
+
 // ---- ユーザー (synthetic) ----
 // テストデータの統一感を抑えるため:
 //  - 名前は @ / _ / スラッシュ / 数字 / 日英混在 で表記ゆれを意図的に作る
@@ -87,7 +131,7 @@ type SeedUser = {
   photoURL: string;
 };
 
-const USERS: SeedUser[] = [
+const HAND_CURATED_USERS: SeedUser[] = [
   {
     seedKey: "takashi-zumen",
     username: "takashi_spf",
@@ -106,9 +150,8 @@ const USERS: SeedUser[] = [
     seedKey: "kenji-zumen",
     username: "kenji_diy_lab",
     name: "kenji_diy_lab",
-    photoURL: dicebear("avataaars", "kenji-zumen", "dbeafe,e0e7ff", {
-      facialHair: "beardMedium",
-      facialHairProbability: "100",
+    photoURL: dicebear("notionists", "kenji-zumen-jp", "dbeafe,bfdbfe", {
+      beardProbability: "100",
     }),
     bio: "工具沼の住人。マキタの新機種が出ると衝動買いしてしまう。インパクト3台所持。情報共有歓迎です。",
   },
@@ -137,10 +180,8 @@ const USERS: SeedUser[] = [
     seedKey: "hideo-zumen",
     username: "hideo_woodshop",
     name: "Hideo / 退職後DIY",
-    photoURL: dicebear("micah", "hideo-zumen", "d1fae5,a7f3d0", {
-      facialHair: "beard",
-      facialHairProbability: "100",
-      glassesProbability: "100",
+    photoURL: dicebear("notionists", "hideo-zumen-jp", "d1fae5,a7f3d0", {
+      beardProbability: "100",
     }),
     bio: "65歳で退職して工房始めました。週末はずっと木と向き合ってます。最近は鉋の扱いを練習中。",
   },
@@ -148,7 +189,7 @@ const USERS: SeedUser[] = [
     seedKey: "saya-zumen",
     username: "saya_rentaldiy",
     name: "saya@賃貸OK",
-    photoURL: dicebear("big-smile", "saya-zumen", "ffe4e6,fecdd3"),
+    photoURL: dicebear("lorelei", "saya-zumen-jp", "ffe4e6,fecdd3"),
     bio: "ワンルーム賃貸でDIY。穴あけ無し・両面テープ＋突っ張り棒で何とかする派です。",
   },
   {
@@ -167,6 +208,197 @@ const USERS: SeedUser[] = [
     bio: "猫と暮らして10年。市販のキャットタワーが1度倒れてからは全部自作してます。",
   },
 ];
+
+// ---- 追加テストユーザー（90 名 / procedurally generated）----
+// 男性 30 / 女性 30 / 性別ニュートラル 30。
+//  - 男性名 → notionists(beard) / personas(facialHair) で男性表現
+//  - 女性名 → lorelei / notionists(beardProbability=0)
+//  - ニュートラル枠 → notionists-neutral / bottts-neutral / fun-emoji / モチーフ写真
+// `gen-{m|f|n}-NN` を seedKey とし再実行で UID 安定。
+type UserSeedTuple = readonly [name: string, username: string | null, bio: string];
+
+const BG_PALETTES: readonly string[] = [
+  "ffe4e6,fecdd3", "fef3c7,fde68a", "fed7aa,fdba74", "dbeafe,bfdbfe",
+  "d1fae5,a7f3d0", "e9d5ff,d8b4fe", "ccfbf1,99f6e4", "e0e7ff,c7d2fe",
+  "e7e5e4,d6d3d1", "bae6fd,e0f2fe",
+];
+
+// Unsplash 上で 200 OK が確認できた、人物以外のモチーフ写真（猫・犬・植物・コーヒーなど）
+const MOTIF_PHOTOS: readonly string[] = [
+  "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1561948955-570b270e7c36?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1517423440428-a5a00ad493e8?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1561037404-61cd46aa615b?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1444212477490-ca407925329e?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1463936575829-25148e1db1b8?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1564349683136-77e08dba1ef7?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1452857297128-d9c29adba80b?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1568736333610-eae6e0ab9206?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1493804714600-6edb1cd93080?w=240&h=240&fit=crop",
+  "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=240&h=240&fit=crop",
+];
+
+const MALE_SEEDS: readonly UserSeedTuple[] = [
+  ["Takeshi / DIY8年", "takeshi_spf_lover", "千葉の戸建て住まい。SPFと2x4が好き。最近は子供部屋の収納を作ってます。"],
+  ["ヒロシ@木工", "hiroshi_woodshop", "30代の DIY 中級者。ホームセンターで切ってもらう派。週末は工房にこもります。"],
+  ["Yuki_garage", "yuki_garage_lab", "ガレージで工具を集めてます。インパクトとトリマーがあれば何でもできる(と信じてる)。"],
+  ["Makoto", "makoto_diy", "築20年のマンション住まい。賃貸OKなDIYを開拓中です。原状回復が前提。"],
+  ["Daiki@週末DIY", "daiki_weekend", "平日エンジニア、週末木工職人。図面引いてからじゃないと動けないタイプです。"],
+  ["Naoki / ナオキ", null, "DIY始めて3年。最初は失敗だらけでしたが、最近は人にあげても恥ずかしくない仕上がりに。"],
+  ["Tatsuya_kobo", "tatsuya_kobo", "京都で工房やってます。注文家具のかたわら、自宅 DIY も。"],
+  ["Shun@2x4", "shun_2x4", "2x4 と SPF があれば家全体作れる説、検証中です。"],
+  ["Akira_handmade", "akira_handmade", "手作り愛好家。電動工具より手鋸派です。時間はかかるけど精度は出る。"],
+  ["Masaki", null, "札幌の戸建て。冬は薪棚作りに精を出してます。北海道のDIY事情、需要あればシェアします。"],
+  ["Toshi@庭づくり", "toshi_garden", "庭の整備に5年かかってます。ウッドデッキ、フェンス、物置、全部自作。"],
+  ["Yuto / ユート", "yuto_diy_jp", "新卒エンジニアです。一人暮らしのワンルームでもDIYしたい。突っ張り棒最強説。"],
+  ["Genki@田舎暮らし", "genki_inaka", "古民家を購入して改装中。床はり替え、漆喰壁、襖まで自分でやります。"],
+  ["Kohei_carpenter", "kohei_carpenter", "本業大工です。家のことは商売道具と同じ感覚でいじってしまいます。"],
+  ["Soichiro@道具沼", "soichiro_tools", "工具を集めるのが目的になってます。最近は墨壺と差し金が増えてきた。"],
+  ["Atsushi_iemori", "atsushi_iemori", "築60年の実家を補修中。床下から屋根まで。父と二人三脚です。"],
+  ["Junichi", null, "週末は工具触ってないと落ち着きません。最近の関心はカンナの調整。"],
+  ["Ryosuke_works", "ryosuke_works", "DIY歴は浅いですが、図面ソフト(Fusion360)使えるので設計だけは得意です。"],
+  ["Tetsuya@工具レビュー", "tetsuya_review", "工具レビュー記事を書いてます。日立(HiKOKI)、マキタ、京セラを比較中。"],
+  ["Daisuke_workshop", "daisuke_workshop", "20代後半、最近DIYに目覚めました。とりあえず棚を作りまくってます。"],
+  ["Hayato_lab", "hayato_lab", "工学部出身、計算は得意。木材の強度計算してから設計するクセがあります。"],
+  ["Kenta@iemori", "kenta_iemori", "中古マンション買って自分でリノベ中。床はり、壁張り、配線まで全部DIY。"],
+  ["Ryuji", null, "シニアDIYer。50代後半から始めました。年齢関係なく楽しめる趣味です。"],
+  ["Shinji@リフォーム見習い", "shinji_reform", "本業は別ですがリフォームに憧れて勉強中です。施工事例を投稿していきます。"],
+  ["Yusuke / ユウスケ", "yusuke_koubou", "実家の工具をもらって始めました。父の遺品の鉋を使うのが楽しい。"],
+  ["Wataru_diy", "wataru_diy", "ワンルーム賃貸で精一杯DIY。工具は折りたたみワークベンチ＋電動ドライバーのみ。"],
+  ["Tomoya@週末作家", "tomoya_weekend", "本業はサラリーマン、週末は陶芸＋木工。陶器を入れる棚を自作してます。"],
+  ["Kazuki_atelier", "kazuki_atelier", "DIYアトリエ運営してます。月1ワークショップ開催中。"],
+  ["Norio", null, "60代、工具歴30年。インパクトドライバーが世に出る前から DIY やってます。"],
+  ["Yoshi@makers", "yoshi_makers", "デジファブ＋木工。3Dプリンタとレーザーカッターも使います。"],
+];
+
+const FEMALE_SEEDS: readonly UserSeedTuple[] = [
+  ["Yuka@インテリア", "yuka_interior", "都内マンション暮らし。インテリア系雑誌が好きで、作るものも雑貨寄りです。"],
+  ["Miki", "miki_diy_life", "DIY歴2年です。最近はオイルステインの色比較にハマってます。"],
+  ["Kanae / カナエ", "kanae_kobo", "築40年戸建てに住んでます。床のリペアからスタートしました。"],
+  ["Naomi_handmade", "naomi_handmade", "ハンドメイド全般好きです。木工はその一部。アクセサリーも作ります。"],
+  ["Akari@木工女子", "akari_woodgirl", "20代女子。父の影響でDIY始めました。トリマー使えるのが自慢です。"],
+  ["Sakura@DIY", "sakura_diy_jp", "賃貸マンションでDIY。原状回復しやすい方法だけ実験中です。"],
+  ["Miho_atelier", "miho_atelier", "アトリエ持ってます。といっても自宅の一室です。陶芸＋木工＋革で雑貨制作。"],
+  ["Ai / アイ", null, "30代、子供3人。子育ての合間にちょっとずつ作ってます。"],
+  ["Riko_diy", "riko_diy", "DIY初心者。失敗作ばかりですが、アプリ参考にがんばってます！"],
+  ["Mio@木工女子部", "mio_woodgirls", "木工女子部のメンバーです。月1で集まってワイワイ作ってます。"],
+  ["Hina", null, "20代、ハンドメイド系インスタやってます。木工は最近の挑戦分野。"],
+  ["Yui_diy_jp", "yui_diy_jp", "賃貸ワンルーム住まい。狭い空間を有効活用するDIYが得意になりました。"],
+  ["Tomoko / トモコ", "tomoko_atelier", "40代、子供が独立してから本格的にDIY始めました。第二の人生満喫中。"],
+  ["Chiaki@手作り部", "chiaki_handmade", "DIY歴5年。家族には『また何か作ってる』と言われますが楽しいです。"],
+  ["Eri@田舎暮らし", "eri_inaka", "長野の田舎で古民家暮らし。薪割り、燻製、DIY全部楽しんでます。"],
+  ["Yuri / ユリ", "yuri_studio", "都内で一人暮らし。狭いので作るのは小物中心です。アクセサリー収納など。"],
+  ["Kana_studio", "kana_studio", "DIY系YouTuberに憧れて始めました。今は密かに撮影中です。"],
+  ["Mariko@古民家", null, "古民家リノベ中。漆喰、塗装、襖張りまで自分でやってます。"],
+  ["Natsumi@木工", "natsumi_woodworks", "30代後半。子供部屋の家具を全部自作してから DIY 沼にハマりました。"],
+  ["Saki", "saki_diy_log", "DIYログをコツコツつけてます。失敗も含めて記録するのが趣味。"],
+  ["Ayumi / アユミ", "ayumi_kobo", "DIY歴8年。最近は鉋削りの練習中です。鏡面仕上げを目指してます。"],
+  ["Reina@子供と作る", "reina_kidsdiy", "小2の娘と一緒にDIYしてます。安全第一、塗料も食品衛生法適合のものを。"],
+  ["Ami_workshop", "ami_workshop", "20代後半。週末はワークショップ巡り。最近は彫刻刀の使い方を習ってます。"],
+  ["Honoka", null, "建築学科出身です。設計だけでなく施工もしてみたくて DIY 始めました。"],
+  ["Mai / マイ", "mai_diy", "30代、夫と二人で DIY。意見が合わないときは図面を3パターン引いて選ぶ派。"],
+  ["Ayano@DIY部", "ayano_diybu", "会社のDIY部部長です。社内ワークショップを月1で開催中。"],
+  ["Ruka_handmade", "ruka_handmade", "ハンドメイドが趣味。最近は木工＋レジン作品を作ってます。"],
+  ["Hikari / ヒカリ", "hikari_atelier", "DIYで小遣い稼ぎ始めました。ミンネとクリーマで販売中です。"],
+  ["Mizuki@手作り日記", "mizuki_diary", "DIY始めて3ヶ月。何でも作りたい欲が止まりません。"],
+  ["Karen", null, "20代女子、初心者DIYer。先輩方の投稿を毎日見て勉強しています。"],
+];
+
+const NEUTRAL_SEEDS: readonly UserSeedTuple[] = [
+  ["woodlab.jp", "woodlab_jp", "木工系メディアです。技術ノートを蓄積中。"],
+  ["diy_garden", "diy_garden", "庭づくりDIYを発信。フェンス、デッキ、プランターまで何でも。"],
+  ["庭づくりラボ", "niwa_lab", "庭まわりのDIYを記録するアカウントです。"],
+  ["古民家DIY", "kominka_diy", "古民家再生プロジェクト進行中。漆喰・襖・板間・畳まで全部記録。"],
+  ["Sunday Carpenter", "sunday_carpenter", "日曜大工アカウント。週末しか動けないから1作業1工程ずつ。"],
+  ["spf_master", "spf_master", "SPF材だけで何でも作るのを目指すアカウントです。"],
+  ["ハードウッドJP", "hardwood_jp", "ウリン・イペ・イタウバなど、ハードウッド情報専門。"],
+  ["賃貸DIY研究所", "rental_diy_lab", "賃貸でも諦めない。原状回復しやすいDIYのアイデア集。"],
+  ["tools_collector", "tools_collector", "工具コレクター。新しい工具が出ると我慢できません。"],
+  ["iemori (家守)", "iemori_jp", "家を自分で守る、自分で直す。家守としての記録。"],
+  ["tiny house jp", "tinyhouse_jp", "タイニーハウス建築中。1坪でも快適に暮らす。"],
+  ["plant_dad", "plant_dad", "観葉植物育てつつ、植物用什器をDIY。植木鉢台5作品目。"],
+  ["zakka_works", "zakka_works", "雑貨系DIY中心です。小物作品多め。"],
+  ["mokkou_log", "mokkou_log", "木工ログ。製作過程と寸法を細かく公開してます。"],
+  ["BackyardLab", "backyard_lab", "裏庭で実験的なDIY中。失敗作品も載せます。"],
+  ["atelier_2k", null, "築2K一軒家を改修中のアカウントです。"],
+  ["家族でDIY", "kazokude_diy", "家族みんなで作るDIYアカウント。子供と一緒の作業中心。"],
+  ["ほのぼのDIY", "honobono_works", "焦らずゆっくり、月1作品ペースで作ってます。"],
+  ["craft_diary", "craft_diary", "DIYと工作記録を写真で残すアカウント。"],
+  ["raw wood lover", "raw_wood_lover", "無垢材好きです。集成材も使うけど、メインは無垢。"],
+  ["drill_addict", "drill_addict", "ドリル沼。インパクトとドリルドライバーは別物だと最近気づきました。"],
+  ["WORKBENCH.jp", "workbench_jp", "作業台専門のアカウント。MFTテーブル、ホールドファスト等。"],
+  ["noki_chigai", null, "屋根まわりのDIYに特化。雨樋、軒先、外壁補修など。"],
+  ["工樹建", "kojuken", "工具・木材・建築の3軸でDIYを楽しむアカウント。"],
+  ["roomie_diy", "roomie_diy", "ワンルーム住まいDIYer。狭い空間で何ができるか実験中。"],
+  ["tsumikoki", "tsumikoki", "積み木のような家具DIYを目指してます。組み合わせ可能な箱モノが好き。"],
+  ["monozukuri.lab", "monozukuri_lab", "ものづくり全般。木工、金工、革、樹脂までカバー。"],
+  ["boku no kojo", "boku_no_kojo", "自分の工房を作るのが目標。今は車庫で間に合わせ。"],
+  ["kanazuchi_san", "kanazuchi_san", "金槌一本でできる DIY を探求するアカウント。釘文化好き。"],
+  ["庭百本", "niwa_hyappon", "庭に百本の木を植えるプロジェクト。木材調達も自分で。"],
+];
+
+function maleAvatar(seedKey: string, idx: number): string {
+  const bg = BG_PALETTES[idx % BG_PALETTES.length];
+  if (idx % 2 === 0) {
+    return dicebear("notionists", `${seedKey}-jp`, bg, { beardProbability: "100" });
+  }
+  return dicebear("personas", `${seedKey}-jp-male`, bg, {
+    facialHair: "beardMustache",
+    facialHairProbability: "100",
+  });
+}
+
+function femaleAvatar(seedKey: string, idx: number): string {
+  const bg = BG_PALETTES[idx % BG_PALETTES.length];
+  if (idx % 2 === 0) {
+    return dicebear("lorelei", `${seedKey}-jp`, bg);
+  }
+  return dicebear("notionists", `${seedKey}-jp-female`, bg, { beardProbability: "0" });
+}
+
+function neutralAvatar(seedKey: string, idx: number): string {
+  const bg = BG_PALETTES[idx % BG_PALETTES.length];
+  switch (idx % 4) {
+    case 0: return dicebear("notionists-neutral", `${seedKey}-jp`, bg);
+    case 1: return dicebear("bottts-neutral", `${seedKey}-jp`, bg);
+    case 2: return dicebear("fun-emoji", `${seedKey}-jp`, bg);
+    default: return MOTIF_PHOTOS[idx % MOTIF_PHOTOS.length];
+  }
+}
+
+function buildSeeds(
+  category: "m" | "f" | "n",
+  tuples: readonly UserSeedTuple[],
+  avatar: (seedKey: string, idx: number) => string,
+): SeedUser[] {
+  return tuples.map(([name, username, bio], i) => {
+    const seedKey = `gen-${category}-${String(i + 1).padStart(2, "0")}`;
+    return {
+      seedKey,
+      username,
+      name,
+      bio,
+      photoURL: avatar(seedKey, i),
+    };
+  });
+}
+
+const GENERATED_USERS: SeedUser[] = [
+  ...buildSeeds("m", MALE_SEEDS, maleAvatar),
+  ...buildSeeds("f", FEMALE_SEEDS, femaleAvatar),
+  ...buildSeeds("n", NEUTRAL_SEEDS, neutralAvatar),
+];
+
+const USERS: SeedUser[] = [...HAND_CURATED_USERS, ...GENERATED_USERS];
 
 // 派生情報（ループで毎回計算しないよう先に解決）
 type ResolvedUser = SeedUser & { uid: string };
@@ -389,10 +621,14 @@ async function upsertSeedUsers(): Promise<void> {
     const snap = await ref.get();
     const prevUsername = (snap.data()?.username as string | null | undefined) ?? null;
 
+    // ソース画像 (DiceBear / Unsplash) を Firebase Storage の users/{uid}/avatar.jpg に
+    // コピーし、実ユーザーと同じ URL 形式で配信できるようにする。
+    const storedPhotoURL = await uploadAvatarFromSource(u.uid, u.photoURL);
+
     const base = {
       displayName: u.name,
       bio: u.bio,
-      photoURL: u.photoURL,
+      photoURL: storedPhotoURL,
       username: u.username,
       seedTag: SEED_TAG,
       seedKey: u.seedKey,
