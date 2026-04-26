@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -118,10 +119,16 @@ export default async function ExampleDetailPage({ params }: Props) {
       />
 
       {/* 画像 */}
-      <div className="aspect-video bg-gray-100 rounded-2xl flex items-center justify-center mb-6 overflow-hidden">
+      <div className="relative aspect-video bg-gray-100 rounded-2xl flex items-center justify-center mb-6 overflow-hidden">
         {ex.imageURL ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={ex.imageURL} alt={`${ex.authorName}さんの${ex.useCaseName}`} className="w-full h-full object-cover" />
+          <Image
+            src={ex.imageURL}
+            alt={`${ex.authorName}さんの${ex.useCaseName}`}
+            fill
+            sizes="(max-width: 768px) 100vw, 768px"
+            className="object-cover"
+            priority
+          />
         ) : (
           <LottieIcon name="photoEmpty" size={160} ariaLabel="画像なし" />
         )}
@@ -232,11 +239,13 @@ export default async function ExampleDetailPage({ params }: Props) {
                   />
                   {step.imageURL && (
                     <div className="rounded-xl overflow-hidden bg-gray-100">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
+                      <Image
                         src={step.imageURL}
                         alt={`工程 ${step.order} の写真`}
-                        className="w-full h-auto object-cover"
+                        width={1200}
+                        height={900}
+                        sizes="(max-width: 768px) 100vw, 768px"
+                        className="w-full h-auto"
                       />
                     </div>
                   )}
