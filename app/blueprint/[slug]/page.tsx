@@ -50,20 +50,22 @@ async function resolvePageData(slug: string): Promise<{
   uc: Awaited<ReturnType<typeof fetchUseCaseById>>;
   fsBp: FSBlueprintDetail | null;
 } | null> {
-  // 1) Direct match — slug is a template slug (e.g. "garden-bench")
+  // 1) UseCase slug / ID を先に解決し、個別の Firestore データを優先する
+  const uc = await fetchUseCaseById(slug);
+  if (uc?.templateID) {
+    const bp = getBlueprintByTemplateID(uc.templateID) ?? getBlueprintBySlug(slug);
+    if (!bp) return null;
+    const fsBp = await fetchBlueprintByUseCaseID(uc.id);
+    return { bp, uc, fsBp };
+  }
+
+  // 2) Firestore に個別データがないテンプレートslugはローカル定義を使う
   const direct = getBlueprintBySlug(slug);
   if (direct) {
-    // テンプレートslugの場合はuseCaseIDがないのでfsBpなし
     return { bp: direct, uc: null, fsBp: null };
   }
-  // 2) Firestore use case ID → templateID → blueprint template
-  const uc = await fetchUseCaseById(slug);
-  if (!uc?.templateID) return null;
-  const bp = getBlueprintByTemplateID(uc.templateID);
-  if (!bp) return null;
-  // blueprints/{useCaseID} から固有データを取得
-  const fsBp = await fetchBlueprintByUseCaseID(uc.id);
-  return { bp, uc, fsBp };
+
+  return null;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

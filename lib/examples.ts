@@ -36,7 +36,7 @@ export interface Example {
 export const mockExamples: Example[] = [
   {
     id: "ex-001",
-    useCaseID: "uc-shelf-basic",
+    useCaseID: "kantan-wall-shelf",
     useCaseName: "かんたん壁面棚",
     useCaseSlug: "kantan-wall-shelf",
     imageURL: null,
@@ -56,7 +56,7 @@ export const mockExamples: Example[] = [
   },
   {
     id: "ex-002",
-    useCaseID: "uc-planter-stand",
+    useCaseID: "planter-stand",
     useCaseName: "プランター台",
     useCaseSlug: "planter-stand",
     imageURL: null,

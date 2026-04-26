@@ -376,6 +376,14 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
   }
 }
 
+function buildExampleCounts(examples: Array<{ useCaseID: string }>): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const ex of examples) {
+    counts[ex.useCaseID] = (counts[ex.useCaseID] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /**
  * useCaseID 別の作例件数を返す（hidden==true は除外）。
  * iOS の FirestoreService.fetchExampleCountsByUseCase と同じく、
@@ -385,13 +393,8 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
 export const fetchExampleCountsByUseCase = cache(
   async (): Promise<Record<string, number>> => {
     const db = getAdminDb();
-    if (!db) {
-      const counts: Record<string, number> = {};
-      for (const ex of mockExamples) {
-        counts[ex.useCaseID] = (counts[ex.useCaseID] ?? 0) + 1;
-      }
-      return counts;
-    }
+    if (!db) return buildExampleCounts(mockExamples);
+
     try {
       const snap = await db.collection("examples").get();
       const counts: Record<string, number> = {};
@@ -405,7 +408,7 @@ export const fetchExampleCountsByUseCase = cache(
       return counts;
     } catch (e) {
       console.error("[firestore] fetchExampleCountsByUseCase failed:", e);
-      return {};
+      return buildExampleCounts(mockExamples);
     }
   }
 );
