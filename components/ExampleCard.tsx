@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { type Example, formatTime } from "@/lib/examples";
 
@@ -16,12 +17,12 @@ export default function ExampleCard({ example: ex }: Props) {
         }}
       >
         {ex.imageURL ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+          <Image
             src={ex.imageURL}
             alt={`${ex.authorName}さんの${ex.useCaseName}`}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
           />
         ) : (
           <span className="text-5xl select-none">📷</span>

@@ -6,7 +6,7 @@ import ExampleCard from "@/components/ExampleCard";
 import LottieIcon from "@/components/LottieIcon";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { categories } from "@/lib/data";
-import { fetchExamples } from "@/lib/examples";
+import { fetchRecentExamples } from "@/lib/examples";
 import { fetchUseCases, fetchFeaturedUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 
 export const dynamic = "force-dynamic";
@@ -136,13 +136,16 @@ const features: Array<{ lottie: string; title: string; desc: string; appOnly?: b
 ];
 
 export default async function HomePage() {
-  const [useCasesData, featuredUseCases, allExamples, exampleCounts] = await Promise.all([
+  const [useCasesData, featuredUseCases, featuredExamples, exampleCounts] = await Promise.all([
     fetchUseCases(),
     fetchFeaturedUseCases(6),
-    fetchExamples(),
+    fetchRecentExamples(3),
     fetchExampleCountsByUseCase(),
   ]);
-  const featuredExamples = allExamples.slice(0, 3);
+  const countsByCategory = useCasesData.reduce<Record<string, number>>((acc, uc) => {
+    acc[uc.categorySlug] = (acc[uc.categorySlug] ?? 0) + 1;
+    return acc;
+  }, {});
   return (
     <>
       <script
@@ -228,7 +231,7 @@ export default async function HomePage() {
                 {cat.name}
               </p>
               <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                {useCasesData.filter((uc) => uc.categorySlug === cat.slug).length}件
+                {countsByCategory[cat.slug] ?? 0}件
               </p>
             </Link>
           ))}

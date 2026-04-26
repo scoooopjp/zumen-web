@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import AppOnlyGate from "@/components/AppOnlyGate";
+import BlueprintPartsTable from "@/components/BlueprintPartsTable";
 import CustomDesignPreview from "@/components/CustomDesignPreview";
 import PrintButton from "@/components/PrintButton";
 import SaveButton from "@/components/SaveButton";
@@ -11,7 +13,6 @@ import ViewRecorder from "@/components/ViewRecorder";
 import StepIllustration from "@/components/StepIllustration";
 import BlueprintCard from "@/components/BlueprintCard";
 import ExampleCard from "@/components/ExampleCard";
-import PartPriceTag from "@/components/PartPriceTag";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import LottieIcon from "@/components/LottieIcon";
 import RelatedNav from "@/components/RelatedNav";
@@ -198,10 +199,12 @@ export default async function BlueprintPage({ params }: Props) {
         {/* ヒーロー */}
         {heroImage ? (
           <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "3/2" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={heroImage}
               alt={uc?.imageAlt || bp.imageAlt || `${name}の完成イメージ — ${uc?.category ?? bp.category}DIY設計図`}
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 768px"
               className="w-full h-full object-cover"
             />
             <span
@@ -403,65 +406,7 @@ export default async function BlueprintPage({ params }: Props) {
         {/* 資材一覧 */}
         <section className="mt-10">
           <h2 className="text-xl font-bold text-gray-900 mb-3">資材一覧</h2>
-          <div className="rounded-xl divide-y overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-            {parts.map((part, idx) => (
-              <div key={idx} className="px-4 py-3 text-sm" style={{ background: "var(--surface)" }}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-900">{part.name}</p>
-                    <p className="text-gray-400 text-xs font-mono">{part.spec}</p>
-                    {part.note && (
-                      <p className="text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>{part.note}</p>
-                    )}
-                  </div>
-                  <p className="font-bold text-gray-700 shrink-0 mt-0.5">
-                    {part.quantity} {part.unit}
-                  </p>
-                </div>
-                {/* 購入リンク — カインズ / コメリ / コーナン / DCM (with live prices) */}
-                {(part.cainzURL || part.komeriURL || part.kohnanURL || part.dcmURL) && (
-                  <div className="flex flex-wrap gap-2 mt-2.5">
-                    {part.cainzURL && (
-                      <PartPriceTag
-                        href={part.cainzURL}
-                        searchURL={part.komeriURL || part.kohnanURL || part.dcmURL}
-                        retailer="cainz"
-                        label="カインズ"
-                        style={{ background: "#1565C020", color: "#1565C0", border: "1px solid #1565C040" }}
-                      />
-                    )}
-                    {part.komeriURL && (
-                      <PartPriceTag
-                        href={part.komeriURL}
-                        searchURL={part.komeriURL}
-                        retailer="komeri"
-                        label="コメリ"
-                        style={{ background: "#C0000020", color: "#C00000", border: "1px solid #C0000040" }}
-                      />
-                    )}
-                    {part.kohnanURL && (
-                      <PartPriceTag
-                        href={part.kohnanURL}
-                        searchURL={part.kohnanURL}
-                        retailer="kohnan"
-                        label="コーナン"
-                        style={{ background: "#E6500020", color: "#E65000", border: "1px solid #E6500040" }}
-                      />
-                    )}
-                    {part.dcmURL && (
-                      <PartPriceTag
-                        href={part.dcmURL}
-                        searchURL={part.dcmURL}
-                        retailer="dcm"
-                        label="DCM"
-                        style={{ background: "#2E7D3220", color: "#2E7D32", border: "1px solid #2E7D3240" }}
-                      />
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          <BlueprintPartsTable parts={parts} />
         </section>
 
         {/* 工程 */}

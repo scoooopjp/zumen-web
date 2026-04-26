@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { UseCase, formatBudget, formatTime, getCategoryThumbnailURL } from "@/lib/data";
 
@@ -69,12 +70,12 @@ export default function BlueprintCard({ useCase, exampleCount = 0 }: BlueprintCa
         />
 
         {thumbURL ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+          <Image
             src={thumbURL}
             alt={useCase.imageAlt}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
           />
         ) : (
           <span

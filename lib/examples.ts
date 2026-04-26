@@ -1,6 +1,6 @@
 // 作例データ (Firestore 接続前のモック)
 // 実際は Firestore から動的取得
-export { fetchExamples, fetchExampleById } from "./firestore";
+export { fetchExamples, fetchExampleById, fetchRecentExamples } from "./firestore";
 
 export interface ExampleStep {
   id: string;

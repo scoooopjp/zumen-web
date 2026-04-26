@@ -1,76 +1,17 @@
-"use client";
-
-/**
- * Fetches live price for a single part+retailer and renders a pill badge.
- * Falls back gracefully to a link-only button if price is unavailable.
- *
- * keyword is extracted from `searchURL` (komeri/kohnan/dcm use ?q= or ?KEYWORDS= or ?searchWord=)
- * and used to call /api/product-search for this retailer.
- */
-
-import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 
 interface Props {
-  href: string;          // static fallback search URL (also the link target before we get a live URL)
-  searchURL?: string;    // URL with keyword param to extract the search term from
-  keyword?: string;      // explicit keyword override (takes priority over searchURL extraction)
-  retailer: "cainz" | "komeri" | "kohnan" | "dcm";
+  href: string;
   label: string;
-  style: React.CSSProperties;
+  style: CSSProperties;
+  loading?: boolean;
+  price?: number | null;
 }
 
-interface PriceData {
-  price: number | null;
-  url: string;
-}
-
-// Simple in-memory cache for the session
-const priceCache = new Map<string, PriceData>();
-
-function extractKeyword(url: string): string {
-  try {
-    const u = new URL(url);
-    const kw =
-      u.searchParams.get("q") ||
-      u.searchParams.get("KEYWORDS") ||
-      u.searchParams.get("searchWord");
-    if (kw) return decodeURIComponent(kw.replace(/\+/g, " "));
-  } catch {
-    // ignore
-  }
-  return "";
-}
-
-export default function PartPriceTag({ href, searchURL, keyword: keywordProp, retailer, label, style }: Props) {
-  const [data, setData] = useState<PriceData | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const keyword = keywordProp || (searchURL ? extractKeyword(searchURL) : "") || extractKeyword(href);
-
-  useEffect(() => {
-    if (!keyword) return;
-    const cacheKey = `${retailer}:${keyword}`;
-    if (priceCache.has(cacheKey)) {
-      setData(priceCache.get(cacheKey)!);
-      return;
-    }
-    setLoading(true);
-    fetch(`/api/product-search?retailer=${retailer}&keyword=${encodeURIComponent(keyword)}`)
-      .then((r) => r.json())
-      .then((result: PriceData) => {
-        priceCache.set(cacheKey, result);
-        setData(result);
-      })
-      .catch(() => setData({ price: null, url: href }))
-      .finally(() => setLoading(false));
-  }, [retailer, keyword, href]);
-
-  const finalHref = data?.url || href;
-  const price = data?.price;
-
+export default function PartPriceTag({ href, label, style, loading = false, price }: Props) {
   return (
     <a
-      href={finalHref}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       className="flex items-center gap-1 text-xs font-bold px-2.5 py-1.5 rounded-full"

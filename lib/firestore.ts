@@ -4,6 +4,7 @@
  * iOS の FirestoreService.swift と DTO スキーマを合わせている
  */
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { getAdminDb } from "./firebase-admin";
 import { useCases as mockUseCases } from "./data";
 import { getUseCaseById } from "./data";
@@ -28,6 +29,7 @@ interface FSUseCase {
   description?: string;
   imageAlt?: string;
   imageURL?: string;
+  exampleCount?: number;
 }
 
 interface FSExampleStep {
@@ -56,6 +58,11 @@ interface FSExample {
   createdAt: FirebaseFirestore.Timestamp;
   hidden?: boolean;
   steps?: FSExampleStep[];
+}
+
+interface ExampleCountsDoc {
+  counts?: Record<string, number>;
+  updatedAt?: FirebaseFirestore.Timestamp;
 }
 
 // ── Storage URL ベース（リサイズ済み） ────────────────────────
@@ -403,10 +410,67 @@ export const fetchExampleById = cache(
   }
 );
 
+export async function fetchRecentExamples(limit = 3): Promise<Example[]> {
+  const db = getAdminDb();
+  if (!db) return mockExamples.slice(0, limit);
+
+  try {
+    const snap = await db
+      .collection("examples")
+      .orderBy("createdAt", "desc")
+      .limit(Math.max(limit * 2, limit))
+      .get();
+    if (snap.empty) return [];
+
+    const dtos = snap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as FSExample))
+      .filter(isPublicExample)
+      .slice(0, limit);
+    if (dtos.length === 0) return [];
+
+    const metaMap = await fetchAuthorMetaMap(db, dtos.map((e) => e.authorUID));
+    return dtos.map((dto) => fsExampleToModel(dto, metaMap));
+  } catch (e) {
+    console.error(`[firestore] fetchRecentExamples(${limit}) failed:`, e);
+    return mockExamples.slice(0, limit);
+  }
+}
+
 function buildExampleCounts(examples: Array<{ useCaseID: string }>): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const ex of examples) {
     counts[ex.useCaseID] = (counts[ex.useCaseID] ?? 0) + 1;
+  }
+  return counts;
+}
+
+const EXAMPLE_COUNTS_TTL_MS = 15 * 60 * 1000;
+
+const loadExampleCountsDoc = unstable_cache(
+  async (): Promise<ExampleCountsDoc | null> => {
+    const db = getAdminDb();
+    if (!db) return null;
+    try {
+      const snap = await db.collection("config").doc("exampleCounts").get();
+      return snap.exists ? (snap.data() as ExampleCountsDoc) : null;
+    } catch (e) {
+      console.error("[firestore] loadExampleCountsDoc failed:", e);
+      return null;
+    }
+  },
+  ["firestore-example-counts-doc"],
+  { revalidate: 60 }
+);
+
+async function recomputeExampleCounts(db: FirebaseFirestore.Firestore): Promise<Record<string, number>> {
+  const snap = await db.collection("examples").select("useCaseID", "hidden").get();
+  const counts: Record<string, number> = {};
+  for (const d of snap.docs) {
+    const data = d.data();
+    if (data.hidden === true) continue;
+    const id = data.useCaseID;
+    if (typeof id !== "string" || !id) continue;
+    counts[id] = (counts[id] ?? 0) + 1;
   }
   return counts;
 }
@@ -423,15 +487,25 @@ export const fetchExampleCountsByUseCase = cache(
     if (!db) return buildExampleCounts(mockExamples);
 
     try {
-      const snap = await db.collection("examples").get();
-      const counts: Record<string, number> = {};
-      for (const d of snap.docs) {
-        const data = d.data();
-        if (data.hidden === true) continue;
-        const id = data.useCaseID;
-        if (typeof id !== "string" || !id) continue;
-        counts[id] = (counts[id] ?? 0) + 1;
+      const doc = await loadExampleCountsDoc();
+      const updatedAt = doc?.updatedAt?.toDate?.();
+      const isFresh =
+        updatedAt instanceof Date &&
+        Date.now() - updatedAt.getTime() < EXAMPLE_COUNTS_TTL_MS;
+      if (doc?.counts && isFresh) {
+        return doc.counts;
       }
+
+      const counts = await recomputeExampleCounts(db);
+      void db.collection("config").doc("exampleCounts").set(
+        {
+          counts,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      ).catch((e) => {
+        console.warn("[firestore] exampleCounts write failed:", e);
+      });
       return counts;
     } catch (e) {
       console.error("[firestore] fetchExampleCountsByUseCase failed:", e);
