@@ -47,11 +47,10 @@ serviceAccountKey.json
 /scripts/backups
 
 # 一時シード/診断スクリプト (本番運用に必要なものだけコミットする)
-/scripts/check-photo-quality.ts
-/scripts/dedupe-comments.ts
-/scripts/inspect-example.ts
-/scripts/inspect-hina.ts
-/scripts/list-usecases.ts
+/scripts/inspect-*.ts
+/scripts/check-*.ts
+/scripts/list-*.ts
+/scripts/dedupe-*.ts
 /scripts/seed-example-shelf-1.ts
 /scripts/seed-examples.ts
 /scripts/seed-user-activity.ts
