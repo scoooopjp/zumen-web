@@ -26,14 +26,6 @@ export const metadata: Metadata = {
     locale: "ja_JP",
     type: "website",
     url: BASE_URL,
-    images: [
-      {
-        url: "/opengraph-image.png",
-        width: 1200,
-        height: 630,
-        alt: "ZUMEN - つくれるDIY設計図",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
