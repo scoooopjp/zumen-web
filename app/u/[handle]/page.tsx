@@ -28,13 +28,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       type: "profile",
       url: `/u/${handle}`,
-      ...(profile.photoURL ? { images: [profile.photoURL] } : {}),
     },
     twitter: {
-      card: profile.photoURL ? "summary" : "summary_large_image",
+      card: "summary_large_image",
       title: ogTitle,
       description,
-      ...(profile.photoURL ? { images: [profile.photoURL] } : {}),
     },
   };
 }
