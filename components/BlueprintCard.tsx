@@ -142,7 +142,7 @@ export default function BlueprintCard({ useCase, exampleCount = 0 }: BlueprintCa
         </p>
 
         {/* Badges row */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 items-center">
           <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${difficultyClass[useCase.difficulty] ?? ""}`}>
             {useCase.difficulty}
           </span>
@@ -158,6 +158,19 @@ export default function BlueprintCard({ useCase, exampleCount = 0 }: BlueprintCa
           >
             {formatTime(useCase.estimatedTimeMinutes)}
           </span>
+          {(useCase.ratingCount ?? 0) > 0 && (
+            <span
+              className="inline-flex items-center gap-0.5 text-xs font-semibold ml-auto"
+              style={{ color: "var(--navy-deep)" }}
+              aria-label={`平均評価 ${(useCase.ratingAverage ?? 0).toFixed(1)} / ${useCase.ratingCount}件`}
+            >
+              <span aria-hidden="true" style={{ color: "#E5A93B" }}>★</span>
+              {(useCase.ratingAverage ?? 0).toFixed(1)}
+              <span className="font-normal" style={{ color: "var(--text-tertiary)" }}>
+                ({useCase.ratingCount})
+              </span>
+            </span>
+          )}
         </div>
       </div>
     </Link>

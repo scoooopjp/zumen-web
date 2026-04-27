@@ -60,6 +60,19 @@ export default function ExampleCard({ example: ex }: Props) {
           <span className="font-medium text-sm" style={{ color: "var(--navy-deep)" }}>
             {ex.authorName}
           </span>
+          {ex.ratingCount > 0 && (
+            <span
+              className="inline-flex items-center gap-0.5 text-xs font-semibold"
+              style={{ color: "var(--navy-deep)" }}
+              aria-label={`平均評価 ${ex.ratingAverage.toFixed(1)} / ${ex.ratingCount}件`}
+            >
+              <span aria-hidden="true" style={{ color: "#E5A93B" }}>★</span>
+              {ex.ratingAverage.toFixed(1)}
+              <span className="font-normal" style={{ color: "var(--text-tertiary)" }}>
+                ({ex.ratingCount})
+              </span>
+            </span>
+          )}
           <span className="text-xs ml-auto" style={{ color: "var(--text-tertiary)" }}>
             {ex.createdAt}
           </span>

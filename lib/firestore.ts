@@ -30,6 +30,10 @@ interface FSUseCase {
   imageAlt?: string;
   imageURL?: string;
   exampleCount?: number;
+  // Cloud Function `recomputeRatingAggregate` が書き戻す denormalized フィールド。
+  ratingCount?: number;
+  ratingAverage?: number;
+  popularityScore?: number;
 }
 
 interface FSExampleStep {
@@ -60,6 +64,10 @@ interface FSExample {
   createdAt: FirebaseFirestore.Timestamp;
   hidden?: boolean;
   steps?: FSExampleStep[];
+  // Cloud Function `recomputeRatingAggregate` が書き戻す denormalized フィールド。
+  ratingCount?: number;
+  ratingAverage?: number;
+  popularityScore?: number;
 }
 
 interface ExampleCountsDoc {
@@ -149,6 +157,9 @@ function fsUseCaseToModel(dto: FSUseCase): UseCase | null {
     description: dto.description ?? `${dto.name}のDIY設計図`,
     imageAlt: dto.imageAlt ?? `${dto.name}のDIY設計図`,
     imageURL: resolveImageURL(dto),
+    ratingCount: typeof dto.ratingCount === "number" ? dto.ratingCount : 0,
+    ratingAverage: typeof dto.ratingAverage === "number" ? dto.ratingAverage : 0,
+    popularityScore: typeof dto.popularityScore === "number" ? dto.popularityScore : 0,
   };
 }
 
@@ -205,6 +216,9 @@ function fsExampleToModel(
     authorUsername: meta?.username ?? null,
     createdAt,
     steps: fsExampleStepsToModel(dto.steps),
+    ratingCount: typeof dto.ratingCount === "number" ? dto.ratingCount : 0,
+    ratingAverage: typeof dto.ratingAverage === "number" ? dto.ratingAverage : 0,
+    popularityScore: typeof dto.popularityScore === "number" ? dto.popularityScore : 0,
   };
 }
 
@@ -247,7 +261,10 @@ export async function fetchUseCases(): Promise<UseCase[]> {
   const db = getAdminDb();
   if (!db) return mockUseCases;
   try {
-    const snap = await db.collection("useCases").orderBy("category").get();
+    // 一覧トップは人気順 (popularityScore 降順 → category)。useCases は ~50 件と少ないので
+    // 全件取得してクライアント (= server component) 側でソートし、
+    // popularityScore 未設定 doc を取りこぼさない。iOS の fetchUseCases と同じ挙動。
+    const snap = await db.collection("useCases").get();
     if (snap.empty) {
       console.warn("[firestore] useCases collection empty — falling back to mock");
       return mockUseCases;
@@ -255,6 +272,12 @@ export async function fetchUseCases(): Promise<UseCase[]> {
     const results = snap.docs
       .map((d) => fsUseCaseToModel({ id: d.id, ...d.data() } as FSUseCase))
       .filter((uc): uc is UseCase => uc !== null);
+    results.sort((a, b) => {
+      const sa = a.popularityScore ?? 0;
+      const sb = b.popularityScore ?? 0;
+      if (sa !== sb) return sb - sa;
+      return a.category.localeCompare(b.category, "ja");
+    });
     return results.length > 0 ? results : mockUseCases;
   } catch (e) {
     console.error("[firestore] fetchUseCases failed:", e);
@@ -378,10 +401,17 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
       : mockExamples;
   }
   try {
+    // 一覧トップ (作例 list / blueprint カテゴリ詳細) は人気順:
+    // popularityScore 降順 → createdAt 降順。pickup は fetchRecentExamples を使うこと。
     const col = db.collection("examples");
     const q = useCaseID
-      ? col.where("useCaseID", "==", useCaseID).orderBy("createdAt", "desc")
-      : col.orderBy("createdAt", "desc");
+      ? col
+          .where("useCaseID", "==", useCaseID)
+          .orderBy("popularityScore", "desc")
+          .orderBy("createdAt", "desc")
+      : col
+          .orderBy("popularityScore", "desc")
+          .orderBy("createdAt", "desc");
     const snap = await q.get();
     if (snap.empty) return [];
 

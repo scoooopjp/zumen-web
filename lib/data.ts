@@ -59,6 +59,12 @@ export interface UseCase {
   imageAlt: string;
   /** Firebase Storage の useCaseID 固有サムネイル URL */
   imageURL?: string;
+  /** Cloud Function `recomputeRatingAggregate` が親 doc に書き戻す評価数 (未評価は 0)。 */
+  ratingCount?: number;
+  /** 親 doc の平均評価 (1.0–5.0、未評価は 0)。 */
+  ratingAverage?: number;
+  /** 一覧 orderBy 用のベイジアン人気スコア (`average*count/(count+2)`)。 */
+  popularityScore?: number;
 }
 
 export interface Part {

@@ -34,6 +34,12 @@ export interface Example {
   authorUsername: string | null;
   createdAt: string; // ISO date string
   steps: ExampleStep[];
+  /** Cloud Function `recomputeRatingAggregate` が親 doc に書き戻す評価数。 */
+  ratingCount: number;
+  /** 親 doc の平均評価 (1.0–5.0)。未評価は 0。 */
+  ratingAverage: number;
+  /** 一覧 orderBy 用のベイジアン人気スコア (`average*count/(count+2)`)。 */
+  popularityScore: number;
 }
 
 export const mockExamples: Example[] = [
@@ -56,6 +62,9 @@ export const mockExamples: Example[] = [
     authorUsername: null,
     createdAt: "2025-03-15",
     steps: [],
+    ratingCount: 0,
+    ratingAverage: 0,
+    popularityScore: 0,
   },
   {
     id: "ex-002",
@@ -76,6 +85,9 @@ export const mockExamples: Example[] = [
     authorUsername: null,
     createdAt: "2025-04-02",
     steps: [],
+    ratingCount: 0,
+    ratingAverage: 0,
+    popularityScore: 0,
   },
 ];
 
