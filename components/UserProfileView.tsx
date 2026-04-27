@@ -118,10 +118,10 @@ export default function UserProfileView({ profile, examples }: Props) {
                 href={`/example/${ex.id}`}
                 className="block aspect-square overflow-hidden bg-gray-100 group"
               >
-                {ex.imageURL ? (
+                {ex.thumbnailURL || ex.imageURL ? (
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
-                    src={ex.imageURL}
+                    src={ex.thumbnailURL ?? ex.imageURL!}
                     alt={ex.useCaseName}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                     loading="lazy"

@@ -16,9 +16,9 @@ export default function ExampleCard({ example: ex }: Props) {
           background: "linear-gradient(135deg, #F5F0E8 0%, #EDE8DC 100%)",
         }}
       >
-        {ex.imageURL ? (
+        {ex.thumbnailURL || ex.imageURL ? (
           <Image
-            src={ex.imageURL}
+            src={ex.thumbnailURL ?? ex.imageURL!}
             alt={`${ex.authorName}さんの${ex.useCaseName}`}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

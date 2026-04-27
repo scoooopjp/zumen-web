@@ -20,6 +20,8 @@ export interface Example {
   useCaseName: string;
   useCaseSlug: string;
   imageURL: string | null;
+  /** 一覧用の縮小版 (960px max)。null のときは imageURL を使う。 */
+  thumbnailURL: string | null;
   actualWidth: number | null;
   actualDepth: number | null;
   actualHeight: number | null;
@@ -49,6 +51,7 @@ export const mockExamples: Example[] = [
     useCaseName: "かんたん壁面棚",
     useCaseSlug: "kantan-wall-shelf",
     imageURL: null,
+    thumbnailURL: null,
     actualWidth: 900,
     actualDepth: 200,
     actualHeight: 1100,
@@ -72,6 +75,7 @@ export const mockExamples: Example[] = [
     useCaseName: "プランター台",
     useCaseSlug: "planter-stand",
     imageURL: null,
+    thumbnailURL: null,
     actualWidth: 400,
     actualDepth: 350,
     actualHeight: 550,

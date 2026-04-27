@@ -52,6 +52,8 @@ interface FSExample {
   useCaseID: string;
   useCaseName: string;
   imageURL: string | null;
+  /** 一覧表示用の縮小版 (960px max, JPEG q=0.76)。なければ imageURL にフォールバック。 */
+  thumbnailURL?: string | null;
   actualWidth: number | null;
   actualDepth: number | null;
   actualHeight: number | null;
@@ -202,6 +204,7 @@ function fsExampleToModel(
     useCaseName: dto.useCaseName ?? "",
     useCaseSlug,
     imageURL: dto.imageURL ?? null,
+    thumbnailURL: dto.thumbnailURL ?? null,
     actualWidth: dto.actualWidth ?? null,
     actualDepth: dto.actualDepth ?? null,
     actualHeight: dto.actualHeight ?? null,
