@@ -215,30 +215,38 @@ export default async function HomePage() {
       </section>
 
       {/* ── カテゴリ ──────────────────────────────────────── */}
-      <section className="max-w-5xl mx-auto px-4 py-16">
-        <h2
-          className="font-bold mb-8"
-          style={{ fontSize: "1.375rem", color: "var(--navy-deep)" }}
-        >
-          カテゴリから探す
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <section className="max-w-5xl mx-auto px-4 pt-8 pb-6">
+        <div className="flex items-baseline justify-between mb-3">
+          <h2
+            className="font-bold"
+            style={{ fontSize: "1.125rem", color: "var(--navy-deep)" }}
+          >
+            カテゴリから探す
+          </h2>
+          <Link
+            href="/category"
+            style={{ color: "var(--amber)", fontSize: "0.8125rem", fontWeight: 600 }}
+          >
+            すべて見る →
+          </Link>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
           {categories.map((cat) => (
             <Link
               key={cat.slug}
               href={`/category/${cat.slug}`}
-              className="zumen-card flex flex-col items-center gap-2 p-4 text-center group"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-shadow hover:shadow-sm"
+              style={{
+                background: "var(--parchment)",
+                border: "0.8px solid var(--border)",
+                color: "var(--navy-deep)",
+              }}
             >
-              <span className="text-3xl">{categoryIcon[cat.name] ?? "🪚"}</span>
-              <p
-                className="font-semibold text-sm leading-tight"
-                style={{ color: "var(--navy-deep)" }}
-              >
-                {cat.name}
-              </p>
-              <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                {countsByCategory[cat.slug] ?? 0}件
-              </p>
+              <span className="text-base leading-none">{categoryIcon[cat.name] ?? "🪚"}</span>
+              <span className="font-semibold">{cat.name}</span>
+              <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                {countsByCategory[cat.slug] ?? 0}
+              </span>
             </Link>
           ))}
         </div>
