@@ -7,6 +7,8 @@ export interface ExampleStep {
   order: number;
   text: string;
   imageURL: string | null;
+  /** 一覧・詳細表示用の縮小版 (960px max)。null のときは imageURL を使う。 */
+  thumbnailURL: string | null;
   /** IllType rawValue (例: "measure", "cut", "screw"). iOS 側と一致 */
   illustrationType: string | null;
   /** Storage 上の動画パス。non-null なら工程動画が紐付いている。

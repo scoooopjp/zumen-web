@@ -238,17 +238,17 @@ export default async function ExampleDetailPage({ params }: Props) {
                     illustrationType={step.illustrationType}
                     dimensions={stepDimensions}
                   />
-                  {step.imageURL && (
+                  {(step.thumbnailURL || step.imageURL) && (
                     step.videoPath ? (
                       <StepVideoPoster
-                        imageURL={step.imageURL}
+                        imageURL={step.thumbnailURL ?? step.imageURL!}
                         stepOrder={step.order}
                         source={`step_video_play_example_${ex.id}`}
                       />
                     ) : (
                       <div className="rounded-xl overflow-hidden bg-gray-100">
                         <Image
-                          src={step.imageURL}
+                          src={step.thumbnailURL ?? step.imageURL!}
                           alt={`工程 ${step.order} の写真`}
                           width={1200}
                           height={900}

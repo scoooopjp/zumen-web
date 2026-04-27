@@ -41,6 +41,8 @@ interface FSExampleStep {
   order: number;
   text: string;
   imageURL?: string | null;
+  /** 一覧・詳細表示用の縮小版 (960px max, JPEG q=0.76)。なければ imageURL にフォールバック。 */
+  thumbnailURL?: string | null;
   /** IllType rawValue (iOS と一致) */
   illustrationType?: string | null;
   /** Storage 上の動画パス。Web からは再生せず ▶ オーバーレイ & アプリ誘導のみに使う。 */
@@ -174,6 +176,7 @@ function fsExampleStepsToModel(steps: FSExampleStep[] | undefined): ExampleStep[
       order: typeof s.order === "number" ? s.order : idx + 1,
       text: s.text ?? "",
       imageURL: s.imageURL ?? null,
+      thumbnailURL: s.thumbnailURL ?? null,
       illustrationType: s.illustrationType ?? null,
       videoPath: s.videoPath ?? null,
     }));
