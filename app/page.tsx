@@ -65,8 +65,8 @@ const jsonLd = {
       },
       "offers": [
         { "@type": "Offer", "price": "0", "priceCurrency": "JPY", "name": "基本プラン" },
-        { "@type": "Offer", "price": "370", "priceCurrency": "JPY", "name": "カスタム設計（単発）" },
-        { "@type": "Offer", "price": "480", "priceCurrency": "JPY", "name": "プレミアム月額" },
+        { "@type": "Offer", "price": "200", "priceCurrency": "JPY", "name": "カスタム設計（単発）" },
+        { "@type": "Offer", "price": "500", "priceCurrency": "JPY", "name": "プレミアム月額" },
       ],
       "url": "https://apps.apple.com/jp/app/id6762496625",
       "downloadUrl": "https://apps.apple.com/jp/app/id6762496625",

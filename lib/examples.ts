@@ -9,6 +9,9 @@ export interface ExampleStep {
   imageURL: string | null;
   /** IllType rawValue (例: "measure", "cut", "screw"). iOS 側と一致 */
   illustrationType: string | null;
+  /** Storage 上の動画パス。non-null なら工程動画が紐付いている。
+   *  Web では path は使わず、▶ オーバーレイと App 誘導モーダルだけ表示する。 */
+  videoPath: string | null;
 }
 
 export interface Example {

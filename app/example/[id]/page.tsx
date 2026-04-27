@@ -8,6 +8,7 @@ import LottieIcon from "@/components/LottieIcon";
 import SaveButton from "@/components/SaveButton";
 import ShareButton from "@/components/ShareButton";
 import StepIllustration from "@/components/StepIllustration";
+import StepVideoPoster from "@/components/StepVideoPoster";
 import RatingsCommentsSection from "@/components/RatingsCommentsSection";
 import { fetchExampleById, formatTime } from "@/lib/examples";
 import { fetchComments, fetchRatingSummary } from "@/lib/firestore";
@@ -238,16 +239,24 @@ export default async function ExampleDetailPage({ params }: Props) {
                     dimensions={stepDimensions}
                   />
                   {step.imageURL && (
-                    <div className="rounded-xl overflow-hidden bg-gray-100">
-                      <Image
-                        src={step.imageURL}
-                        alt={`工程 ${step.order} の写真`}
-                        width={1200}
-                        height={900}
-                        sizes="(max-width: 768px) 100vw, 768px"
-                        className="w-full h-auto"
+                    step.videoPath ? (
+                      <StepVideoPoster
+                        imageURL={step.imageURL}
+                        stepOrder={step.order}
+                        source={`step_video_play_example_${ex.id}`}
                       />
-                    </div>
+                    ) : (
+                      <div className="rounded-xl overflow-hidden bg-gray-100">
+                        <Image
+                          src={step.imageURL}
+                          alt={`工程 ${step.order} の写真`}
+                          width={1200}
+                          height={900}
+                          sizes="(max-width: 768px) 100vw, 768px"
+                          className="w-full h-auto"
+                        />
+                      </div>
+                    )
                   )}
                   {step.text && (
                     <p className="text-gray-700 leading-relaxed text-sm">{step.text}</p>

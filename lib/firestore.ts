@@ -39,6 +39,8 @@ interface FSExampleStep {
   imageURL?: string | null;
   /** IllType rawValue (iOS と一致) */
   illustrationType?: string | null;
+  /** Storage 上の動画パス。Web からは再生せず ▶ オーバーレイ & アプリ誘導のみに使う。 */
+  videoPath?: string | null;
 }
 
 interface FSExample {
@@ -160,6 +162,7 @@ function fsExampleStepsToModel(steps: FSExampleStep[] | undefined): ExampleStep[
       text: s.text ?? "",
       imageURL: s.imageURL ?? null,
       illustrationType: s.illustrationType ?? null,
+      videoPath: s.videoPath ?? null,
     }));
 }
 

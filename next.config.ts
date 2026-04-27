@@ -2,6 +2,16 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["firebase-admin"],
+  // Apple Universal Links: AASA は application/json で配信する必要がある。
+  // public/.well-known/apple-app-site-association を返しつつ Content-Type だけ上書きする。
+  async headers() {
+    return [
+      {
+        source: "/.well-known/apple-app-site-association",
+        headers: [{ key: "Content-Type", value: "application/json" }],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
