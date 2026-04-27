@@ -3,6 +3,11 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
+const NAVY_DEEP = "#0F2A4A";
+const NAVY_MID = "#1A3A5C";
+const AMBER = "#D97B2A";
+const AMBER_PALE = "#FEF3E2";
+
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const title = searchParams.get("title") ?? "つくれるDIY設計図";
@@ -19,19 +24,38 @@ export async function GET(req: NextRequest) {
           flexDirection: "column",
           width: "1200px",
           height: "630px",
-          backgroundColor: "#ffffff",
+          background: `linear-gradient(135deg, #FFFFFF 0%, ${AMBER_PALE} 100%)`,
           padding: "80px",
           fontFamily: "sans-serif",
+          position: "relative",
         }}
       >
-        {/* ロゴ */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "auto" }}>
+        <div
+          style={{
+            display: "flex",
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: "8px",
+            background: `linear-gradient(90deg, ${AMBER} 0%, ${NAVY_DEEP} 100%)`,
+          }}
+        />
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+            marginBottom: "auto",
+          }}
+        >
           <div
             style={{
-              fontSize: "24px",
-              fontWeight: "bold",
-              color: "#4f46e5",
-              letterSpacing: "-0.5px",
+              fontSize: "28px",
+              fontWeight: 700,
+              color: NAVY_DEEP,
+              letterSpacing: "-0.02em",
             }}
           >
             ZUMEN
@@ -39,11 +63,14 @@ export async function GET(req: NextRequest) {
           {category && (
             <div
               style={{
-                fontSize: "16px",
-                color: "#6b7280",
-                background: "#f3f4f6",
-                padding: "4px 12px",
+                display: "flex",
+                fontSize: "18px",
+                color: NAVY_MID,
+                background: "rgba(255, 255, 255, 0.7)",
+                border: `2px solid ${AMBER}`,
+                padding: "4px 16px",
                 borderRadius: "999px",
+                fontWeight: 600,
               }}
             >
               {category}
@@ -51,29 +78,33 @@ export async function GET(req: NextRequest) {
           )}
         </div>
 
-        {/* タイトル */}
         <div
           style={{
+            display: "flex",
             fontSize: title.length > 15 ? "60px" : "72px",
-            fontWeight: "bold",
-            color: "#111827",
+            fontWeight: 800,
+            color: NAVY_DEEP,
             lineHeight: 1.2,
+            letterSpacing: "-0.02em",
             marginBottom: "24px",
+            maxWidth: "900px",
           }}
         >
           {title}
         </div>
 
-        {/* メタ情報 */}
-        <div style={{ display: "flex", gap: "16px" }}>
+        <div style={{ display: "flex", gap: "12px" }}>
           {difficulty && (
             <div
               style={{
+                display: "flex",
                 fontSize: "20px",
-                color: "#059669",
-                background: "#ecfdf5",
+                color: NAVY_DEEP,
+                background: "rgba(255, 255, 255, 0.7)",
+                border: `2px solid ${AMBER}`,
                 padding: "8px 20px",
                 borderRadius: "999px",
+                fontWeight: 600,
               }}
             >
               {difficulty}
@@ -82,11 +113,14 @@ export async function GET(req: NextRequest) {
           {budget && (
             <div
               style={{
+                display: "flex",
                 fontSize: "20px",
-                color: "#374151",
-                background: "#f9fafb",
+                color: NAVY_DEEP,
+                background: "rgba(255, 255, 255, 0.7)",
+                border: `2px solid ${AMBER}`,
                 padding: "8px 20px",
                 borderRadius: "999px",
+                fontWeight: 600,
               }}
             >
               {budget}
@@ -94,15 +128,15 @@ export async function GET(req: NextRequest) {
           )}
         </div>
 
-        {/* 装飾 */}
         <div
           style={{
+            display: "flex",
             position: "absolute",
             right: "60px",
             top: "50%",
             transform: "translateY(-50%)",
             fontSize: "200px",
-            opacity: 0.06,
+            opacity: 0.08,
           }}
         >
           {icon}

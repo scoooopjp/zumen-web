@@ -9,12 +9,21 @@ import { fetchExamples } from "@/lib/examples";
 // 5分ごとに再検証（新しい投稿を反映）
 export const revalidate = 300;
 
+const exampleOgUrl = `/og?title=${encodeURIComponent("作例ギャラリー")}&category=${encodeURIComponent("みんなの作品")}&icon=${encodeURIComponent("📸")}`;
+
 export const metadata: Metadata = {
   title: "作例ギャラリー | ZUMEN",
   description:
     "ZUMENユーザーが実際に作ったDIY作品のギャラリー。実費・制作時間・使用ホームセンターなどリアルな情報を公開。",
   alternates: { canonical: "/example" },
   robots: { index: false }, // UGC は審査後に個別で index 化
+  openGraph: {
+    title: "作例ギャラリー | ZUMEN",
+    description:
+      "ZUMENユーザーが実際に作ったDIY作品のギャラリー。実費・制作時間・使用ホームセンターなどリアルな情報を公開。",
+    images: [{ url: exampleOgUrl, width: 1200, height: 630 }],
+  },
+  twitter: { card: "summary_large_image", images: [exampleOgUrl] },
 };
 
 export default async function ExampleListPage() {

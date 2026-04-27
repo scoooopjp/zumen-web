@@ -17,13 +17,22 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { q } = await searchParams;
   const hasQuery = typeof q === "string" && q.trim().length > 0;
+  const title = hasQuery ? `「${q}」の検索結果` : "設計図を検索";
+  const description = hasQuery
+    ? `「${q}」を含む DIY 設計図の検索結果。`
+    : "棚・ベンチ・ウッドデッキなどの DIY 設計図をキーワードで検索できます。";
+  const ogUrl = `/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent("検索")}&icon=${encodeURIComponent("🔍")}`;
   return {
-    title: hasQuery ? `「${q}」の検索結果` : "設計図を検索",
-    description: hasQuery
-      ? `「${q}」を含む DIY 設計図の検索結果。`
-      : "棚・ベンチ・ウッドデッキなどの DIY 設計図をキーワードで検索できます。",
+    title,
+    description,
     alternates: { canonical: "/search" },
     robots: { index: !hasQuery, follow: true },
+    openGraph: {
+      title: `${title} | ZUMEN`,
+      description,
+      images: [{ url: ogUrl, width: 1200, height: 630 }],
+    },
+    twitter: { card: "summary_large_image", images: [ogUrl] },
   };
 }
 
