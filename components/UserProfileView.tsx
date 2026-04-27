@@ -41,7 +41,7 @@ export default function UserProfileView({ profile, examples }: Props) {
       <div className="flex flex-col items-center text-center gap-3 mt-2">
         <div
           className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center"
-          style={{ background: "var(--canvas)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           {profile.photoURL ? (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -71,7 +71,7 @@ export default function UserProfileView({ profile, examples }: Props) {
 
       <div
         className="grid grid-cols-3 gap-3 mt-6 rounded-2xl p-4 text-center"
-        style={{ background: "var(--canvas)" }}
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
       >
         <div>
           <p className="font-bold text-gray-900">{examples.length}</p>

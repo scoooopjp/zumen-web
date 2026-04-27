@@ -188,7 +188,7 @@ export default async function ExampleDetailPage({ params }: Props) {
       {/* スタッツ */}
       <div
         className="grid grid-cols-3 gap-3 mt-6 rounded-2xl p-4 text-center"
-        style={{ background: "var(--canvas)" }}
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
       >
         <div>
           <p className="text-xs text-gray-400">実費</p>
@@ -206,7 +206,7 @@ export default async function ExampleDetailPage({ params }: Props) {
 
       {/* 実寸 */}
       {dimensionsLabel && (
-        <div className="mt-4 rounded-xl px-4 py-3" style={{ background: "var(--canvas)" }}>
+        <div className="mt-4 rounded-xl px-4 py-3" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
           <p className="text-xs text-gray-400">実寸</p>
           <p className="font-medium text-gray-700 mt-0.5">{dimensionsLabel}</p>
         </div>

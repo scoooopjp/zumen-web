@@ -238,7 +238,7 @@ export default async function BlueprintPage({ params }: Props) {
           </div>
         ) : (
           <div className="aspect-video rounded-2xl flex items-center justify-center mb-6"
-            style={{ background: "var(--canvas)" }}>
+            style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
             <LottieIcon name="saw" size={160} ariaLabel="設計図を準備中" />
           </div>
         )}

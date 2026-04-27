@@ -178,7 +178,7 @@ export default function RatingsCommentsSection({ rating, comments, maxComments =
       {comments.length > 0 && (
         <div
           className="mt-3 rounded-xl px-4 py-3 flex items-center justify-between gap-3"
-          style={{ background: "var(--canvas)", border: "1px solid var(--border)" }}
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
             {hiddenCount > 0
