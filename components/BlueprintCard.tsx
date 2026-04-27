@@ -158,20 +158,23 @@ export default function BlueprintCard({ useCase, exampleCount = 0 }: BlueprintCa
           >
             {formatTime(useCase.estimatedTimeMinutes)}
           </span>
-          {(useCase.ratingCount ?? 0) > 0 && (
+        </div>
+
+        {(useCase.ratingCount ?? 0) > 0 && (
+          <div className="mt-2">
             <span
-              className="inline-flex items-center gap-0.5 text-xs font-semibold ml-auto"
+              className="inline-flex items-center gap-0.5 text-xs font-semibold"
               style={{ color: "var(--navy-deep)" }}
               aria-label={`平均評価 ${(useCase.ratingAverage ?? 0).toFixed(1)} / ${useCase.ratingCount}件`}
             >
               <span aria-hidden="true" style={{ color: "#E5A93B" }}>★</span>
               {(useCase.ratingAverage ?? 0).toFixed(1)}
-              <span className="font-normal" style={{ color: "var(--text-tertiary)" }}>
+              <span className="font-normal ml-0.5" style={{ color: "var(--text-tertiary)" }}>
                 ({useCase.ratingCount})
               </span>
             </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </Link>
   );
