@@ -326,20 +326,26 @@ async function translateBlueprint(bp: FSBlueprint): Promise<BlueprintTranslation
 
 function validateBlueprintTranslation(bp: FSBlueprint, t: BlueprintTranslation): string[] {
   const errs: string[] = [];
-  if (t.warningsEn.length !== bp.warnings.length) errs.push(`warnings 配列長 ${t.warningsEn.length} != ${bp.warnings.length}`);
+  // 位置インデックスが揃っている必要があるものは厳格チェック (zip して書き込むため)
   if (t.tools.length !== bp.tools.length) errs.push(`tools 配列長 ${t.tools.length} != ${bp.tools.length}`);
   if (t.parts.length !== bp.parts.length) errs.push(`parts 配列長 ${t.parts.length} != ${bp.parts.length}`);
   if (t.cutItems.length !== bp.cutItems.length) errs.push(`cutItems 配列長 ${t.cutItems.length} != ${bp.cutItems.length}`);
   if (t.steps.length !== bp.steps.length) errs.push(`steps 配列長 ${t.steps.length} != ${bp.steps.length}`);
 
+  // tips / pitfalls / warnings は独立要素のリストなので、EN < JA (情報欠損) のみエラー扱い。
+  // EN > JA (モデルが分割/拡張) は許容 — pickI18nArray は配列丸ごと差し替えるだけなので表示上は冗長になるだけ。
+  if (t.warningsEn.length < bp.warnings.length) {
+    errs.push(`warnings 配列が不足: ${t.warningsEn.length} < ${bp.warnings.length}`);
+  }
+
   for (let i = 0; i < Math.min(t.steps.length, bp.steps.length); i++) {
     const inLen = (bp.steps[i].tips ?? []).length;
     const outLen = (t.steps[i].tipsEn ?? []).length;
-    if (inLen !== outLen) errs.push(`step ${i + 1}: tipsEn 配列長 ${outLen} != ${inLen}`);
+    if (outLen < inLen) errs.push(`step ${i + 1}: tipsEn が不足 ${outLen} < ${inLen}`);
 
     const inPits = (bp.steps[i].pitfalls ?? []).length;
     const outPits = (t.steps[i].pitfallsEn ?? []).length;
-    if (inPits !== outPits) errs.push(`step ${i + 1}: pitfallsEn 配列長 ${outPits} != ${inPits}`);
+    if (outPits < inPits) errs.push(`step ${i + 1}: pitfallsEn が不足 ${outPits} < ${inPits}`);
   }
   return errs;
 }
@@ -447,6 +453,8 @@ interface CliArgs {
   useCaseIds: string[] | "all" | null;
   blueprintIds: string[] | "all" | null;
   propagateExamples: boolean;
+  /** translated/blueprint_${id}.json が存在すれば OpenAI を呼ばずに再検証 + Firestore 書き込みのみ行う */
+  fromCache: boolean;
 }
 
 function parseArgs(): CliArgs {
@@ -458,6 +466,7 @@ function parseArgs(): CliArgs {
     useCaseIds: null,
     blueprintIds: null,
     propagateExamples: argv.includes("--propagate-examples"),
+    fromCache: argv.includes("--from-cache"),
   };
 
   const ucIdx = argv.indexOf("--useCases");
@@ -532,8 +541,18 @@ async function processBlueprint(
     console.log(`  [skip] ${id} (already has nameEn). use --force to retranslate.`);
     return;
   }
-  console.log(`\n▶ blueprint ${id} — ${bp.name} (steps=${bp.steps.length}, parts=${bp.parts.length})`);
-  const t = await translateBlueprint(bp);
+
+  // --from-cache: 既に保存済みの翻訳 JSON があれば OpenAI を呼ばずに再検証だけする
+  const cachePath = path.join(outDir, `blueprint_${id}.json`);
+  let t: BlueprintTranslation;
+  if (args.fromCache && fs.existsSync(cachePath)) {
+    const cached = JSON.parse(fs.readFileSync(cachePath, "utf8")) as { translation: BlueprintTranslation };
+    t = cached.translation;
+    console.log(`\n▶ blueprint ${id} — ${bp.name} (steps=${bp.steps.length}, parts=${bp.parts.length}) [from-cache]`);
+  } else {
+    console.log(`\n▶ blueprint ${id} — ${bp.name} (steps=${bp.steps.length}, parts=${bp.parts.length})`);
+    t = await translateBlueprint(bp);
+  }
 
   const errs = validateBlueprintTranslation(bp, t);
   if (errs.length > 0) {
