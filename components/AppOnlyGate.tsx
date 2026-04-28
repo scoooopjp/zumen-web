@@ -5,6 +5,7 @@
  * App Store への誘導CTAを重ねてアプリへ流す。
  */
 
+import { useTranslations } from "next-intl";
 import LottieIcon from "./LottieIcon";
 
 const APP_STORE_URL =
@@ -29,9 +30,11 @@ interface AppOnlyGateProps {
 export default function AppOnlyGate({
   title,
   description,
-  ctaLabel = "アプリで使う",
+  ctaLabel,
   children,
 }: AppOnlyGateProps) {
+  const t = useTranslations("AppOnlyGate");
+  const resolvedCta = ctaLabel ?? t("defaultCta");
   return (
     <div
       className="relative rounded-2xl overflow-hidden"
@@ -59,7 +62,7 @@ export default function AppOnlyGate({
           className="w-14 h-14 rounded-2xl flex items-center justify-center"
           style={{ background: "var(--amber-pale)" }}
         >
-          <LottieIcon name="pencil" size={44} ariaLabel="カスタム設計" />
+          <LottieIcon name="pencil" size={44} ariaLabel={t("ariaLabel")} />
         </div>
 
         <div>
@@ -68,7 +71,7 @@ export default function AppOnlyGate({
               className="text-xs font-bold px-2 py-0.5 rounded-full"
               style={{ background: "var(--amber-pale)", color: "var(--amber)" }}
             >
-              App 限定
+              {t("appOnlyBadge")}
             </span>
           </div>
           <p className="font-bold text-base" style={{ color: "var(--navy-deep)" }}>{title}</p>
@@ -83,7 +86,7 @@ export default function AppOnlyGate({
           style={{ padding: "10px 24px" }}
         >
           <AppleIcon />
-          {ctaLabel}
+          {resolvedCta}
         </a>
       </div>
     </div>

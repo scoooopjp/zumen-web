@@ -811,11 +811,19 @@ export function enrichPartWithRetailerURLs(partName: string, _spec: string): {
   return {};
 }
 
-export function formatBudget(min: number, max: number): string {
-  return `¥${min.toLocaleString()}〜¥${max.toLocaleString()}`;
+export function formatBudget(min: number, max: number, locale: string = "ja"): string {
+  const dash = locale === "en" ? "–" : "〜";
+  return `¥${min.toLocaleString()}${dash}¥${max.toLocaleString()}`;
 }
 
-export function formatTime(minutes: number): string {
+export function formatTime(minutes: number, locale: string = "ja"): string {
+  if (locale === "en") {
+    if (minutes < 60) return `${minutes} min`;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (m === 0) return h === 1 ? "1 h" : `${h} h`;
+    return `${h} h ${m} min`;
+  }
   if (minutes < 60) return `${minutes}分`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;

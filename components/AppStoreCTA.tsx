@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import LottieIcon from "./LottieIcon";
 import { track } from "@/lib/analytics";
 
@@ -14,9 +15,12 @@ const APP_STORE_URL =
 
 export default function AppStoreCTA({
   variant = "primary",
-  title = "カスタム設計はアプリで",
-  description = "自分のサイズに合わせた設計図・材料リストをその場で生成。無料で試せます。",
+  title,
+  description,
 }: AppStoreCTAProps) {
+  const t = useTranslations("AppStoreCTA");
+  const resolvedTitle = title ?? t("defaultTitle");
+  const resolvedDescription = description ?? t("defaultDescription");
   const onClick = () => track("app_store_click", { variant });
 
   /* ── Banner variant ── */
@@ -42,18 +46,18 @@ export default function AppStoreCTA({
         <div className="relative flex flex-col md:flex-row items-center justify-between gap-6 p-8 md:p-10">
           <div>
             <p className="section-label mb-2" style={{ color: "var(--amber-light)" }}>
-              App 限定機能
+              {t("appOnlyBadge")}
             </p>
-            <p className="text-xl font-bold text-white">{title}</p>
+            <p className="text-xl font-bold text-white">{resolvedTitle}</p>
             <p className="text-sm mt-1.5" style={{ color: "rgba(255,255,255,0.65)" }}>
-              {description}
+              {resolvedDescription}
             </p>
           </div>
           <a href={APP_STORE_URL} onClick={onClick} className="btn-amber shrink-0 text-sm">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
             </svg>
-            App Store でダウンロード
+            {t("bannerDownload")}
           </a>
         </div>
       </div>
@@ -70,14 +74,14 @@ export default function AppStoreCTA({
           className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: "var(--amber-pale)" }}
         >
-          <LottieIcon name="pencil" size={44} ariaLabel={title} />
+          <LottieIcon name="pencil" size={44} ariaLabel={resolvedTitle} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold" style={{ color: "var(--navy-deep)" }}>{title}</p>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{description}</p>
+          <p className="font-bold" style={{ color: "var(--navy-deep)" }}>{resolvedTitle}</p>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{resolvedDescription}</p>
         </div>
         <a href={APP_STORE_URL} onClick={onClick} className="btn-primary shrink-0 text-sm" style={{ padding: "9px 18px", borderRadius: "10px" }}>
-          無料
+          {t("free")}
         </a>
       </div>
     );
@@ -98,15 +102,15 @@ export default function AppStoreCTA({
           </svg>
         </div>
         <div>
-          <p className="font-bold" style={{ color: "var(--navy-deep)" }}>{title}</p>
-          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>{description}</p>
+          <p className="font-bold" style={{ color: "var(--navy-deep)" }}>{resolvedTitle}</p>
+          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>{resolvedDescription}</p>
         </div>
       </div>
       <a href={APP_STORE_URL} onClick={onClick} className="btn-primary text-sm justify-center">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
         </svg>
-        無料でダウンロード (iPhone)
+        {t("primaryDownload")}
       </a>
     </div>
   );

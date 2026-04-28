@@ -101,7 +101,14 @@ export function getExampleById(id: string): Example | undefined {
   return mockExamples.find((e) => e.id === id);
 }
 
-export function formatTime(minutes: number): string {
+export function formatTime(minutes: number, locale: string = "ja"): string {
+  if (locale === "en") {
+    if (minutes < 60) return `${minutes} min`;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (m === 0) return h === 1 ? "1 h" : `${h} h`;
+    return `${h} h ${m} min`;
+  }
   if (minutes < 60) return `${minutes}分`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;

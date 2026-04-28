@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { categories } from "@/lib/data";
@@ -7,23 +8,26 @@ import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 
 export const dynamic = "force-dynamic";
 
-const ogUrl = `/og?title=${encodeURIComponent("DIY設計図一覧")}&category=${encodeURIComponent("カテゴリ別")}&icon=${encodeURIComponent("📐")}`;
-
-export const metadata: Metadata = {
-  title: "DIY設計図一覧",
-  description:
-    "棚・プランター台・コンポストなどのDIY設計図を一覧で探せます。ホームセンター別の材料リスト付き。",
-  alternates: { canonical: "/category" },
-  openGraph: {
-    title: "DIY設計図一覧 | ZUMEN",
-    description:
-      "棚・プランター台・コンポストなどのDIY設計図を一覧で探せます。ホームセンター別の材料リスト付き。",
-    images: [{ url: ogUrl, width: 1200, height: 630 }],
-  },
-  twitter: { card: "summary_large_image", images: [ogUrl] },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("CategoryList");
+  const ogUrl = `/og?title=${encodeURIComponent(t("metaTitle"))}&category=${encodeURIComponent(t("ogCategory"))}&icon=${encodeURIComponent(t("ogIcon"))}`;
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    alternates: { canonical: "/category" },
+    openGraph: {
+      title: t("ogTitle"),
+      description: t("metaDescription"),
+      images: [{ url: ogUrl, width: 1200, height: 630 }],
+    },
+    twitter: { card: "summary_large_image", images: [ogUrl] },
+  };
+}
 
 export default async function CategoryListPage() {
+  const t = await getTranslations("CategoryList");
+  const tCommon = await getTranslations("Common");
+  const tFooter = await getTranslations("Footer");
   const [useCasesData, exampleCounts] = await Promise.all([
     fetchUseCases(),
     fetchExampleCountsByUseCase(),
@@ -33,8 +37,8 @@ export default async function CategoryListPage() {
   const collectionLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "DIY設計図一覧",
-    description: "カテゴリ別に探せるDIY設計図の総合一覧。ホームセンター別の材料リスト付き。",
+    name: t("metaTitle"),
+    description: t("metaDescription"),
     url: `${BASE}/category`,
     mainEntity: {
       "@type": "ItemList",
@@ -43,7 +47,7 @@ export default async function CategoryListPage() {
         "@type": "ListItem",
         position: i + 1,
         url: `${BASE}/category/${cat.slug}`,
-        name: `${cat.name} DIY 設計図`,
+        name: cat.name,
       })),
     },
   };
@@ -55,25 +59,23 @@ export default async function CategoryListPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
       />
       <Breadcrumbs
-        items={[{ name: "TOP", href: "/" }, { name: "設計図一覧" }]}
+        items={[{ name: tCommon("breadcrumbHome"), href: "/" }, { name: t("breadcrumbCurrent") }]}
       />
 
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">DIY設計図一覧</h1>
-      <p className="text-gray-500 mb-8">
-        カテゴリ別に設計図を探せます。ホームセンター別の材料リスト付き。
-      </p>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("h1")}</h1>
+      <p className="text-gray-500 mb-8">{t("lead")}</p>
 
       {categories.map((cat) => {
         const items = useCasesData.filter((uc) => uc.categorySlug === cat.slug);
         return (
           <section key={cat.slug} className="mb-12">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">{cat.name}</h2>
+              <h2 className="text-xl font-bold text-gray-900">{tFooter(`categories.${cat.slug}` as never)}</h2>
               <Link
                 href={`/category/${cat.slug}`}
                 className="text-sm text-indigo-600 hover:underline"
               >
-                すべて見る →
+                {tCommon("viewAll")}
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

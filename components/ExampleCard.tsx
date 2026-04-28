@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { type Example, formatTime } from "@/lib/examples";
 
 interface Props {
@@ -7,6 +8,9 @@ interface Props {
 }
 
 export default function ExampleCard({ example: ex }: Props) {
+  const locale = useLocale();
+  const tCard = useTranslations("BlueprintCard");
+  const tExample = useTranslations("ExampleDetail");
   return (
     <Link href={`/example/${ex.id}`} className="zumen-card block overflow-hidden group">
       <div
@@ -19,7 +23,7 @@ export default function ExampleCard({ example: ex }: Props) {
         {ex.thumbnailURL || ex.imageURL ? (
           <Image
             src={ex.thumbnailURL ?? ex.imageURL!}
-            alt={`${ex.authorName}さんの${ex.useCaseName}`}
+            alt={ex.useCaseName}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
@@ -49,7 +53,7 @@ export default function ExampleCard({ example: ex }: Props) {
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
                 src={ex.authorPhotoURL}
-                alt={`${ex.authorName} のアバター`}
+                alt={ex.authorName}
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
@@ -70,12 +74,12 @@ export default function ExampleCard({ example: ex }: Props) {
             <span
               className="inline-flex items-center gap-0.5 text-xs font-semibold"
               style={{ color: "var(--navy-deep)" }}
-              aria-label={`平均評価 ${ex.ratingAverage.toFixed(1)} / ${ex.ratingCount}件`}
+              aria-label={tCard("ratingAria", { avg: ex.ratingAverage.toFixed(1), count: ex.ratingCount })}
             >
               <span aria-hidden="true" style={{ color: "#E5A93B" }}>★</span>
               {ex.ratingAverage.toFixed(1)}
               <span className="font-normal ml-0.5" style={{ color: "var(--text-tertiary)" }}>
-                ({ex.ratingCount}件)
+                ({ex.ratingCount})
               </span>
             </span>
           </div>
@@ -86,19 +90,19 @@ export default function ExampleCard({ example: ex }: Props) {
           style={{ background: "var(--canvas)" }}
         >
           <div>
-            <p className="text-[10px] mb-0.5" style={{ color: "var(--text-tertiary)" }}>実費</p>
+            <p className="text-[10px] mb-0.5" style={{ color: "var(--text-tertiary)" }}>{tExample("actualBudget")}</p>
             <p className="text-sm font-bold" style={{ color: "var(--navy-deep)" }}>
               ¥{ex.actualCost.toLocaleString()}
             </p>
           </div>
           <div>
-            <p className="text-[10px] mb-0.5" style={{ color: "var(--text-tertiary)" }}>時間</p>
+            <p className="text-[10px] mb-0.5" style={{ color: "var(--text-tertiary)" }}>{tExample("actualTime")}</p>
             <p className="text-sm font-bold" style={{ color: "var(--navy-deep)" }}>
-              {formatTime(ex.actualTimeMinutes)}
+              {formatTime(ex.actualTimeMinutes, locale)}
             </p>
           </div>
           <div>
-            <p className="text-[10px] mb-0.5" style={{ color: "var(--text-tertiary)" }}>店舗</p>
+            <p className="text-[10px] mb-0.5" style={{ color: "var(--text-tertiary)" }}>{tExample("store")}</p>
             <p className="text-sm font-bold" style={{ color: "var(--navy-deep)" }}>
               {ex.retailer}
             </p>

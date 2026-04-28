@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { track } from "@/lib/analytics";
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function ShareButton({ title, text }: Props) {
+  const t = useTranslations("Share");
   const [copied, setCopied] = useState(false);
 
   const onClick = async () => {
@@ -43,7 +45,7 @@ export default function ShareButton({ title, text }: Props) {
         color: "var(--text-secondary)",
         border: "1px solid var(--border)",
       }}
-      aria-label="シェア"
+      aria-label={t("ariaLabel")}
     >
       <svg
         width="15"
@@ -62,7 +64,7 @@ export default function ShareButton({ title, text }: Props) {
         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
         <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
       </svg>
-      {copied ? "コピー済み" : "シェア"}
+      {copied ? t("copied") : t("buttonLabel")}
     </button>
   );
 }

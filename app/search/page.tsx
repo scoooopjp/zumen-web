@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import RecentlyViewed from "@/components/RecentlyViewed";
@@ -17,11 +18,12 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { q } = await searchParams;
   const hasQuery = typeof q === "string" && q.trim().length > 0;
-  const title = hasQuery ? `「${q}」の検索結果` : "設計図を検索";
+  const t = await getTranslations("Search");
+  const title = hasQuery ? t("metaTitleResultTpl", { q: q!.trim() }) : t("metaTitle");
   const description = hasQuery
-    ? `「${q}」を含む DIY 設計図の検索結果。`
-    : "棚・ベンチ・ウッドデッキなどの DIY 設計図をキーワードで検索できます。";
-  const ogUrl = `/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent("検索")}&icon=${encodeURIComponent("🔍")}`;
+    ? t("metaDescriptionResultTpl", { q: q!.trim() })
+    : t("metaDescription");
+  const ogUrl = `/og?title=${encodeURIComponent(title)}&category=${encodeURIComponent(t("ogCategory"))}&icon=${encodeURIComponent(t("ogIcon"))}`;
   return {
     title,
     description,
@@ -68,13 +70,15 @@ function matches(uc: UseCase, tokens: string[]): boolean {
     .join(" ")
     .trim();
   const normalizedHaystack = normalizeSearchText(haystack);
-  return tokens.every((t) => normalizedHaystack.includes(t));
+  return tokens.every((tok) => normalizedHaystack.includes(tok));
 }
 
 export default async function SearchPage({ searchParams }: Props) {
   const { q } = await searchParams;
   const query = (q ?? "").trim();
   const tokens = tokenize(query);
+  const t = await getTranslations("Search");
+  const tCommon = await getTranslations("Common");
 
   const [all, exampleCounts] = await Promise.all([
     fetchUseCases(),
@@ -82,22 +86,31 @@ export default async function SearchPage({ searchParams }: Props) {
   ]);
   const results = tokens.length === 0 ? [] : all.filter((uc) => matches(uc, tokens));
 
+  const popularKeywords = [
+    t("popularKeyword1"),
+    t("popularKeyword2"),
+    t("popularKeyword3"),
+    t("popularKeyword4"),
+    t("popularKeyword5"),
+    t("popularKeyword6"),
+  ];
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <Breadcrumbs
         items={[
-          { name: "TOP", href: "/" },
-          { name: query ? `「${query}」の検索結果` : "検索" },
+          { name: tCommon("breadcrumbHome"), href: "/" },
+          { name: query ? t("breadcrumbResultTpl", { q: query }) : t("breadcrumbCurrent") },
         ]}
       />
 
       <h1 className="text-3xl font-bold text-gray-900 mb-2">
-        {query ? `「${query}」の検索結果` : "設計図を検索"}
+        {query ? t("h1ResultTpl", { q: query }) : t("h1")}
       </h1>
       <p className="text-gray-500 mb-6">
         {query
-          ? `${results.length} 件ヒットしました`
-          : "設計図名・カテゴリ・対応ホームセンターから検索できます。"}
+          ? t("leadResultTpl", { n: results.length })
+          : t("leadEmpty")}
       </p>
 
       <div className="mb-8">
@@ -110,16 +123,16 @@ export default async function SearchPage({ searchParams }: Props) {
           style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
         >
           <p className="font-bold mb-2" style={{ color: "var(--navy-deep)" }}>
-            一致する設計図が見つかりませんでした
+            {t("noMatchTitle")}
           </p>
           <p className="text-sm mb-5" style={{ color: "var(--text-secondary)" }}>
-            別のキーワードで試すか、カテゴリから探してみてください。
+            {t("noMatchBody")}
           </p>
           <Link
             href="/category"
             className="btn-primary text-sm inline-flex items-center gap-1.5"
           >
-            設計図一覧を見る
+            {t("browseAll")}
           </Link>
         </div>
       )}
@@ -136,10 +149,10 @@ export default async function SearchPage({ searchParams }: Props) {
         <>
           <div className="mt-2">
             <p className="text-sm font-semibold mb-3" style={{ color: "var(--navy-deep)" }}>
-              人気のキーワード
+              {t("popularKeywordsTitle")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {["棚", "ベンチ", "ウッドデッキ", "シューズラック", "コンポスト", "プランター台"].map((kw) => (
+              {popularKeywords.map((kw) => (
                 <Link
                   key={kw}
                   href={`/search?q=${encodeURIComponent(kw)}`}

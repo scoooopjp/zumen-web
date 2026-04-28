@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getTranslations, getLocale } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import ExampleCard from "@/components/ExampleCard";
@@ -12,25 +13,27 @@ import { fetchUseCases, fetchFeaturedUseCases, fetchExampleCountsByUseCase } fro
 export const dynamic = "force-dynamic";
 
 /* ─── SEO Metadata ─── */
-export const metadata: Metadata = {
-  title: "ZUMEN｜DIY設計図・木材リスト自動生成アプリ",
-  description:
-    "棚・ベンチ・ウッドデッキなど22種のDIY設計図を無料公開。サイズを入力するだけでカインズ・コメリ・コーナン・DCM別の木材リストと費用を自動計算。初心者から上級者まで使えるDIY支援サービス。",
-  keywords: ["DIY", "設計図", "木材リスト", "カインズ", "コメリ", "コーナン", "DCM", "棚", "ウッドデッキ", "2×4", "SPF材"],
-  openGraph: {
-    title: "ZUMEN｜DIY設計図・木材リスト自動生成アプリ",
-    description:
-      "棚・ベンチ・ウッドデッキなど22種のDIY設計図。サイズ入力でカインズ・コメリ別の材料リストを自動生成。",
-    type: "website",
-    locale: "ja_JP",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "ZUMEN｜DIY設計図・木材リスト自動生成",
-    description: "22種の設計図から材料リストを自動生成。カインズ・コメリ対応。",
-  },
-  alternates: { canonical: "https://zumen.scoooop.com/" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = await getTranslations("Home");
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    keywords: ["DIY", "設計図", "木材リスト", "カインズ", "コメリ", "コーナン", "DCM", "棚", "ウッドデッキ", "2×4", "SPF材"],
+    openGraph: {
+      title: t("ogTitle"),
+      description: t("ogDescription"),
+      type: "website",
+      locale: locale === "en" ? "en_US" : "ja_JP",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t("twitterTitle"),
+      description: t("twitterDescription"),
+    },
+    alternates: { canonical: "https://zumen.scoooop.com/" },
+  };
+}
 
 /* ─── JSON-LD Structured Data ─── */
 const jsonLd = {
@@ -109,31 +112,9 @@ const categoryIcon: Record<string, string> = {
   "看板・インテリア": "🪧",
 };
 
-const features: Array<{ lottie: string; title: string; desc: string; appOnly?: boolean }> = [
-  {
-    lottie: "ruler",
-    title: "22種の設計図",
-    desc: "棚・ベンチ・デッキなど、厳選されたプロ品質の設計図を無料公開。",
-  },
-  {
-    lottie: "pencil",
-    title: "カスタム設計",
-    desc: "幅・高さを入力するだけで最適な材料構成と費用を自動算出。アプリ限定機能。",
-    appOnly: true,
-  },
-  {
-    lottie: "storefront",
-    title: "ホームセンター別リスト",
-    desc: "カインズ・コメリ別に最適な材料と価格を自動選定。",
-  },
-  {
-    lottie: "cameraFlash",
-    title: "作例ギャラリー",
-    desc: "実際に作った人のコスト・写真・サイズを参考にできる。",
-  },
-];
-
 export default async function HomePage() {
+  const t = await getTranslations("Home");
+  const tFooter = await getTranslations("Footer");
   const [useCasesData, featuredUseCases, featuredExamples, exampleCounts] = await Promise.all([
     fetchUseCases(),
     fetchFeaturedUseCases(6),
@@ -144,6 +125,14 @@ export default async function HomePage() {
     acc[uc.categorySlug] = (acc[uc.categorySlug] ?? 0) + 1;
     return acc;
   }, {});
+
+  const features = [
+    { lottie: "ruler", title: t("feature1Title"), desc: t("feature1Desc") },
+    { lottie: "pencil", title: t("feature2Title"), desc: t("feature2Desc"), appOnly: true },
+    { lottie: "storefront", title: t("feature3Title"), desc: t("feature3Desc") },
+    { lottie: "cameraFlash", title: t("feature4Title"), desc: t("feature4Desc") },
+  ];
+
   return (
     <>
       <script
@@ -164,26 +153,27 @@ export default async function HomePage() {
           }}
         />
         <div className="max-w-5xl mx-auto px-4 text-center relative">
-          <p className="section-label mb-4">DIYをちゃんと作れるまで</p>
+          <p className="section-label mb-4">{t("heroLabel")}</p>
           <h1
             className="font-bold leading-tight"
             style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)", color: "var(--navy-deep)", letterSpacing: "-0.03em" }}
           >
-            つくりたいを、
+            {t("heroTitleLine1")}
             <br />
-            <span style={{ color: "var(--amber)" }}>つくれる</span>に。
+            <span style={{ color: "var(--amber)" }}>{t("heroTitleHighlight")}</span>
+            {t("heroTitleLine2")}
           </h1>
           <p
             className="mt-5 mx-auto leading-relaxed"
             style={{ fontSize: "1.0625rem", color: "var(--text-secondary)", maxWidth: "480px" }}
           >
-            設計図から木材リスト・工程・費用まで。
+            {t("heroBodyLine1")}
             <br className="hidden sm:block" />
-            DIYを「良さそう」で終わらせないサービス。
+            {t("heroBodyLine2")}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
             <Link href="/category" className="btn-primary">
-              設計図を見る
+              {t("ctaBrowseBlueprints")}
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
                 <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -194,22 +184,22 @@ export default async function HomePage() {
                 <circle cx="9" cy="9" r="2" />
                 <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
               </svg>
-              作例を見る
+              {t("ctaBrowseExamples")}
             </Link>
             <a href={APP_STORE_URL} className="btn-outline">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
               </svg>
-              App Store (無料)
+              {t("ctaAppStore")}
             </a>
           </div>
           {/* Social proof */}
           <p className="mt-6 text-xs flex flex-wrap justify-center gap-x-3 gap-y-1" style={{ color: "var(--text-tertiary)" }}>
-            <span className="whitespace-nowrap">iOS 17以上対応</span>
+            <span className="whitespace-nowrap">{t("socialProof1")}</span>
             <span aria-hidden="true">·</span>
-            <span className="whitespace-nowrap">完全無料で閲覧可能</span>
+            <span className="whitespace-nowrap">{t("socialProof2")}</span>
             <span aria-hidden="true">·</span>
-            <span className="whitespace-nowrap">カスタム設計はアプリ限定</span>
+            <span className="whitespace-nowrap">{t("socialProof3")}</span>
           </p>
         </div>
       </section>
@@ -221,13 +211,13 @@ export default async function HomePage() {
             className="font-bold"
             style={{ fontSize: "1.125rem", color: "var(--navy-deep)" }}
           >
-            カテゴリから探す
+            {t("categoriesTitle")}
           </h2>
           <Link
             href="/category"
             style={{ color: "var(--amber)", fontSize: "0.8125rem", fontWeight: 600 }}
           >
-            すべて見る →
+            {t("viewAll")}
           </Link>
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -243,7 +233,7 @@ export default async function HomePage() {
               }}
             >
               <span className="text-base leading-none">{categoryIcon[cat.name] ?? "🪚"}</span>
-              <span className="font-semibold">{cat.name}</span>
+              <span className="font-semibold">{tFooter(`categories.${cat.slug}` as never)}</span>
               <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                 {countsByCategory[cat.slug] ?? 0}
               </span>
@@ -256,10 +246,10 @@ export default async function HomePage() {
       <section className="max-w-5xl mx-auto px-4 pb-16">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-bold" style={{ fontSize: "1.375rem", color: "var(--navy-deep)" }}>
-            人気の設計図
+            {t("popularBlueprintsTitle")}
           </h2>
           <Link href="/category" style={{ color: "var(--amber)", fontSize: "0.875rem", fontWeight: 600 }}>
-            すべて見る →
+            {t("viewAll")}
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -276,17 +266,17 @@ export default async function HomePage() {
         <section className="max-w-5xl mx-auto px-4 pb-16">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <p className="section-label mb-1">みんなの作品</p>
+              <p className="section-label mb-1">{t("examplesLabel")}</p>
               <h2 className="font-bold" style={{ fontSize: "1.375rem", color: "var(--navy-deep)" }}>
-                作例ピックアップ
+                {t("examplesPickupTitle")}
               </h2>
             </div>
             <Link href="/example" style={{ color: "var(--amber)", fontSize: "0.875rem", fontWeight: 600 }}>
-              すべて見る →
+              {t("viewAll")}
             </Link>
           </div>
           <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
-            ZUMENユーザーが実際に作った作品。実費・制作時間のリアルな参考に。
+            {t("examplesPickupBody")}
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {featuredExamples.map((ex) => (
@@ -299,9 +289,9 @@ export default async function HomePage() {
       {/* ── 機能紹介 ──────────────────────────────────────── */}
       <section style={{ background: "var(--parchment)", borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)" }}>
         <div className="max-w-5xl mx-auto px-4 py-16">
-          <p className="section-label text-center mb-3">できること</p>
+          <p className="section-label text-center mb-3">{t("featuresLabel")}</p>
           <h2 className="font-bold text-center mb-12" style={{ fontSize: "1.5rem", color: "var(--navy-deep)" }}>
-            設計から完成まで、まるごとサポート
+            {t("featuresTitle")}
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {features.map((f) => (
@@ -321,7 +311,7 @@ export default async function HomePage() {
                         className="text-xs font-bold px-2 py-0.5 rounded-full"
                         style={{ background: "var(--amber-pale)", color: "var(--amber)" }}
                       >
-                        App 限定
+                        {t("appOnlyBadge")}
                       </span>
                     )}
                   </div>
@@ -335,18 +325,18 @@ export default async function HomePage() {
 
       {/* ── 対応ホームセンター ─────────────────────────────── */}
       <section className="max-w-5xl mx-auto px-4 py-16 text-center">
-        <p className="section-label mb-3">対応ホームセンター</p>
+        <p className="section-label mb-3">{t("retailersLabel")}</p>
         <h2 className="font-bold mb-8" style={{ fontSize: "1.375rem", color: "var(--navy-deep)" }}>
-          お近くのホームセンターで
+          {t("retailersTitle")}
           <br className="sm:hidden" />
-          そのまま買い物リストに
+          {t("retailersTitleSuffix")}
         </h2>
         <div className="flex flex-wrap justify-center gap-4">
           {[
-            { slug: "cainz",  name: "カインズ",  emoji: "🔵" },
-            { slug: "komeri", name: "コメリ",    emoji: "🔴" },
-            { slug: "kohnan", name: "コーナン",  emoji: "🟠" },
-            { slug: "dcm",    name: "DCM",        emoji: "🟢" },
+            { slug: "cainz",  emoji: "🔵" },
+            { slug: "komeri", emoji: "🔴" },
+            { slug: "kohnan", emoji: "🟠" },
+            { slug: "dcm",    emoji: "🟢" },
           ].map((store) => (
             <Link
               key={store.slug}
@@ -355,7 +345,7 @@ export default async function HomePage() {
             >
               <span className="text-4xl">{store.emoji}</span>
               <span className="font-bold text-sm" style={{ color: "var(--navy-deep)" }}>
-                {store.name}
+                {tFooter(`retailers.${store.slug}` as never)}
               </span>
             </Link>
           ))}
@@ -366,8 +356,8 @@ export default async function HomePage() {
       <section className="max-w-5xl mx-auto px-4 pb-20">
         <AppStoreCTA
           variant="banner"
-          title="カスタム設計はアプリで"
-          description="幅・奥行・高さを入力するだけ。カインズ・コメリ別の材料リストと費用を即座に生成。"
+          title={t("appCtaTitle")}
+          description={t("appCtaDescription")}
         />
       </section>
     </>

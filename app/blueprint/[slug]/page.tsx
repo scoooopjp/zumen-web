@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getLocale, getTranslations } from "next-intl/server";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import BlueprintPartsTable from "@/components/BlueprintPartsTable";
@@ -79,18 +80,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await resolvePageData(slug);
   if (!data) return {};
   const { bp, uc } = data;
+  const t = await getTranslations("BlueprintDetail");
+  const locale = await getLocale();
   const name = uc?.name ?? bp.name;
   const difficulty = uc?.difficulty ?? bp.difficulty;
   const budgetMin = uc?.estimatedBudgetMin ?? bp.estimatedBudgetMin;
   const budgetMax = uc?.estimatedBudgetMax ?? bp.estimatedBudgetMax;
   const time = uc?.estimatedTimeMinutes ?? bp.estimatedTimeMinutes;
   const category = uc?.category ?? bp.category;
-  const ogUrl = `/og?title=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&difficulty=${encodeURIComponent(difficulty)}&budget=${encodeURIComponent(formatBudget(budgetMin, budgetMax))}`;
-  const description = `${name}のDIY設計図。難易度${difficulty}、予算${formatBudget(budgetMin, budgetMax)}、制作時間${formatTime(time)}。カインズ・コメリ対応の材料リスト付き。`;
-  const ogTitle = `${name} DIY 設計図 | ZUMEN`;
+  const ogUrl = `/og?title=${encodeURIComponent(name)}&category=${encodeURIComponent(category)}&difficulty=${encodeURIComponent(difficulty)}&budget=${encodeURIComponent(formatBudget(budgetMin, budgetMax, locale))}`;
+  const description = t("metaDescriptionTpl", {
+    name,
+    difficulty,
+    budget: formatBudget(budgetMin, budgetMax, locale),
+    time: formatTime(time, locale),
+  });
+  const ogTitle = t("ogTitleTpl", { name });
   const ogDescription = uc?.description ?? bp.description;
   return {
-    title: `${name} DIY 設計図`,
+    title: t("metaTitleTpl", { name }),
     description,
     alternates: { canonical: `/blueprint/${slug}` },
     openGraph: {
@@ -98,7 +106,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: ogDescription,
       type: "article",
       url: `/blueprint/${slug}`,
-      images: [{ url: ogUrl, width: 1200, height: 630, alt: `${name} DIY 設計図` }],
+      images: [{ url: ogUrl, width: 1200, height: 630, alt: t("ogImageAlt", { name }) }],
     },
     twitter: {
       card: "summary_large_image",
@@ -115,12 +123,38 @@ const difficultyColor: Record<string, string> = {
   "上級者向け": "bg-red-100 text-red-700",
 };
 
+const difficultyKeyMap: Record<string, "beginner" | "intermediate" | "advanced"> = {
+  "初心者向け": "beginner",
+  "中級者向け": "intermediate",
+  "上級者向け": "advanced",
+};
+
+const indoorKeyMap: Record<string, "indoor" | "outdoor" | "both"> = {
+  "室内": "indoor",
+  "屋外": "outdoor",
+  "両用": "both",
+};
+
+const retailerKeyMap: Record<string, "cainz" | "komeri" | "kohnan" | "dcm"> = {
+  "カインズ": "cainz",
+  "コメリ": "komeri",
+  "コーナン": "kohnan",
+  "DCM": "dcm",
+};
+
 export default async function BlueprintPage({ params }: Props) {
   const { slug } = await params;
   const data = await resolvePageData(slug);
   if (!data) notFound();
 
   const { bp, uc, fsBp } = data;
+  const t = await getTranslations("BlueprintDetail");
+  const tCommon = await getTranslations("Common");
+  const tDiff = await getTranslations("Difficulty");
+  const tIndoor = await getTranslations("IndoorOutdoor");
+  const tFooter = await getTranslations("Footer");
+  const locale = await getLocale();
+
   const exampleCounts = await fetchExampleCountsByUseCase();
   const exampleCount = uc ? exampleCounts[uc.id] ?? 0 : 0;
   const [examples, rating, comments] = uc
@@ -141,6 +175,14 @@ export default async function BlueprintPage({ params }: Props) {
   const time        = uc?.estimatedTimeMinutes ?? bp.estimatedTimeMinutes;
   const indoor      = uc?.indoorOutdoor ?? fsBp?.indoorOutdoor ?? bp.indoorOutdoor;
   const retailers   = uc?.supportedRetailers ?? bp.supportedRetailers;
+  const categorySlug = uc?.categorySlug ?? bp.categorySlug;
+  const rawCategory = uc?.category ?? bp.category;
+  const categoryLabel = (tFooter(`categories.${categorySlug}` as never) as string) || rawCategory;
+
+  const difficultyKey = difficultyKeyMap[difficulty];
+  const difficultyLabel = difficultyKey ? tDiff(difficultyKey) : difficulty;
+  const indoorKey = indoorKeyMap[indoor];
+  const indoorLabel = indoorKey ? tIndoor(indoorKey) : indoor;
 
   // Firestore blueprint を優先、なければローカルにフォールバック
   const dimensions = fsBp?.dimensions ?? bp.dimensions;
@@ -163,7 +205,7 @@ export default async function BlueprintPage({ params }: Props) {
   const howToSchema = {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: `${name}の作り方`,
+    name,
     description,
     ...(heroImage ? { image: heroImage } : {}),
     estimatedCost: {
@@ -173,7 +215,7 @@ export default async function BlueprintPage({ params }: Props) {
       maxValue: budgetMax,
     },
     totalTime: `PT${time}M`,
-    tool: tools.map((t) => ({ "@type": "HowToTool", name: typeof t === "string" ? t : t.name })),
+    tool: tools.map((tool) => ({ "@type": "HowToTool", name: typeof tool === "string" ? tool : tool.name })),
     supply: parts.map((p) => ({
       "@type": "HowToSupply",
       name: `${p.name} (${p.spec}) × ${p.quantity}${p.unit}`,
@@ -208,11 +250,11 @@ export default async function BlueprintPage({ params }: Props) {
       <div className="max-w-3xl mx-auto px-4 py-8">
         <Breadcrumbs
           items={[
-            { name: "TOP", href: "/" },
-            { name: "設計図一覧", href: "/category" },
+            { name: tCommon("breadcrumbHome"), href: "/" },
+            { name: t("breadcrumbCategoryList"), href: "/category" },
             {
-              name: uc?.category ?? bp.category,
-              href: `/category/${uc?.categorySlug ?? bp.categorySlug}`,
+              name: categoryLabel,
+              href: `/category/${categorySlug}`,
             },
             { name },
           ]}
@@ -223,7 +265,7 @@ export default async function BlueprintPage({ params }: Props) {
           <div className="relative rounded-2xl overflow-hidden mb-6" style={{ aspectRatio: "3/2" }}>
             <Image
               src={heroImage}
-              alt={uc?.imageAlt || bp.imageAlt || `${name}の完成イメージ — ${uc?.category ?? bp.category}DIY設計図`}
+              alt={uc?.imageAlt || bp.imageAlt || t("completedImageAlt", { name, category: categoryLabel })}
               fill
               priority
               sizes="(max-width: 768px) 100vw, 768px"
@@ -233,21 +275,21 @@ export default async function BlueprintPage({ params }: Props) {
               className="absolute bottom-3 right-3 text-[11px] px-2 py-1 rounded"
               style={{ background: "rgba(0,0,0,0.45)", color: "rgba(255,255,255,0.92)" }}
             >
-              ※完成イメージ
+              {tCommon("completedImage")}
             </span>
           </div>
         ) : (
           <div className="aspect-video rounded-2xl flex items-center justify-center mb-6"
             style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
-            <LottieIcon name="saw" size={160} ariaLabel="設計図を準備中" />
+            <LottieIcon name="saw" size={160} ariaLabel={t("preparingAria")} />
           </div>
         )}
 
         {/* タイトル・バッジ・保存ボタン */}
         <div className="flex items-start justify-between gap-3 mb-1">
-          <p className="text-sm text-gray-400">{uc?.category ?? bp.category}</p>
+          <p className="text-sm text-gray-400">{categoryLabel}</p>
           <div className="flex items-center gap-2 no-print">
-            <ShareButton title={`${name} DIY 設計図`} text={description} />
+            <ShareButton title={t("ogTitleTpl", { name })} text={description} />
             <PrintButton />
             <SaveButton kind="blueprint" />
           </div>
@@ -257,7 +299,7 @@ export default async function BlueprintPage({ params }: Props) {
 
         <div className="flex flex-wrap gap-2 mt-4">
           <span className={`text-sm px-3 py-1 rounded-full font-medium ${difficultyColor[difficulty]}`}>
-            {difficulty}
+            {difficultyLabel}
           </span>
           <span
             className="text-sm px-3 py-1 rounded-full"
@@ -267,7 +309,7 @@ export default async function BlueprintPage({ params }: Props) {
               border: "1px solid var(--border)",
             }}
           >
-            {formatBudget(budgetMin, budgetMax)}
+            {formatBudget(budgetMin, budgetMax, locale)}
           </span>
           <span
             className="text-sm px-3 py-1 rounded-full"
@@ -277,7 +319,7 @@ export default async function BlueprintPage({ params }: Props) {
               border: "1px solid var(--border)",
             }}
           >
-            {formatTime(time)}
+            {formatTime(time, locale)}
           </span>
           <span
             className="text-sm px-3 py-1 rounded-full"
@@ -287,7 +329,7 @@ export default async function BlueprintPage({ params }: Props) {
               border: "1px solid var(--border)",
             }}
           >
-            {indoor}
+            {indoorLabel}
           </span>
           {exampleCount > 0 && (
             <span
@@ -297,45 +339,49 @@ export default async function BlueprintPage({ params }: Props) {
                 color: "var(--text-secondary)",
                 border: "1px solid var(--border)",
               }}
-              aria-label={`作例 ${exampleCount} 件`}
+              aria-label={t("exampleCountAria", { n: exampleCount })}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="9" cy="9" r="2" />
                 <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
               </svg>
-              作例 {exampleCount}
+              {t("exampleCountInline", { n: exampleCount })}
             </span>
           )}
         </div>
 
         <div className="flex gap-2 mt-3">
-          {retailers.map((r) => (
-            <span
-              key={r}
-              className="text-xs px-2 py-1 rounded-full"
-              style={{
-                background: "var(--surface)",
-                color: "var(--text-secondary)",
-                border: "1px solid var(--border)",
-              }}
-            >
-              {r}
-            </span>
-          ))}
+          {retailers.map((r) => {
+            const key = retailerKeyMap[r];
+            const label = key ? (tFooter(`retailers.${key}` as never) as string) : r;
+            return (
+              <span
+                key={r}
+                className="text-xs px-2 py-1 rounded-full"
+                style={{
+                  background: "var(--surface)",
+                  color: "var(--text-secondary)",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                {label}
+              </span>
+            );
+          })}
         </div>
 
         {/* 基本寸法 */}
         <section className="mt-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-3">基本寸法</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">{t("dimensionsHeading")}</h2>
           <div
             className="rounded-xl p-4 grid grid-cols-3 gap-4 text-center"
             style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
           >
             {[
-              { label: "幅 (W)", value: `${dimensions.width}mm` },
-              { label: "奥行 (D)", value: `${dimensions.depth}mm` },
-              { label: "高さ (H)", value: `${dimensions.height}mm` },
+              { label: t("dimWidth"), value: `${dimensions.width}mm` },
+              { label: t("dimDepth"), value: `${dimensions.depth}mm` },
+              { label: t("dimHeight"), value: `${dimensions.height}mm` },
             ].map((d) => (
               <div key={d.label}>
                 <p className="text-xs text-gray-400">{d.label}</p>
@@ -348,7 +394,7 @@ export default async function BlueprintPage({ params }: Props) {
         {/* カット図 */}
         {cutItems.length > 0 && (
           <section className="mt-10">
-            <h2 className="text-xl font-bold text-gray-900 mb-3">カット図</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">{t("cutItemsHeading")}</h2>
             <div
               className="rounded-xl overflow-hidden"
               style={{ border: "1px solid var(--border)", background: "var(--surface)" }}
@@ -363,9 +409,9 @@ export default async function BlueprintPage({ params }: Props) {
                   borderBottom: "1px solid var(--border)",
                 }}
               >
-                <span>部材名</span>
-                <span>寸法 (T×W×L mm)</span>
-                <span className="text-right">数</span>
+                <span>{t("cutItemsPart")}</span>
+                <span>{t("cutItemsSize")}</span>
+                <span className="text-right">{t("cutItemsQty")}</span>
               </div>
               {/* 行 */}
               {cutItems.map((item, idx) => (
@@ -405,7 +451,7 @@ export default async function BlueprintPage({ params }: Props) {
 
         {/* 工具一覧 */}
         <section className="mt-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-3">必要工具</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">{t("toolsHeading")}</h2>
           <ul className="bg-gray-50 rounded-xl divide-y divide-gray-100">
             {tools.map((tool) => {
               const toolName = typeof tool === "string" ? tool : tool.name;
@@ -427,13 +473,13 @@ export default async function BlueprintPage({ params }: Props) {
 
         {/* 資材一覧 */}
         <section className="mt-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-3">資材一覧</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-3">{t("partsHeading")}</h2>
           <BlueprintPartsTable parts={parts} />
         </section>
 
         {/* 工程 */}
         <section className="mt-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">工程</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">{t("stepsHeading")}</h2>
           <ol className="space-y-6">
             {steps.map((step) => {
               const tips = "tips" in step ? (step as { tips?: string[] }).tips : undefined;
@@ -450,7 +496,7 @@ export default async function BlueprintPage({ params }: Props) {
                       <div className="flex items-baseline gap-2 flex-wrap">
                         <p className="font-bold text-gray-900">{step.title}</p>
                         {typeof estimatedMinutes === "number" && estimatedMinutes > 0 && (
-                          <span className="text-xs text-gray-500 shrink-0">目安 {estimatedMinutes}分</span>
+                          <span className="text-xs text-gray-500 shrink-0">{t("stepEstimateLabel", { n: estimatedMinutes })}</span>
                         )}
                       </div>
                       <p className="text-sm text-gray-500 mt-0.5">{step.description}</p>
@@ -471,10 +517,10 @@ export default async function BlueprintPage({ params }: Props) {
                       className="mt-3 p-3 rounded-lg text-sm"
                       style={{ background: "rgba(250,204,21,0.10)", border: "1px solid rgba(202,138,4,0.25)" }}
                     >
-                      <p className="text-xs font-bold mb-1" style={{ color: "#92400E" }}>コツ</p>
+                      <p className="text-xs font-bold mb-1" style={{ color: "#92400E" }}>{t("tipsLabel")}</p>
                       <ul className="space-y-1">
-                        {tips.map((t, i) => (
-                          <li key={i} className="text-gray-700 leading-relaxed">{t}</li>
+                        {tips.map((tip, i) => (
+                          <li key={i} className="text-gray-700 leading-relaxed">{tip}</li>
                         ))}
                       </ul>
                     </div>
@@ -485,7 +531,7 @@ export default async function BlueprintPage({ params }: Props) {
                       className="mt-2 p-3 rounded-lg text-sm"
                       style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.25)" }}
                     >
-                      <p className="text-xs font-bold mb-1" style={{ color: "#991B1B" }}>つまずきポイント</p>
+                      <p className="text-xs font-bold mb-1" style={{ color: "#991B1B" }}>{t("pitfallsLabel")}</p>
                       <ul className="space-y-1">
                         {pitfalls.map((p, i) => (
                           <li key={i} className="text-gray-700 leading-relaxed">{p}</li>
@@ -502,7 +548,7 @@ export default async function BlueprintPage({ params }: Props) {
         {/* 注意点 */}
         {warnings.length > 0 && (
           <section className="mt-10">
-            <h2 className="text-xl font-bold text-gray-900 mb-3">注意点</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-3">{t("warningsHeading")}</h2>
             <ul
               className="space-y-2 p-4 rounded-xl"
               style={{ background: "var(--amber-pale)", border: "1px solid rgba(217,123,42,0.25)" }}
@@ -519,9 +565,9 @@ export default async function BlueprintPage({ params }: Props) {
 
         {/* カスタム設計 — 寸法プレビュー */}
         <section className="mt-10 no-print">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">カスタム設計</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">{t("customDesignHeading")}</h2>
           <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-            寸法を変えるとカット図がざっくりスケールします。正確な計算はアプリで。
+            {t("customDesignBody")}
           </p>
           {cutItems.length > 0 ? (
             <CustomDesignPreview
@@ -532,13 +578,17 @@ export default async function BlueprintPage({ params }: Props) {
             />
           ) : (
             <AppOnlyGate
-              title="自分のサイズで設計図を生成"
-              description="幅・奥行・高さを入力するだけでカインズ・コメリ別の材料リストと費用を自動計算します。"
-              ctaLabel="アプリで試す（無料）"
+              title={t("customDesignAppGateTitle")}
+              description={t("customDesignAppGateDescription")}
+              ctaLabel={t("customDesignAppGateCta")}
             >
               <div className="p-5" style={{ background: "var(--surface)" }}>
                 <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                  ベーシック寸法 {dimensions.width}×{dimensions.depth}×{dimensions.height} mm
+                  {t("customDesignBaseDimsTpl", {
+                    width: dimensions.width,
+                    depth: dimensions.depth,
+                    height: dimensions.height,
+                  })}
                 </p>
               </div>
             </AppOnlyGate>
@@ -549,13 +599,13 @@ export default async function BlueprintPage({ params }: Props) {
         <section className="mt-10 no-print">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-bold text-gray-900">
-              作例
+              {t("examplesHeading")}
               {exampleCount > 0 && (
                 <span
                   className="ml-2 text-sm font-medium"
                   style={{ color: "var(--text-tertiary)" }}
                 >
-                  {exampleCount}件
+                  {t("exampleCountInline", { n: exampleCount })}
                 </span>
               )}
             </h2>
@@ -565,7 +615,7 @@ export default async function BlueprintPage({ params }: Props) {
                 className="text-sm font-semibold"
                 style={{ color: "var(--amber)" }}
               >
-                すべて見る →
+                {t("examplesViewAll")}
               </Link>
             )}
           </div>
@@ -580,16 +630,16 @@ export default async function BlueprintPage({ params }: Props) {
               <div className="mt-6">
                 <AppStoreCTA
                   variant="inline"
-                  title="あなたの作例を投稿"
-                  description="アプリから写真・実費・コメントを投稿するとここに掲載されます。"
+                  title={t("examplesPostTitle")}
+                  description={t("examplesPostBody")}
                 />
               </div>
             </>
           ) : (
             <AppStoreCTA
               variant="inline"
-              title="作例を投稿するにはアプリから"
-              description="写真・実費・コメントをアプリで投稿するとここに掲載されます。"
+              title={t("examplesEmptyTitle")}
+              description={t("examplesEmptyBody")}
             />
           )}
         </section>
@@ -600,33 +650,37 @@ export default async function BlueprintPage({ params }: Props) {
         {/* App CTA */}
         <div className="mt-12 no-print">
           <AppStoreCTA
-            title="サイズを変えてカスタム設計"
-            description="アプリでは幅・奥行・高さを入力するだけで設計図と材料リストを自動生成。"
+            title={t("appCtaTitle")}
+            description={t("appCtaDescription")}
           />
         </div>
 
         {/* 内部リンク — カテゴリ・対応店舗への動線 */}
         <RelatedNav
-          title="このカテゴリ・店舗で他の設計図を探す"
+          title={t("relatedNavTitle")}
           items={[
             {
-              href: `/category/${uc?.categorySlug ?? bp.categorySlug}`,
-              label: `📐 ${uc?.category ?? bp.category}を全部見る`,
+              href: `/category/${categorySlug}`,
+              label: t("relatedNavCategoryTpl", { category: categoryLabel }),
             },
-            ...retailers.map((r) => ({
-              href: `/store/${retailerSlugs[r]}`,
-              label: `🏬 ${r}で買える設計図`,
-            })),
+            ...retailers.map((r) => {
+              const key = retailerKeyMap[r];
+              const retailerLabel = key ? (tFooter(`retailers.${key}` as never) as string) : r;
+              return {
+                href: `/store/${retailerSlugs[r]}`,
+                label: t("relatedNavRetailerTpl", { retailer: retailerLabel }),
+              };
+            }),
           ]}
         />
 
         {/* 関連設計図 */}
         {relatedUseCases.length > 0 && (
           <section className="mt-12 no-print">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">関連設計図</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">{t("relatedHeading")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {relatedUseCases.map((uc) => (
-                <BlueprintCard key={uc.id} useCase={uc} exampleCount={exampleCounts[uc.id] ?? 0} />
+              {relatedUseCases.map((relatedUc) => (
+                <BlueprintCard key={relatedUc.id} useCase={relatedUc} exampleCount={exampleCounts[relatedUc.id] ?? 0} />
               ))}
             </div>
           </section>

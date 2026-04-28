@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { Comment, RatingSummary } from "@/lib/firestore";
 import { userProfilePath } from "@/lib/userPath";
 
@@ -78,6 +79,7 @@ interface Props {
  * コメントは maxComments 件までを表示し、それ以上はアプリで全件閲覧してもらう。
  */
 export default function RatingsCommentsSection({ rating, comments, maxComments = 3 }: Props) {
+  const t = useTranslations("RatingsComments");
   const avg = rating.count > 0 ? rating.average : 0;
   const avgLabel = avg > 0 ? avg.toFixed(1) : "–";
   const visibleComments = comments.slice(0, maxComments);
@@ -85,7 +87,7 @@ export default function RatingsCommentsSection({ rating, comments, maxComments =
   return (
     <section className="mt-10 no-print">
       {/* 評価 */}
-      <h2 className="text-xl font-bold text-gray-900 mb-3">評価</h2>
+      <h2 className="text-xl font-bold text-gray-900 mb-3">{t("ratingsHeading")}</h2>
       <div
         className="rounded-xl px-4 py-3 flex items-center gap-3"
         style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
@@ -93,26 +95,26 @@ export default function RatingsCommentsSection({ rating, comments, maxComments =
         <Stars value={avg} size={20} />
         <div className="flex items-baseline gap-1">
           <span className="font-bold text-gray-900">{avgLabel}</span>
-          <span className="text-sm text-gray-500">/ 5</span>
+          <span className="text-sm text-gray-500">{t("outOf")}</span>
         </div>
-        <span className="text-sm text-gray-500">({rating.count}件)</span>
+        <span className="text-sm text-gray-500">{t("ratingCount", { count: rating.count })}</span>
         <span
           className="ml-auto text-xs"
           style={{ color: "var(--text-tertiary)" }}
         >
-          評価はアプリから
+          {t("ratingsAppOnly")}
         </span>
       </div>
 
       {/* コメント */}
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">
-        コメント
+        {t("commentsHeading")}
         {comments.length > 0 && (
           <span
             className="ml-2 text-sm font-medium"
             style={{ color: "var(--text-tertiary)" }}
           >
-            {comments.length}件
+            {t("commentCount", { count: comments.length })}
           </span>
         )}
       </h2>
@@ -122,7 +124,7 @@ export default function RatingsCommentsSection({ rating, comments, maxComments =
           className="rounded-xl px-4 py-6 text-sm text-center"
           style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
         >
-          まだコメントはありません。コメントの投稿はアプリから。
+          {t("empty")}
         </div>
       ) : (
         <ul
@@ -140,7 +142,7 @@ export default function RatingsCommentsSection({ rating, comments, maxComments =
                   /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={c.authorPhotoURL}
-                    alt={`${c.authorName} のアバター`}
+                    alt={t("avatarAltTpl", { name: c.authorName })}
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -182,14 +184,14 @@ export default function RatingsCommentsSection({ rating, comments, maxComments =
         >
           <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
             {hiddenCount > 0
-              ? `残り ${hiddenCount} 件のコメントはアプリで`
-              : "コメントの投稿はアプリから"}
+              ? t("remainingInApp", { n: hiddenCount })
+              : t("postInApp")}
           </p>
           <a
             href={APP_STORE_URL}
             className="btn-amber text-xs shrink-0"
           >
-            アプリで開く
+            {t("openInApp")}
           </a>
         </div>
       )}

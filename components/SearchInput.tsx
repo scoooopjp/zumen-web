@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { useTranslations } from "next-intl";
 
 interface Props {
   placeholder?: string;
@@ -9,9 +10,10 @@ interface Props {
 }
 
 export default function SearchInput({
-  placeholder = "棚、ベンチ、SPF 1×4 など…",
+  placeholder,
   className,
 }: Props) {
+  const t = useTranslations("SearchInput");
   const router = useRouter();
   const params = useSearchParams();
   const query = params.get("q") ?? "";
@@ -63,8 +65,8 @@ export default function SearchInput({
           name="q"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder={placeholder}
-          aria-label="設計図を検索"
+          placeholder={placeholder ?? t("placeholder")}
+          aria-label={t("ariaLabel")}
           className="flex-1 bg-transparent py-2.5 px-2 text-sm outline-none"
           style={{ color: "var(--navy-deep)" }}
         />
@@ -75,7 +77,7 @@ export default function SearchInput({
         style={{ padding: "9px 16px", borderRadius: "10px" }}
         disabled={isPending}
       >
-        検索
+        {t("submit")}
       </button>
     </form>
   );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import BlueprintFilters from "@/components/BlueprintFilters";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -19,14 +20,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const cat = categories.find((c) => c.slug === slug);
   if (!cat) return {};
-  const ogUrl = `/og?title=${encodeURIComponent(`${cat.name} DIY 設計図`)}&category=${encodeURIComponent("カテゴリ")}&icon=${encodeURIComponent("📐")}`;
+  const t = await getTranslations("CategoryDetail");
+  const tFooter = await getTranslations("Footer");
+  const categoryLabel = tFooter(`categories.${slug}` as never) as string;
+  const ogUrl = `/og?title=${encodeURIComponent(t("metaTitleTpl", { category: categoryLabel }))}&category=${encodeURIComponent("📐")}&icon=${encodeURIComponent("📐")}`;
   return {
-    title: `${cat.name} DIY 設計図一覧`,
-    description: `${cat.name}のDIY設計図を一覧で探せます。ホームセンター別の材料リスト付き。`,
+    title: t("metaTitleTpl", { category: categoryLabel }),
+    description: t("metaDescriptionTpl", { category: categoryLabel }),
     alternates: { canonical: `/category/${slug}` },
     openGraph: {
-      title: `${cat.name} DIY 設計図 | ZUMEN`,
-      description: `${cat.name}のDIY設計図。${cat.description}`,
+      title: t("ogTitleTpl", { category: categoryLabel }),
+      description: t("ogDescriptionTpl", { category: categoryLabel, description: cat.description }),
       images: [{ url: ogUrl, width: 1200, height: 630 }],
     },
     twitter: { card: "summary_large_image", images: [ogUrl] },
@@ -38,6 +42,11 @@ export default async function CategoryDetailPage({ params }: Props) {
   const cat = categories.find((c) => c.slug === slug);
   if (!cat) notFound();
 
+  const t = await getTranslations("CategoryDetail");
+  const tCommon = await getTranslations("Common");
+  const tFooter = await getTranslations("Footer");
+  const categoryLabel = tFooter(`categories.${slug}` as never) as string;
+
   const [allUseCases, exampleCounts] = await Promise.all([
     fetchUseCases(),
     fetchExampleCountsByUseCase(),
@@ -48,7 +57,7 @@ export default async function CategoryDetailPage({ params }: Props) {
   const collectionLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: `${cat.name} DIY 設計図一覧`,
+    name: t("metaTitleTpl", { category: categoryLabel }),
     description: cat.description,
     url: `${BASE}/category/${slug}`,
     mainEntity: {
@@ -71,13 +80,13 @@ export default async function CategoryDetailPage({ params }: Props) {
       />
       <Breadcrumbs
         items={[
-          { name: "TOP", href: "/" },
-          { name: "設計図一覧", href: "/category" },
-          { name: cat.name },
+          { name: tCommon("breadcrumbHome"), href: "/" },
+          { name: t("breadcrumbCategory"), href: "/category" },
+          { name: categoryLabel },
         ]}
       />
 
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">{cat.name} DIY 設計図</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-2">{t("h1Tpl", { category: categoryLabel })}</h1>
       <p className="text-gray-500 mb-8">{cat.description}</p>
 
       {items.length > 0 ? (
@@ -85,24 +94,27 @@ export default async function CategoryDetailPage({ params }: Props) {
       ) : (
         <div className="text-center py-16 mb-12">
           <div className="flex justify-center mb-4">
-            <LottieIcon name="searching" size={180} ariaLabel="設計図を準備中" />
+            <LottieIcon name="searching" size={180} ariaLabel={t("preparingTitle")} />
           </div>
-          <p className="text-gray-500">設計図を準備中です。</p>
+          <p className="text-gray-500">{t("preparingBody")}</p>
         </div>
       )}
 
       <AppStoreCTA
         variant="banner"
-        title={`${cat.name}をカスタムサイズで作る`}
-        description="アプリでは幅・奥行・高さを入力するだけで設計図と材料リストを自動生成。"
+        title={t("appCtaTitleTpl", { category: categoryLabel })}
+        description={t("appCtaDescription")}
       />
 
       <RelatedNav
-        title="他のカテゴリも探す"
+        title={t("relatedNavTitle")}
         items={categories
           .filter((c) => c.slug !== slug)
           .slice(0, 12)
-          .map((c) => ({ href: `/category/${c.slug}`, label: c.name }))}
+          .map((c) => ({
+            href: `/category/${c.slug}`,
+            label: tFooter(`categories.${c.slug}` as never) as string,
+          }))}
       />
     </div>
   );

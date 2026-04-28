@@ -1,8 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { track } from "@/lib/analytics";
 
 export default function PrintButton() {
+  const t = useTranslations("Print");
   const onClick = () => {
     track("print_click", {});
     if (typeof window !== "undefined") window.print();
@@ -18,7 +20,7 @@ export default function PrintButton() {
         color: "var(--text-secondary)",
         border: "1px solid var(--border)",
       }}
-      aria-label="設計図を印刷"
+      aria-label={t("ariaLabel")}
     >
       <svg
         width="15"
@@ -35,7 +37,7 @@ export default function PrintButton() {
         <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
         <rect x="6" y="14" width="12" height="8" />
       </svg>
-      印刷
+      {t("buttonLabel")}
     </button>
   );
 }

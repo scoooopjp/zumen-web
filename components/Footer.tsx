@@ -1,102 +1,72 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
-const indoor = [
-  { slug: "tana", name: "棚" },
-  { slug: "bookshelf", name: "本棚" },
-  { slug: "tv-stand", name: "TV台" },
-  { slug: "dining-table", name: "ダイニングテーブル" },
-  { slug: "desk", name: "デスク・作業台" },
-  { slug: "shoe-rack", name: "シューズラック" },
-  { slug: "entrance-storage", name: "玄関収納" },
-  { slug: "hanger-rack", name: "ハンガーラック" },
-];
-
-const outdoor = [
-  { slug: "bench", name: "ベンチ" },
-  { slug: "garden-table", name: "ガーデンテーブル" },
-  { slug: "deck", name: "ウッドデッキ" },
-  { slug: "garden-fence", name: "ガーデンフェンス" },
-  { slug: "flower-box", name: "フラワーボックス" },
-  { slug: "planter-dai", name: "プランター台" },
-  { slug: "compost", name: "コンポスト" },
-  { slug: "storage-shed", name: "物置・収納" },
-];
-
-const petKidsOther = [
-  { slug: "cat-walk", name: "キャットウォーク" },
-  { slug: "cat-tower", name: "キャットタワー" },
-  { slug: "dog-house", name: "犬小屋" },
-  { slug: "pet-storage", name: "ペット用収納" },
-  { slug: "kids-furniture", name: "子供用家具" },
-  { slug: "sign", name: "看板・インテリア" },
-];
-
-const stores = [
-  { slug: "cainz", name: "カインズ" },
-  { slug: "komeri", name: "コメリ" },
-  { slug: "kohnan", name: "コーナン" },
-  { slug: "dcm", name: "DCM" },
-];
+const indoor = ["tana", "bookshelf", "tv-stand", "dining-table", "desk", "shoe-rack", "entrance-storage", "hanger-rack"] as const;
+const outdoor = ["bench", "garden-table", "deck", "garden-fence", "flower-box", "planter-dai", "compost", "storage-shed"] as const;
+const petKidsOther = ["cat-walk", "cat-tower", "dog-house", "pet-storage", "kids-furniture", "sign"] as const;
+const stores = ["cainz", "komeri", "kohnan", "dcm"] as const;
 
 export default function Footer() {
+  const t = useTranslations("Footer");
+  const tSite = useTranslations("Site");
   return (
     <footer className="border-t border-gray-100 mt-24">
       <div className="max-w-5xl mx-auto px-4 py-12">
         <div className="flex flex-col gap-10">
           <div>
             <p className="font-bold text-lg text-gray-900">ZUMEN</p>
-            <p className="text-sm text-gray-500 mt-1">つくりたいを、つくれるに。</p>
+            <p className="text-sm text-gray-500 mt-1">{tSite("tagline")}</p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-sm text-gray-600">
             <div className="flex flex-col gap-2">
-              <p className="font-medium text-gray-900">室内・収納</p>
-              {indoor.map((c) => (
-                <Link key={c.slug} href={`/category/${c.slug}`} className="hover:text-gray-900">
-                  {c.name}
+              <p className="font-medium text-gray-900">{t("indoor")}</p>
+              {indoor.map((slug) => (
+                <Link key={slug} href={`/category/${slug}`} className="hover:text-gray-900">
+                  {t(`categories.${slug}`)}
                 </Link>
               ))}
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-medium text-gray-900">屋外・ガーデン</p>
-              {outdoor.map((c) => (
-                <Link key={c.slug} href={`/category/${c.slug}`} className="hover:text-gray-900">
-                  {c.name}
+              <p className="font-medium text-gray-900">{t("outdoor")}</p>
+              {outdoor.map((slug) => (
+                <Link key={slug} href={`/category/${slug}`} className="hover:text-gray-900">
+                  {t(`categories.${slug}`)}
                 </Link>
               ))}
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-medium text-gray-900">ペット・子供・装飾</p>
-              {petKidsOther.map((c) => (
-                <Link key={c.slug} href={`/category/${c.slug}`} className="hover:text-gray-900">
-                  {c.name}
+              <p className="font-medium text-gray-900">{t("petKidsOther")}</p>
+              {petKidsOther.map((slug) => (
+                <Link key={slug} href={`/category/${slug}`} className="hover:text-gray-900">
+                  {t(`categories.${slug}`)}
                 </Link>
               ))}
               <Link href="/category" className="hover:text-gray-900 text-gray-500 mt-1">
-                すべて見る →
+                {t("viewAll")}
               </Link>
             </div>
             <div className="flex flex-col gap-2">
-              <p className="font-medium text-gray-900">ホームセンター</p>
-              {stores.map((s) => (
-                <Link key={s.slug} href={`/store/${s.slug}`} className="hover:text-gray-900">
-                  {s.name}
+              <p className="font-medium text-gray-900">{t("stores")}</p>
+              {stores.map((slug) => (
+                <Link key={slug} href={`/store/${slug}`} className="hover:text-gray-900">
+                  {t(`retailers.${slug}`)}
                 </Link>
               ))}
               <Link href="/example" className="hover:text-gray-900 mt-3 font-medium text-gray-900">
-                作例ギャラリー
+                {t("exampleGallery")}
               </Link>
               <Link href="/search" className="hover:text-gray-900">
-                検索
+                {t("search")}
               </Link>
             </div>
           </div>
         </div>
 
         <div className="flex flex-wrap gap-4 mt-10 pt-6 border-t border-gray-100">
-          <p className="text-xs text-gray-400">© 2025 ZUMEN. All rights reserved.</p>
-          <a href="https://www.scoooop.com/privacy-policy/" className="text-xs text-gray-400 hover:text-gray-600" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>
-          <Link href="/support" className="text-xs text-gray-400 hover:text-gray-600">サポート</Link>
+          <p className="text-xs text-gray-400">{t("copyright")}</p>
+          <a href="https://www.scoooop.com/privacy-policy/" className="text-xs text-gray-400 hover:text-gray-600" target="_blank" rel="noopener noreferrer">{t("privacyPolicy")}</a>
+          <Link href="/support" className="text-xs text-gray-400 hover:text-gray-600">{t("support")}</Link>
         </div>
       </div>
     </footer>

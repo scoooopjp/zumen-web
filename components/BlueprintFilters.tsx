@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import BlueprintCard from "@/components/BlueprintCard";
 import LottieIcon from "@/components/LottieIcon";
 import type { UseCase, Difficulty, IndoorOutdoor } from "@/lib/data";
@@ -14,34 +15,6 @@ type DifficultyFilter = Difficulty | "all";
 type IndoorFilter = IndoorOutdoor | "all";
 type BudgetTier = "all" | "u3000" | "u10000" | "o10000";
 type TimeTier = "all" | "u60" | "u180" | "o180";
-
-const difficulties: { value: DifficultyFilter; label: string }[] = [
-  { value: "all", label: "すべて" },
-  { value: "初心者向け", label: "初心者" },
-  { value: "中級者向け", label: "中級者" },
-  { value: "上級者向け", label: "上級者" },
-];
-
-const indoorOutdoors: { value: IndoorFilter; label: string }[] = [
-  { value: "all", label: "すべて" },
-  { value: "室内", label: "室内" },
-  { value: "屋外", label: "屋外" },
-  { value: "両用", label: "両用" },
-];
-
-const budgets: { value: BudgetTier; label: string }[] = [
-  { value: "all", label: "すべて" },
-  { value: "u3000", label: "〜3,000円" },
-  { value: "u10000", label: "〜10,000円" },
-  { value: "o10000", label: "10,000円〜" },
-];
-
-const times: { value: TimeTier; label: string }[] = [
-  { value: "all", label: "すべて" },
-  { value: "u60", label: "〜1時間" },
-  { value: "u180", label: "〜3時間" },
-  { value: "o180", label: "3時間〜" },
-];
 
 function matchBudget(uc: UseCase, tier: BudgetTier): boolean {
   if (tier === "all") return true;
@@ -60,6 +33,36 @@ function matchTime(uc: UseCase, tier: TimeTier): boolean {
 }
 
 export default function BlueprintFilters({ useCases, exampleCounts }: Props) {
+  const t = useTranslations("BlueprintFilters");
+
+  const difficulties: { value: DifficultyFilter; label: string }[] = [
+    { value: "all", label: t("all") },
+    { value: "初心者向け", label: t("diffBeginner") },
+    { value: "中級者向け", label: t("diffIntermediate") },
+    { value: "上級者向け", label: t("diffAdvanced") },
+  ];
+
+  const indoorOutdoors: { value: IndoorFilter; label: string }[] = [
+    { value: "all", label: t("all") },
+    { value: "室内", label: t("indoor") },
+    { value: "屋外", label: t("outdoor") },
+    { value: "両用", label: t("both") },
+  ];
+
+  const budgets: { value: BudgetTier; label: string }[] = [
+    { value: "all", label: t("all") },
+    { value: "u3000", label: t("budgetUnder3000") },
+    { value: "u10000", label: t("budgetUnder10000") },
+    { value: "o10000", label: t("budgetOver10000") },
+  ];
+
+  const times: { value: TimeTier; label: string }[] = [
+    { value: "all", label: t("all") },
+    { value: "u60", label: t("timeUnder1h") },
+    { value: "u180", label: t("timeUnder3h") },
+    { value: "o180", label: t("timeOver3h") },
+  ];
+
   const [diff, setDiff] = useState<DifficultyFilter>("all");
   const [indoor, setIndoor] = useState<IndoorFilter>("all");
   const [budget, setBudget] = useState<BudgetTier>("all");
@@ -92,7 +95,7 @@ export default function BlueprintFilters({ useCases, exampleCounts }: Props) {
       >
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold" style={{ color: "var(--navy-deep)" }}>
-            絞り込み
+            {t("title")}
           </p>
           {hasActiveFilter && (
             <button
@@ -101,19 +104,19 @@ export default function BlueprintFilters({ useCases, exampleCounts }: Props) {
               className="text-xs font-semibold"
               style={{ color: "var(--amber)" }}
             >
-              リセット
+              {t("reset")}
             </button>
           )}
         </div>
 
-        <FilterRow label="難易度" options={difficulties} value={diff} onChange={setDiff} />
-        <FilterRow label="場所" options={indoorOutdoors} value={indoor} onChange={setIndoor} />
-        <FilterRow label="予算" options={budgets} value={budget} onChange={setBudget} />
-        <FilterRow label="制作時間" options={times} value={time} onChange={setTime} />
+        <FilterRow label={t("difficulty")} options={difficulties} value={diff} onChange={setDiff} />
+        <FilterRow label={t("place")} options={indoorOutdoors} value={indoor} onChange={setIndoor} />
+        <FilterRow label={t("budget")} options={budgets} value={budget} onChange={setBudget} />
+        <FilterRow label={t("time")} options={times} value={time} onChange={setTime} />
       </div>
 
       <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
-        {filtered.length} 件 / 全 {useCases.length} 件
+        {t("matchCount", { filtered: filtered.length, total: useCases.length })}
       </p>
 
       {filtered.length > 0 ? (
@@ -125,15 +128,15 @@ export default function BlueprintFilters({ useCases, exampleCounts }: Props) {
       ) : (
         <div className="text-center py-16 mb-12">
           <div className="flex justify-center mb-4">
-            <LottieIcon name="searching" size={180} ariaLabel="該当なし" />
+            <LottieIcon name="searching" size={180} ariaLabel={t("noMatchAria")} />
           </div>
-          <p className="text-gray-500 mb-4">条件に一致する設計図がありません。</p>
+          <p className="text-gray-500 mb-4">{t("noMatchBody")}</p>
           <button
             type="button"
             onClick={reset}
             className="btn-primary text-sm inline-flex items-center gap-1.5"
           >
-            フィルタをリセット
+            {t("resetFilter")}
           </button>
         </div>
       )}

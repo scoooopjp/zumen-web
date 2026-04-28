@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export interface Crumb {
   name: string;
@@ -12,6 +13,7 @@ const BASE_URL = "https://zumen.scoooop.com";
  * 最後の要素 (現在地) は href なしで渡す。
  */
 export default function Breadcrumbs({ items }: { items: Crumb[] }) {
+  const t = useTranslations("Common");
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -30,7 +32,7 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <nav
-        aria-label="パンくずリスト"
+        aria-label={t("breadcrumbAria")}
         className="text-sm text-gray-400 mb-6 flex items-center gap-1.5 flex-wrap"
       >
         {items.map((c, i) => (
