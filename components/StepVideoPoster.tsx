@@ -12,6 +12,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import AppGatedActionDialog from "./AppGatedActionDialog";
 
 interface Props {
@@ -27,6 +28,7 @@ export default function StepVideoPoster({
   source = "step_video_play",
 }: Props) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("StepVideo");
 
   return (
     <>
@@ -34,12 +36,12 @@ export default function StepVideoPoster({
         type="button"
         onClick={() => setOpen(true)}
         className="relative w-full block rounded-xl overflow-hidden bg-gray-100 group"
-        aria-label={`工程 ${stepOrder} の動画を見る`}
+        aria-label={t("playAriaTpl", { n: stepOrder })}
       >
         {imageURL ? (
           <Image
             src={imageURL}
-            alt={`工程 ${stepOrder} の動画ポスター`}
+            alt={t("posterAltTpl", { n: stepOrder })}
             width={1200}
             height={900}
             sizes="(max-width: 768px) 100vw, 768px"
@@ -79,16 +81,16 @@ export default function StepVideoPoster({
           className="absolute top-2 left-2 text-[10px] font-bold px-2 py-0.5 rounded-full"
           style={{ background: "var(--amber-pale)", color: "var(--amber)" }}
         >
-          動画あり
+          {t("videoBadge")}
         </span>
       </button>
 
       <AppGatedActionDialog
         open={open}
         onClose={() => setOpen(false)}
-        title="工程動画はアプリで視聴"
-        description="工程の動画はアプリ限定です。リワード広告 (約30秒)・単発購入・プレミアム月額のいずれかで視聴できます。"
-        ctaLabel="App Store で開く"
+        title={t("dialogTitle")}
+        description={t("dialogDescription")}
+        ctaLabel={t("dialogCta")}
         source={source}
       />
     </>

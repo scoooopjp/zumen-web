@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { sandGrit, drillDiameter, spacingLabel, screwLabel } from "@/lib/stepLabelExtractor";
 
 // Lottie アセットが存在するタイプ（追加したら public/lottie に同名 JSON を置く）
@@ -25,25 +26,26 @@ const LOTTIE_AVAILABLE: ReadonlySet<string> = new Set([
 function resolveCaption(
   type: IllType,
   stepDescription: string,
+  t: (key: string, values?: Record<string, string | number>) => string,
   dimensions?: { width: number; depth: number; height: number },
 ): string | undefined {
   switch (type) {
-    case "measure":    return dimensions ? `W ${dimensions.width} mm` : "W × D × H";
-    case "markLine":   return "さしがね使用";
-    case "cut":        return "ホームセンターでカット可";
+    case "measure":    return dimensions ? t("captionMeasureTpl", { w: dimensions.width }) : t("captionMeasureFallback");
+    case "markLine":   return t("captionMarkLine");
+    case "cut":        return t("captionCut");
     case "sand":       return sandGrit(stepDescription);
     case "drill":      return drillDiameter(stepDescription);
-    case "levelCheck": return "水平 ✓";
+    case "levelCheck": return t("captionLevelCheck");
     case "topBoard":   return spacingLabel(stepDescription);
-    case "frame":      return "直角を確認";
-    case "wallMount":  return "下地に固定";
-    case "waterproof": return "2度塗り必須";
-    case "paint":      return "ワトコオイル・ニス";
-    case "inspect":    return "ぐらつきなし ✓";
+    case "frame":      return t("captionFrame");
+    case "wallMount":  return t("captionWallMount");
+    case "waterproof": return t("captionWaterproof");
+    case "paint":      return t("captionPaint");
+    case "inspect":    return t("captionInspect");
     case "screw":      return screwLabel(stepDescription);
-    case "complete":   return "完成！おめでとう";
-    case "assemble":   return "接合部をしっかり";
-    case "install":    return "下地に固定";
+    case "complete":   return t("captionComplete");
+    case "assemble":   return t("captionAssemble");
+    case "install":    return t("captionInstall");
     default:           return undefined;
   }
 }
@@ -110,33 +112,39 @@ interface StepTheme {
   bgDark: string;
   accent: string;
   secondary: string;
-  label: string;
-  actionLabel: string;
 }
 
 /**
  * iOS `StepTheme(type:)` と完全対応。Color(red, green, blue) (0-1) を
- * #RRGGBB に変換済み。label / actionLabel は iOS `IllType` と同一。
+ * #RRGGBB に変換済み。label / actionLabel は翻訳で解決する。
  */
 const THEMES: Record<IllType, StepTheme> = {
-  measure:    { bgLight: "#E6F2FF", bgDark: "#CCE6FA", accent: "#2E78C7", secondary: "#99C7F2", label: "採寸",     actionLabel: "採寸する"   },
-  markLine:   { bgLight: "#F0E6FF", bgDark: "#DBD1FA", accent: "#7A40C7", secondary: "#C7A6F2", label: "墨付け",   actionLabel: "線を引く"   },
-  cut:        { bgLight: "#FFF2DE", bgDark: "#FFE0BF", accent: "#D96110", secondary: "#FAAD66", label: "カット",   actionLabel: "カットする" },
-  sand:       { bgLight: "#FFF7E0", bgDark: "#FAEBBF", accent: "#C78514", secondary: "#F2BF61", label: "研磨",     actionLabel: "やすりがけ" },
-  drill:      { bgLight: "#242938", bgDark: "#141A29", accent: "#38D9BF", secondary: "#26998C", label: "穴あけ",   actionLabel: "穴をあける" },
-  foundation: { bgLight: "#EBDBC7", bgDark: "#CCB394", accent: "#664221", secondary: "#A67A4D", label: "基礎",     actionLabel: "整地・基礎" },
-  levelCheck: { bgLight: "#E0EBFA", bgDark: "#C7D6F5", accent: "#385AAD", secondary: "#8CADE6", label: "水平確認", actionLabel: "水平を確認" },
-  topBoard:   { bgLight: "#FAF0DB", bgDark: "#EBD6AD", accent: "#8C591E", secondary: "#CC9959", label: "天板取付", actionLabel: "天板を張る" },
-  frame:      { bgLight: "#FFEBE6", bgDark: "#FAD6CC", accent: "#B8332E", secondary: "#EB998C", label: "組立",     actionLabel: "枠を組む"   },
-  wallMount:  { bgLight: "#E6F7EB", bgDark: "#CCEBD6", accent: "#2E8C52", secondary: "#80CC99", label: "壁固定",   actionLabel: "壁に固定"   },
-  waterproof: { bgLight: "#DBF5FA", bgDark: "#BDE6F5", accent: "#1485A6", secondary: "#66C7E0", label: "防腐処理", actionLabel: "防腐処理"   },
-  paint:      { bgLight: "#E6FAEB", bgDark: "#CCF2D6", accent: "#1F9E61", secondary: "#73D194", label: "塗装",     actionLabel: "塗装仕上げ" },
-  inspect:    { bgLight: "#F2E6FA", bgDark: "#E0D1F5", accent: "#732EB8", secondary: "#B88CEB", label: "安全確認", actionLabel: "安全確認"   },
-  screw:      { bgLight: "#E6EBF5", bgDark: "#CCD6EB", accent: "#47618C", secondary: "#8CA6CC", label: "ビス固定", actionLabel: "ビス固定"   },
-  complete:   { bgLight: "#FFFAE0", bgDark: "#FAF0B8", accent: "#A67A0D", secondary: "#E6B833", label: "完成",     actionLabel: "完成！"     },
+  measure:    { bgLight: "#E6F2FF", bgDark: "#CCE6FA", accent: "#2E78C7", secondary: "#99C7F2" },
+  markLine:   { bgLight: "#F0E6FF", bgDark: "#DBD1FA", accent: "#7A40C7", secondary: "#C7A6F2" },
+  cut:        { bgLight: "#FFF2DE", bgDark: "#FFE0BF", accent: "#D96110", secondary: "#FAAD66" },
+  sand:       { bgLight: "#FFF7E0", bgDark: "#FAEBBF", accent: "#C78514", secondary: "#F2BF61" },
+  drill:      { bgLight: "#242938", bgDark: "#141A29", accent: "#38D9BF", secondary: "#26998C" },
+  foundation: { bgLight: "#EBDBC7", bgDark: "#CCB394", accent: "#664221", secondary: "#A67A4D" },
+  levelCheck: { bgLight: "#E0EBFA", bgDark: "#C7D6F5", accent: "#385AAD", secondary: "#8CADE6" },
+  topBoard:   { bgLight: "#FAF0DB", bgDark: "#EBD6AD", accent: "#8C591E", secondary: "#CC9959" },
+  frame:      { bgLight: "#FFEBE6", bgDark: "#FAD6CC", accent: "#B8332E", secondary: "#EB998C" },
+  wallMount:  { bgLight: "#E6F7EB", bgDark: "#CCEBD6", accent: "#2E8C52", secondary: "#80CC99" },
+  waterproof: { bgLight: "#DBF5FA", bgDark: "#BDE6F5", accent: "#1485A6", secondary: "#66C7E0" },
+  paint:      { bgLight: "#E6FAEB", bgDark: "#CCF2D6", accent: "#1F9E61", secondary: "#73D194" },
+  inspect:    { bgLight: "#F2E6FA", bgDark: "#E0D1F5", accent: "#732EB8", secondary: "#B88CEB" },
+  screw:      { bgLight: "#E6EBF5", bgDark: "#CCD6EB", accent: "#47618C", secondary: "#8CA6CC" },
+  complete:   { bgLight: "#FFFAE0", bgDark: "#FAF0B8", accent: "#A67A0D", secondary: "#E6B833" },
   // legacy
-  assemble:   { bgLight: "#FFEBE6", bgDark: "#FAD6CC", accent: "#B8332E", secondary: "#EB998C", label: "組立",     actionLabel: "枠を組む"   },
-  install:    { bgLight: "#E6F7EB", bgDark: "#CCEBD6", accent: "#2E8C52", secondary: "#80CC99", label: "取付",     actionLabel: "壁に固定"   },
+  assemble:   { bgLight: "#FFEBE6", bgDark: "#FAD6CC", accent: "#B8332E", secondary: "#EB998C" },
+  install:    { bgLight: "#E6F7EB", bgDark: "#CCEBD6", accent: "#2E8C52", secondary: "#80CC99" },
+};
+
+/** IllType → 翻訳キーのサフィックス (camelCase) */
+const ILL_KEY: Record<IllType, string> = {
+  measure: "Measure", markLine: "MarkLine", cut: "Cut", sand: "Sand", drill: "Drill",
+  foundation: "Foundation", levelCheck: "LevelCheck", topBoard: "TopBoard", frame: "Frame",
+  wallMount: "WallMount", waterproof: "Waterproof", paint: "Paint", inspect: "Inspect",
+  screw: "Screw", complete: "Complete", assemble: "Assemble", install: "Install",
 };
 
 /* ── キーワード判定（illustrationType 未指定時のフォールバック） ── */
@@ -172,6 +180,7 @@ type DiagramProps = {
   dimensions?: { width: number; depth: number; height: number };
   /** sand/drill/topBoard/screw の図中ラベルを stepDescription から動的抽出する */
   stepDescription: string;
+  t: (key: string, values?: Record<string, string | number>) => string;
 };
 
 function Svg({ children }: { children: React.ReactNode }) {
@@ -191,7 +200,7 @@ function Svg({ children }: { children: React.ReactNode }) {
 
 const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
   // 採寸: 定規 + 板 + 寸法矢印
-  measure: ({ accent, secondary, dimensions }) => {
+  measure: ({ accent, secondary, dimensions, t }) => {
     const cx = W / 2, cy = H / 2;
     const boardY = cy - 10, boardH = 30, boardW = W * 0.72;
     const bx = cx - boardW / 2;
@@ -199,7 +208,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
     const rulerY = boardY - 16;
     const ticks = Math.max(8, Math.floor(boardW / 12));
     const step = boardW / ticks;
-    const label = dimensions ? `W ${dimensions.width} mm` : "W × D × H";
+    const label = dimensions ? t("captionMeasureTpl", { w: dimensions.width }) : t("captionMeasureFallback");
     return (
       <Svg>
         <rect x={bx - 4} y={rulerY - 6} width={boardW + 8} height="14" rx="3" fill={secondary} fillOpacity="0.5"/>
@@ -220,7 +229,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
   },
 
   // 墨付け: 板 + 3本の墨線 + ▼マーカー + 鉛筆
-  markLine: ({ accent }) => {
+  markLine: ({ accent, t }) => {
     const cx = W / 2, cy = H / 2;
     const boardW = W * 0.70, boardH = 40;
     const bx = cx - boardW / 2, by = cy - boardH / 2 + 8;
@@ -241,13 +250,13 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
           <polygon points="-4,0 4,0 0,10" fill="#EBC799"/>
           <polygon points="-1.5,8 1.5,8 0,10" fill="#000" fillOpacity="0.7"/>
         </g>
-        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="500" fill={accent} fillOpacity="0.8">さしがね使用</text>
+        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="500" fill={accent} fillOpacity="0.8">{t("diagramTrySquare")}</text>
       </Svg>
     );
   },
 
   // カット: 板 + 切断ライン + のこぎり + 切り屑
-  cut: ({ accent, secondary }) => {
+  cut: ({ accent, secondary, t }) => {
     const cx = W / 2, cy = H / 2;
     const boardW = W * 0.68, boardH = 34;
     const bx = cx - boardW / 2, by = cy;
@@ -255,8 +264,8 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
     const sawX = cutX - 2, sawTop = by - 34;
     return (
       <Svg>
-        <text x={cx} y={by - 52} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="500" fill={accent} fillOpacity="0.85">ホームセンター</text>
-        <text x={cx} y={by - 40} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="500" fill={accent} fillOpacity="0.85">カットサービスOK</text>
+        <text x={cx} y={by - 52} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="500" fill={accent} fillOpacity="0.85">{t("diagramHomeCenter")}</text>
+        <text x={cx} y={by - 40} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="500" fill={accent} fillOpacity="0.85">{t("diagramCutServiceOK")}</text>
         <rect x={bx} y={by} width={boardW} height={boardH} fill={accent} fillOpacity="0.20" stroke={accent} strokeOpacity="0.5" strokeWidth="1.5"/>
         <line x1={cutX} y1={by - 8} x2={cutX} y2={by + boardH + 8} stroke={accent} strokeWidth="2.5" strokeLinecap="round" strokeDasharray="4 3"/>
         <g transform={`translate(${sawX} ${sawTop})`}>
@@ -332,7 +341,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
   },
 
   // 基礎: 地面断面 + 砕石 + 束石 + 柱 + GL 線
-  foundation: ({ accent }) => {
+  foundation: ({ accent, t }) => {
     const cx = W / 2, cy = H / 2;
     const groundY = cy + 12;
     const stoneY = cy + 26;
@@ -345,7 +354,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
         ))}
         <rect x={cx - 8} y={cy - 24} width="16" height={stoneY - cy + 24} fill={accent} fillOpacity="0.75" stroke={accent} strokeWidth="1.2"/>
         <rect x={cx - 20} y={stoneY} width="40" height="18" fill="#ADA399" stroke="#000" strokeOpacity="0.3" strokeWidth="1"/>
-        <text x={cx} y={stoneY + 9} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fill="#FFF" fillOpacity="0.9">束石</text>
+        <text x={cx} y={stoneY + 9} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fill="#FFF" fillOpacity="0.9">{t("diagramPierBlock")}</text>
         <line x1="12" y1={groundY + 2} x2={W - 12} y2={groundY + 2} stroke="#5C8CCC" strokeOpacity="0.5" strokeWidth="1" strokeDasharray="4 3"/>
         <text x="20" y={groundY - 3} textAnchor="middle" dominantBaseline="middle" fontSize="8" fontWeight="700" fill="#5C8CCC" fillOpacity="0.7">GL</text>
       </Svg>
@@ -353,7 +362,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
   },
 
   // 水平確認: 板 + 水平器 + 気泡
-  levelCheck: ({ accent }) => {
+  levelCheck: ({ accent, t }) => {
     const cx = W / 2, cy = H / 2;
     const boardW = W * 0.70, boardH = 20;
     const bx = cx - boardW / 2, by = cy + 8;
@@ -367,7 +376,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
         <ellipse cx={cx} cy={levY + 9} rx="5" ry="3" fill="#9EE06B" fillOpacity="0.9"/>
         <line x1={cx - 1} y1={levY + 4} x2={cx - 1} y2={levY + 14} stroke="#FFF" strokeOpacity="0.9" strokeWidth="1"/>
         <line x1={cx + 1} y1={levY + 4} x2={cx + 1} y2={levY + 14} stroke="#FFF" strokeOpacity="0.9" strokeWidth="1"/>
-        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill={accent}>水平 ✓</text>
+        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="12" fontWeight="700" fill={accent}>{t("diagramLevelOk")}</text>
       </Svg>
     );
   },
@@ -403,7 +412,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
   },
 
   // 組立: L字接合 + 4本のビス + 90°マーク
-  frame: ({ accent }) => {
+  frame: ({ accent, t }) => {
     const cx = W / 2, cy = H / 2;
     const thick = 14;
     const screwPositions: [number, number][] = [
@@ -422,13 +431,13 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
           </g>
         ))}
         <text x={cx + 28} y={cy - 28} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={accent}>90°</text>
-        <text x={cx} y={cy + 36} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={accent} fillOpacity="0.85">直角を確認</text>
+        <text x={cx} y={cy + 36} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={accent} fillOpacity="0.85">{t("diagramRightAngle")}</text>
       </Svg>
     );
   },
 
   // 壁固定: 壁断面 + 下地(スタッド) + 板 + Lブラケット + アンカー
-  wallMount: ({ accent }) => {
+  wallMount: ({ accent, t }) => {
     const cx = W / 2, cy = H / 2;
     const bW = W * 0.52, bH = 56;
     const bX = 28, bY = cy - bH / 2;
@@ -442,13 +451,13 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
         <rect x="18" y={brY} width="6" height="20" fill="#8C919E"/>
         <circle cx="16" cy={brY + 6} r="4" fill="#BFBFCC"/>
         <circle cx="16" cy={brY + bH - 16} r="4" fill="#BFBFCC"/>
-        <text x={bX + bW / 2 + 14} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fill={accent}>下地に固定</text>
+        <text x={bX + bW / 2 + 14} y={cy} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fill={accent}>{t("diagramFixToStud")}</text>
       </Svg>
     );
   },
 
   // 防腐処理: 板(半分塗布済) + 刷毛 + しずく
-  waterproof: ({ accent }) => {
+  waterproof: ({ accent, t }) => {
     const cx = W / 2, cy = H / 2;
     const boardW = W * 0.68, boardH = 32;
     const bx = cx - boardW / 2, by = cy + 4;
@@ -469,13 +478,13 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
         {[[coatedW * 0.3, 4], [coatedW * 0.6, 8]].map(([dx, dy], i) => (
           <ellipse key={i} cx={bx + dx} cy={by + boardH + dy + 3} rx="3" ry="4" fill={accent} fillOpacity="0.55"/>
         ))}
-        <text x={cx} y={by + boardH + 20} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={accent}>2度塗り必須</text>
+        <text x={cx} y={by + boardH + 20} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={accent}>{t("diagramTwoCoats")}</text>
       </Svg>
     );
   },
 
   // 塗装: 縞状に塗られた板 + 刷毛
-  paint: ({ accent }) => {
+  paint: ({ accent, t }) => {
     const cx = W / 2, cy = H / 2;
     const boardW = W * 0.68, boardH = 30;
     const bx = cx - boardW / 2, by = cy + 6;
@@ -497,13 +506,13 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
             return <line key={i} x1={bx3} y1="10" x2={bx3 + 1} y2="18" stroke={accent} strokeOpacity="0.9" strokeWidth="1.8"/>;
           })}
         </g>
-        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fill={accent} fillOpacity="0.85">ワトコオイル・ニス</text>
+        <text x={cx} y={by + boardH + 16} textAnchor="middle" dominantBaseline="middle" fontSize="9" fontWeight="700" fill={accent} fillOpacity="0.85">{t("diagramWatcoVarnish")}</text>
       </Svg>
     );
   },
 
   // 安全確認: 棚シルエット + 大きなチェックマーク
-  inspect: ({ accent }) => {
+  inspect: ({ accent, t }) => {
     const cx = W / 2, cy = H / 2;
     return (
       <Svg>
@@ -514,7 +523,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
         <rect x={cx + 22} y={cy - 28} width="8" height="56" fill={accent} fillOpacity="0.4"/>
         <path d={`M ${cx - 14} ${cy + 2} L ${cx - 4} ${cy + 14} L ${cx + 18} ${cy - 16}`}
           fill="none" stroke={accent} strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
-        <text x={cx} y={cy + 40} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={accent}>ぐらつきなし ✓</text>
+        <text x={cx} y={cy + 40} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={accent}>{t("diagramNoWobble")}</text>
       </Svg>
     );
   },
@@ -543,7 +552,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
   },
 
   // 完成: 放射線 + 円 + 大きなチェック + 紙吹雪
-  complete: ({ accent, secondary }) => {
+  complete: ({ accent, secondary, t }) => {
     const cx = W / 2, cy = H / 2;
     const rays = 8;
     const confetti: Array<[number, number, number, number]> = [
@@ -568,7 +577,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
         {confetti.map(([ox, oy, r, a], i) => (
           <circle key={i} cx={cx + ox} cy={cy + oy} r={r} fill={secondary} fillOpacity={a}/>
         ))}
-        <text x={cx} y={cy + 48} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="700" fill={accent}>完成！おめでとう</text>
+        <text x={cx} y={cy + 48} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="700" fill={accent}>{t("diagramDone")}</text>
       </Svg>
     );
   },
@@ -737,6 +746,10 @@ export default function StepIllustration({
   const isDark = type === "drill";
   const labelColor = isDark ? "rgba(255,255,255,0.85)" : theme.accent;
   const hasLottie = LOTTIE_AVAILABLE.has(type);
+  const t = useTranslations("StepIllustration");
+  const label = t(`label${ILL_KEY[type]}` as never) as string;
+  const actionLabel = t(`action${ILL_KEY[type]}` as never) as string;
+  const caption = resolveCaption(type, stepDescription, t as (k: string, v?: Record<string, string | number>) => string, dimensions);
 
   return (
     <div
@@ -768,7 +781,7 @@ export default function StepIllustration({
           className="text-[10px] font-bold text-center leading-tight"
           style={{ color: labelColor, maxWidth: 68 }}
         >
-          {theme.actionLabel}
+          {actionLabel}
         </span>
       </div>
 
@@ -777,14 +790,14 @@ export default function StepIllustration({
         {hasLottie ? (
           <>
             <LottiePlayer type={type} />
-            {resolveCaption(type, stepDescription, dimensions) && (
+            {caption && (
               <div className="text-[10px] font-medium mt-1" style={{ color: `${theme.accent}CC` }}>
-                {resolveCaption(type, stepDescription, dimensions)}
+                {caption}
               </div>
             )}
           </>
         ) : (
-          <Diagram accent={theme.accent} secondary={theme.secondary} dimensions={dimensions} stepDescription={stepDescription} />
+          <Diagram accent={theme.accent} secondary={theme.secondary} dimensions={dimensions} stepDescription={stepDescription} t={t as (k: string, v?: Record<string, string | number>) => string} />
         )}
       </div>
 
@@ -794,7 +807,7 @@ export default function StepIllustration({
           className="text-[9px] font-bold px-2 py-0.5 rounded-full"
           style={{ background: `${theme.bgLight}E6`, color: `${theme.accent}D9` }}
         >
-          {theme.label}
+          {label}
         </span>
         <span
           className="text-[9px] font-bold font-mono px-2 py-0.5 rounded-full"

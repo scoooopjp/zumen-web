@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import UserProfileView from "@/components/UserProfileView";
 import { fetchExamplesByAuthor, fetchUserProfile } from "@/lib/firestore";
 
@@ -15,14 +16,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { uid } = await params;
   const profile = await fetchUserProfile(uid);
   if (!profile) return { robots: { index: false, follow: false } };
+  const t = await getTranslations("User");
   const description =
     profile.bio.trim().length > 0
       ? profile.bio.slice(0, 120)
-      : `${profile.displayName} さんの ZUMEN プロフィール`;
-  const ogTitle = `${profile.displayName} | ZUMEN`;
+      : t("metaDescriptionFallbackTpl", { name: profile.displayName });
+  const ogTitle = t("ogTitleTpl", { name: profile.displayName });
   const canonical = profile.username ? `/u/${profile.username}` : `/user/${uid}`;
   return {
-    title: `${profile.displayName}さんのプロフィール`,
+    title: t("metaTitleTpl", { name: profile.displayName }),
     description,
     robots: { index: false, follow: false },
     alternates: { canonical },

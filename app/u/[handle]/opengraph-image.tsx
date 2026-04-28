@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
+import { getLocale } from "next-intl/server";
 import { fetchUserProfileByUsername } from "@/lib/firestore";
 
-export const alt = "ZUMEN プロフィール";
+export const alt = "ZUMEN profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -17,6 +18,10 @@ interface Props {
 export default async function Image({ params }: Props) {
   const { handle } = await params;
   const profile = await fetchUserProfileByUsername(handle);
+  const locale = await getLocale();
+  const isEn = locale === "en";
+  const tagline = isEn ? "DIY blueprints you can build" : "つくれるDIY設計図";
+  const bioFallback = isEn ? "Sharing DIY builds on ZUMEN" : "ZUMEN で DIY 作例を共有中";
   const displayName = profile?.displayName ?? "ZUMEN";
   const bio = profile?.bio?.slice(0, 100) ?? "";
   const photoURL = profile?.photoURL ?? null;
@@ -66,7 +71,7 @@ export default async function Image({ params }: Props) {
             ZUMEN
           </div>
           <div style={{ fontSize: "20px", color: NAVY_MID, opacity: 0.7 }}>
-            つくれるDIY設計図
+            {tagline}
           </div>
         </div>
 
@@ -163,7 +168,7 @@ export default async function Image({ params }: Props) {
               lineHeight: 1.5,
             }}
           >
-            ZUMEN で DIY 作例を共有中
+            {bioFallback}
           </div>
         )}
       </div>

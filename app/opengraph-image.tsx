@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
+import { getLocale } from "next-intl/server";
 
-export const alt = "ZUMEN - つくれるDIY設計図";
+export const alt = "ZUMEN — DIY blueprints you can build";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -10,6 +11,20 @@ const AMBER = "#D97B2A";
 const AMBER_PALE = "#FEF3E2";
 
 export default async function Image() {
+  const locale = await getLocale();
+  const isEn = locale === "en";
+  const tagline = isEn ? "DIY blueprints you can build" : "つくれるDIY設計図";
+  const headline1 = isEn ? "Just enter a size to get" : "サイズを入れるだけで";
+  const headline2 = isEn ? "your DIY blueprint." : "DIY設計図が完成。";
+  const subline1 = isEn
+    ? "22 blueprints × per-retailer material lists."
+    : "22種の設計図 × ホームセンター別の材料リスト。";
+  const subline2 = isEn
+    ? "Cainz · Komeri · Kohnan · DCM."
+    : "カインズ・コメリ・コーナン・DCM 対応。";
+  const tags = isEn
+    ? ["Blueprints", "Materials", "Steps", "Cost estimate"]
+    : ["設計図", "材料リスト", "工程", "費用見積もり"];
   return new ImageResponse(
     (
       <div
@@ -61,7 +76,7 @@ export default async function Image() {
               opacity: 0.7,
             }}
           >
-            つくれるDIY設計図
+            {tagline}
           </div>
         </div>
 
@@ -81,7 +96,7 @@ export default async function Image() {
               letterSpacing: "-0.02em",
             }}
           >
-            サイズを入れるだけで
+            {headline1}
           </div>
           <div
             style={{
@@ -92,7 +107,7 @@ export default async function Image() {
               letterSpacing: "-0.02em",
             }}
           >
-            DIY設計図が完成。
+            {headline2}
           </div>
         </div>
 
@@ -105,15 +120,15 @@ export default async function Image() {
           }}
         >
           <div style={{ fontSize: "26px", color: NAVY_MID, lineHeight: 1.5 }}>
-            22種の設計図 × ホームセンター別の材料リスト。
+            {subline1}
           </div>
           <div style={{ fontSize: "26px", color: NAVY_MID, lineHeight: 1.5 }}>
-            カインズ・コメリ・コーナン・DCM 対応。
+            {subline2}
           </div>
         </div>
 
         <div style={{ display: "flex", gap: "12px" }}>
-          {["設計図", "材料リスト", "工程", "費用見積もり"].map((tag) => (
+          {tags.map((tag) => (
             <div
               key={tag}
               style={{

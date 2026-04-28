@@ -20,6 +20,12 @@ const difficultyClass: Record<string, string> = {
   "上級者向け": "badge-advanced",
 };
 
+const difficultyKey: Record<string, "beginner" | "intermediate" | "advanced"> = {
+  "初心者向け": "beginner",
+  "中級者向け": "intermediate",
+  "上級者向け": "advanced",
+};
+
 /* Category → illustration emoji (until real illustrations exist) */
 const categoryIcon: Record<string, string> = {
   "棚":             "🗄️",
@@ -51,6 +57,11 @@ export default function BlueprintCard({ useCase, exampleCount = 0 }: BlueprintCa
   const locale = useLocale();
   const tCard = useTranslations("BlueprintCard");
   const tCommon = useTranslations("Common");
+  const tFooter = useTranslations("Footer");
+  const tDiff = useTranslations("Difficulty");
+  const categoryLabel = (tFooter(`categories.${useCase.categorySlug}` as never) as string) || useCase.category;
+  const diffKey = difficultyKey[useCase.difficulty];
+  const difficultyLabel = diffKey ? tDiff(diffKey) : useCase.difficulty;
 
   return (
     <Link href={`/blueprint/${useCase.slug}`} className="zumen-card block overflow-hidden group">
@@ -99,7 +110,7 @@ export default function BlueprintCard({ useCase, exampleCount = 0 }: BlueprintCa
             backdropFilter: "blur(4px)",
           }}
         >
-          {useCase.category}
+          {categoryLabel}
         </span>
 
         {/* 作例件数バッジ — iOS の UseCaseGridCard と揃える */}
@@ -148,7 +159,7 @@ export default function BlueprintCard({ useCase, exampleCount = 0 }: BlueprintCa
         {/* Badges row */}
         <div className="flex flex-wrap gap-1.5 items-center">
           <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${difficultyClass[useCase.difficulty] ?? ""}`}>
-            {useCase.difficulty}
+            {difficultyLabel}
           </span>
           <span
             className="text-xs px-2 py-0.5 rounded-full"

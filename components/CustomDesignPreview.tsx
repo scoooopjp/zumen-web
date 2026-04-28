@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { track } from "@/lib/analytics";
 import type { CutItem } from "@/lib/data";
 
@@ -40,6 +41,7 @@ export default function CustomDesignPreview({
   cutItems,
   retailers,
 }: Props) {
+  const t = useTranslations("CustomDesign");
   const [w, setW] = useState<number>(baseDimensions.width);
   const [d, setD] = useState<number>(baseDimensions.depth);
   const [h, setH] = useState<number>(baseDimensions.height);
@@ -114,29 +116,29 @@ export default function CustomDesignPreview({
         <div>
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold" style={{ color: "var(--navy-deep)" }}>
-              寸法を入力 (mm)
+              {t("inputsTitle")}
             </p>
             <span
               className="text-[10px] font-bold px-2 py-0.5 rounded-full"
               style={{ background: "var(--amber-pale)", color: "var(--amber)" }}
             >
-              ざっくり試算
+              {t("roughEstimate")}
             </span>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {renderInput("幅 W", w, setW)}
-            {renderInput("奥行 D", d, setD)}
-            {renderInput("高さ H", h, setH)}
+            {renderInput(t("widthW"), w, setW)}
+            {renderInput(t("depthD"), d, setD)}
+            {renderInput(t("heightH"), h, setH)}
           </div>
           <p className="text-xs mt-2" style={{ color: "var(--text-tertiary)" }}>
-            ベーシック寸法 {baseDimensions.width}×{baseDimensions.depth}×{baseDimensions.height} mm
+            {t("baseDimsTpl", { w: baseDimensions.width, d: baseDimensions.depth, h: baseDimensions.height })}
           </p>
         </div>
 
         {/* Scaled cut list */}
         <div>
           <p className="text-sm font-semibold mb-2" style={{ color: "var(--navy-deep)" }}>
-            カット図（プレビュー）
+            {t("cutListTitle")}
           </p>
           <div
             className="rounded-xl overflow-hidden"
@@ -150,9 +152,9 @@ export default function CustomDesignPreview({
                 borderBottom: "1px solid var(--border)",
               }}
             >
-              <span>部材名</span>
-              <span>寸法 (T×W×L)</span>
-              <span className="text-right">数</span>
+              <span>{t("partName")}</span>
+              <span>{t("partSpec")}</span>
+              <span className="text-right">{t("partQty")}</span>
             </div>
             {scaled.map((item, idx) => {
               const changed = item.scaledLength !== item.length;
@@ -182,8 +184,8 @@ export default function CustomDesignPreview({
             })}
           </div>
           <p className="text-xs mt-2" style={{ color: "var(--text-tertiary)" }}>
-            合計木材長 ≈ {totalBoardMeters} m
-            {retailers.length > 0 && `  ・  対応: ${retailers.join(" / ")}`}
+            {t("totalLengthTpl", { meters: totalBoardMeters })}
+            {retailers.length > 0 && t("supportedTpl", { retailers: retailers.join(" / ") })}
           </p>
         </div>
 
@@ -196,10 +198,10 @@ export default function CustomDesignPreview({
         >
           <div>
             <p className="text-xs font-bold mb-1" style={{ color: "var(--amber-light)" }}>
-              正確な材料・価格・最適カットはアプリで
+              {t("ctaHeadline")}
             </p>
             <p className="text-sm text-white leading-relaxed">
-              ホームセンター別の価格・購入リンク・最適カット割付はアプリで自動計算。
+              {t("ctaBody")}
             </p>
           </div>
           <a
@@ -210,7 +212,7 @@ export default function CustomDesignPreview({
             <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
             </svg>
-            アプリで正確に計算する
+            {t("ctaButton")}
           </a>
         </div>
       </div>
