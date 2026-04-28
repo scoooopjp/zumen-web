@@ -6,7 +6,8 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { categories } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 
-export const dynamic = "force-dynamic";
+// カテゴリ一覧は ほぼ静的 (UseCase マスタ + exampleCounts のみ)。1時間 ISR で十分。
+export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("CategoryList");

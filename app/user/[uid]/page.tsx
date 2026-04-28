@@ -8,9 +8,9 @@ interface Props {
   params: Promise<{ uid: string }>;
 }
 
-// UGC は動的に Fetch。username 設定済みは /u/{username} に正規化、
-// 未設定は UID URL のままレンダリング（noindex）。
-export const dynamic = "force-dynamic";
+// UID URL は noindex 配信なので CDN キャッシュも実質シェアリンク経由のみ。5 分 ISR で十分。
+// /u/{username} 経由は別ページとしてキャッシュされる。
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { uid } = await params;

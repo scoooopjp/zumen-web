@@ -19,8 +19,9 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-// UGC は動的にFetchして最新を返す
-export const dynamic = "force-dynamic";
+// UGC (作例 + コメント + 評価) は 5 分 ISR。書込は iOS アプリ主導なので
+// 5 分の鮮度ラグは許容。CDN キャッシュが効くので多数アクセス時のコストを抑えられる。
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;

@@ -45,7 +45,8 @@ interface Props {
 }
 
 export const dynamicParams = true;
-export const revalidate = 3600;
+// 設計図は Admin SDK でしか更新されない準静的データ。24時間 ISR でCDNキャッシュを最大化。
+export const revalidate = 86400;
 
 export async function generateStaticParams() {
   return blueprintDetails.map((bp) => ({ slug: bp.slug }));

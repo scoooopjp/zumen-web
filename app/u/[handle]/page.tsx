@@ -8,7 +8,9 @@ interface Props {
   params: Promise<{ handle: string }>;
 }
 
-export const dynamic = "force-dynamic";
+// プロフィールは表示頻度が高い割に書込頻度が低いので 5 分 ISR。
+// 投稿が増えた時の表示遅延は 5 分以内に収まる。
+export const revalidate = 300;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { handle } = await params;

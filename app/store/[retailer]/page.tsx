@@ -19,6 +19,9 @@ const storeMap: Record<string, { name: Retailer; descKey: "descCainz" | "descKom
   dcm:    { name: "DCM",       descKey: "descDcm" },
 };
 
+// ホームセンター別ページは UseCase マスタの絞り込み表示のみ。24時間 ISR で十分。
+export const revalidate = 86400;
+
 export async function generateStaticParams() {
   return Object.keys(storeMap).map((retailer) => ({ retailer }));
 }

@@ -9,8 +9,13 @@ import RelatedNav from "@/components/RelatedNav";
 import { categories } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 
-export const dynamic = "force-dynamic";
+// カテゴリ詳細は静的なカテゴリ集合に対する ISR。1時間で十分。
+export const revalidate = 3600;
 export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  return categories.map((c) => ({ slug: c.slug }));
+}
 
 interface Props {
   params: Promise<{ slug: string }>;

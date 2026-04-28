@@ -10,7 +10,9 @@ import { categories } from "@/lib/data";
 import { fetchRecentExamples } from "@/lib/examples";
 import { fetchUseCases, fetchFeaturedUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 
-export const dynamic = "force-dynamic";
+// LP は Featured/作例ピックアップを含むため CDN キャッシュを 10 分で再検証する。
+// Featured (`config/featured.popularUseCaseIds`) は人手 or バッチで更新される程度なので 10 分で十分。
+export const revalidate = 600;
 
 /* ─── SEO Metadata ─── */
 export async function generateMetadata(): Promise<Metadata> {
