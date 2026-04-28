@@ -1,22 +1,24 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ExampleCard from "@/components/ExampleCard";
 import LottieIcon from "@/components/LottieIcon";
 import { fetchExamples } from "@/lib/examples";
+import { localizedAlternates } from "@/lib/i18nMeta";
 
 // 5分ごとに再検証（新しい投稿を反映）
 export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("ExampleList");
+  const locale = await getLocale();
   const exampleOgUrl = `/og?title=${encodeURIComponent(t("h1"))}&category=${encodeURIComponent(t("label"))}&icon=${encodeURIComponent("📸")}`;
   return {
     title: t("metaTitle"),
     description: t("metaDescription"),
-    alternates: { canonical: "/example" },
+    alternates: localizedAlternates(locale, "/example"),
     robots: { index: false }, // UGC は審査後に個別で index 化
     openGraph: {
       title: t("ogTitle"),

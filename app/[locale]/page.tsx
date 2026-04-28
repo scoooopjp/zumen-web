@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
@@ -9,6 +9,7 @@ import RecentlyViewed from "@/components/RecentlyViewed";
 import { categories } from "@/lib/data";
 import { fetchRecentExamples } from "@/lib/examples";
 import { fetchUseCases, fetchFeaturedUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
+import { localizedAlternates, SITE_BASE_URL } from "@/lib/i18nMeta";
 
 // LP は Featured/作例ピックアップを含むため CDN キャッシュを 10 分で再検証する。
 // Featured (`config/featured.popularUseCaseIds`) は人手 or バッチで更新される程度なので 10 分で十分。
@@ -27,13 +28,15 @@ export async function generateMetadata(): Promise<Metadata> {
       description: t("ogDescription"),
       type: "website",
       locale: locale === "en" ? "en_US" : "ja_JP",
+      images: [{ url: `${SITE_BASE_URL}/opengraph-image`, width: 1200, height: 630, alt: "ZUMEN" }],
     },
     twitter: {
       card: "summary_large_image",
       title: t("twitterTitle"),
       description: t("twitterDescription"),
+      images: [`${SITE_BASE_URL}/opengraph-image`],
     },
-    alternates: { canonical: "https://zumen.scoooop.com/" },
+    alternates: localizedAlternates(locale, "/"),
   };
 }
 

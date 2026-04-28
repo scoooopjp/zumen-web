@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
+import { redirect } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import UserProfileView from "@/components/UserProfileView";
 import { fetchExamplesByAuthor, fetchUserProfile } from "@/lib/firestore";
+import { localizedAlternates } from "@/lib/i18nMeta";
 
 interface Props {
   params: Promise<{ uid: string }>;
@@ -17,22 +19,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const profile = await fetchUserProfile(uid);
   if (!profile) return { robots: { index: false, follow: false } };
   const t = await getTranslations("User");
+  const locale = await getLocale();
   const description =
     profile.bio.trim().length > 0
       ? profile.bio.slice(0, 120)
       : t("metaDescriptionFallbackTpl", { name: profile.displayName });
   const ogTitle = t("ogTitleTpl", { name: profile.displayName });
-  const canonical = profile.username ? `/u/${profile.username}` : `/user/${uid}`;
+  const canonicalPath = profile.username ? `/u/${profile.username}` : `/user/${uid}`;
+  const alternates = localizedAlternates(locale, canonicalPath);
   return {
     title: t("metaTitleTpl", { name: profile.displayName }),
     description,
     robots: { index: false, follow: false },
-    alternates: { canonical },
+    alternates,
     openGraph: {
       title: ogTitle,
       description,
       type: "profile",
-      url: canonical,
+      url: alternates.canonical,
       ...(profile.photoURL ? { images: [profile.photoURL] } : {}),
     },
     twitter: {
@@ -48,8 +52,8 @@ export default async function UserProfilePage({ params }: Props) {
   const { uid } = await params;
   const profile = await fetchUserProfile(uid);
   if (!profile) notFound();
-  if (profile.username) redirect(`/u/${profile.username}`);
   const locale = await getLocale();
+  if (profile.username) redirect({ href: `/u/${profile.username}`, locale });
   const examples = await fetchExamplesByAuthor(uid, locale);
   return <UserProfileView profile={profile} examples={examples} />;
 }

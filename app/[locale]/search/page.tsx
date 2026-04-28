@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -8,6 +8,7 @@ import SearchInput from "@/components/SearchInput";
 import { getBlueprintByTemplateID } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 import type { UseCase } from "@/lib/data";
+import { localizedAlternates } from "@/lib/i18nMeta";
 
 interface Props {
   searchParams: Promise<{ q?: string }>;
@@ -19,6 +20,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const { q } = await searchParams;
   const hasQuery = typeof q === "string" && q.trim().length > 0;
   const t = await getTranslations("Search");
+  const locale = await getLocale();
   const title = hasQuery ? t("metaTitleResultTpl", { q: q!.trim() }) : t("metaTitle");
   const description = hasQuery
     ? t("metaDescriptionResultTpl", { q: q!.trim() })
@@ -27,7 +29,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return {
     title,
     description,
-    alternates: { canonical: "/search" },
+    alternates: localizedAlternates(locale, "/search"),
     robots: { index: !hasQuery, follow: true },
     openGraph: {
       title: `${title} | ZUMEN`,

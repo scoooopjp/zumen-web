@@ -7,6 +7,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import RelatedNav from "@/components/RelatedNav";
 import type { Retailer } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
+import { localizedAlternates } from "@/lib/i18nMeta";
 
 interface Props {
   params: Promise<{ retailer: string }>;
@@ -32,13 +33,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!store) return {};
   const t = await getTranslations("Store");
   const tFooter = await getTranslations("Footer");
+  const locale = await getLocale();
   const retailerLabel = tFooter(`retailers.${retailer}` as never) as string;
   const desc = t(store.descKey);
   const ogUrl = `/og?title=${encodeURIComponent(t("h1Tpl", { name: retailerLabel }))}&category=${encodeURIComponent(t("breadcrumbCurrent"))}&icon=${encodeURIComponent("🏬")}`;
   return {
     title: t("metaTitleTpl", { name: retailerLabel }),
     description: t("metaDescriptionTpl", { name: retailerLabel }),
-    alternates: { canonical: `/store/${retailer}` },
+    alternates: localizedAlternates(locale, `/store/${retailer}`),
     openGraph: {
       title: t("ogTitleTpl", { name: retailerLabel }),
       description: desc,

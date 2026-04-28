@@ -8,6 +8,7 @@ import LottieIcon from "@/components/LottieIcon";
 import RelatedNav from "@/components/RelatedNav";
 import { categories } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
+import { localizedAlternates } from "@/lib/i18nMeta";
 
 // カテゴリ詳細は静的なカテゴリ集合に対する ISR。1時間で十分。
 export const revalidate = 3600;
@@ -27,12 +28,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!cat) return {};
   const t = await getTranslations("CategoryDetail");
   const tFooter = await getTranslations("Footer");
+  const locale = await getLocale();
   const categoryLabel = tFooter(`categories.${slug}` as never) as string;
   const ogUrl = `/og?title=${encodeURIComponent(t("metaTitleTpl", { category: categoryLabel }))}&category=${encodeURIComponent("📐")}&icon=${encodeURIComponent("📐")}`;
   return {
     title: t("metaTitleTpl", { category: categoryLabel }),
     description: t("metaDescriptionTpl", { category: categoryLabel }),
-    alternates: { canonical: `/category/${slug}` },
+    alternates: localizedAlternates(locale, `/category/${slug}`),
     openGraph: {
       title: t("ogTitleTpl", { category: categoryLabel }),
       description: t("ogDescriptionTpl", { category: categoryLabel, description: cat.description }),

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import AppOnlyGate from "@/components/AppOnlyGate";
@@ -39,6 +39,7 @@ import {
   fetchRatingSummary,
 } from "@/lib/firestore";
 import type { FSBlueprintDetail } from "@/lib/firestore";
+import { localizedAlternates } from "@/lib/i18nMeta";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -101,7 +102,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: t("metaTitleTpl", { name }),
     description,
-    alternates: { canonical: `/blueprint/${slug}` },
+    alternates: localizedAlternates(locale, `/blueprint/${slug}`),
     openGraph: {
       title: ogTitle,
       description: ogDescription,

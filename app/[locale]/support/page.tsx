@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { localizedAlternates } from "@/lib/i18nMeta";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Support");
+  const locale = await getLocale();
   return {
     title: t("metaTitle"),
     robots: { index: true, follow: false },
+    alternates: localizedAlternates(locale, "/support"),
   };
 }
 

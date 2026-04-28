@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getTranslations, getLocale } from "next-intl/server";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -14,6 +14,7 @@ import RatingsCommentsSection from "@/components/RatingsCommentsSection";
 import { fetchExampleById, formatTime } from "@/lib/examples";
 import { fetchComments, fetchRatingSummary } from "@/lib/firestore";
 import { userProfilePath } from "@/lib/userPath";
+import { localizedAlternates } from "@/lib/i18nMeta";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -43,7 +44,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title,
     description,
     robots: { index: false }, // UGC は審査後に個別で index 化
-    alternates: { canonical: `/example/${id}` },
+    alternates: localizedAlternates(locale, `/example/${id}`),
     openGraph: {
       title: ogTitle,
       description: flatComment.slice(0, 200),

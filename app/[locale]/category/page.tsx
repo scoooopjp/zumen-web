@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { categories } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
+import { localizedAlternates } from "@/lib/i18nMeta";
 
 // カテゴリ一覧は ほぼ静的 (UseCase マスタ + exampleCounts のみ)。1時間 ISR で十分。
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("CategoryList");
+  const locale = await getLocale();
   const ogUrl = `/og?title=${encodeURIComponent(t("metaTitle"))}&category=${encodeURIComponent(t("ogCategory"))}&icon=${encodeURIComponent(t("ogIcon"))}`;
   return {
     title: t("metaTitle"),
     description: t("metaDescription"),
-    alternates: { canonical: "/category" },
+    alternates: localizedAlternates(locale, "/category"),
     openGraph: {
       title: t("ogTitle"),
       description: t("metaDescription"),

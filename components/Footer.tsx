@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 
 const indoor = ["tana", "bookshelf", "tv-stand", "dining-table", "desk", "shoe-rack", "entrance-storage", "hanger-rack"] as const;
