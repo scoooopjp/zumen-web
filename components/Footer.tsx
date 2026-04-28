@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import LocaleSwitcher from "./LocaleSwitcher";
 
 const indoor = ["tana", "bookshelf", "tv-stand", "dining-table", "desk", "shoe-rack", "entrance-storage", "hanger-rack"] as const;
 const outdoor = ["bench", "garden-table", "deck", "garden-fence", "flower-box", "planter-dai", "compost", "storage-shed"] as const;
@@ -63,10 +64,13 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-4 mt-10 pt-6 border-t border-gray-100">
+        <div className="flex flex-wrap items-center gap-4 mt-10 pt-6 border-t border-gray-100">
           <p className="text-xs text-gray-400">{t("copyright")}</p>
           <a href="https://www.scoooop.com/privacy-policy/" className="text-xs text-gray-400 hover:text-gray-600" target="_blank" rel="noopener noreferrer">{t("privacyPolicy")}</a>
           <Link href="/support" className="text-xs text-gray-400 hover:text-gray-600">{t("support")}</Link>
+          <div className="ml-auto">
+            <LocaleSwitcher />
+          </div>
         </div>
       </div>
     </footer>
