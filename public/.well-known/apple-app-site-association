@@ -4,11 +4,16 @@
       {
         "appIDs": ["BSGU2F7TSS.com.scoooop.zumen"],
         "components": [
-          { "/": "/blueprint/*", "comment": "Blueprint detail deep link" },
-          { "/": "/usecase/*",   "comment": "Use case deep link" },
-          { "/": "/example/*",   "comment": "Example deep link" },
-          { "/": "/user/*",      "comment": "User profile by UID deep link" },
-          { "/": "/u/*",         "comment": "User profile by username (handle) deep link" }
+          { "/": "/blueprint/*",    "comment": "Blueprint detail deep link (ja)" },
+          { "/": "/usecase/*",      "comment": "Use case deep link (ja)" },
+          { "/": "/example/*",      "comment": "Example deep link (ja)" },
+          { "/": "/user/*",         "comment": "User profile by UID deep link (ja)" },
+          { "/": "/u/*",            "comment": "User profile by username (handle) deep link (ja)" },
+          { "/": "/en/blueprint/*", "comment": "Blueprint detail deep link (en)" },
+          { "/": "/en/usecase/*",   "comment": "Use case deep link (en)" },
+          { "/": "/en/example/*",   "comment": "Example deep link (en)" },
+          { "/": "/en/user/*",      "comment": "User profile by UID deep link (en)" },
+          { "/": "/en/u/*",         "comment": "User profile by username (handle) deep link (en)" }
         ]
       }
     ]
