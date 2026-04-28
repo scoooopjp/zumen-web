@@ -55,5 +55,9 @@ serviceAccountKey.json
 /scripts/seed-examples.ts
 /scripts/seed-user-activity.ts
 
+# i18n 翻訳バッチの中間ファイル (再生成可能)
+/scripts/i18n-source/
+/scripts/translated/
+
 # Claude Code project state
 /.claude/
