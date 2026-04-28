@@ -30,6 +30,11 @@ interface FSUseCase {
   imageAlt?: string;
   imageURL?: string;
   exampleCount?: number;
+  // i18n: 英語版のテキスト。`scripts/translate-firestore-en.ts` が書き込む。
+  // 未設定 (undefined / 空文字) なら日本語にフォールバックする。
+  nameEn?: string;
+  descriptionEn?: string;
+  imageAltEn?: string;
   // Cloud Function `recomputeRatingAggregate` が書き戻す denormalized フィールド。
   ratingCount?: number;
   ratingAverage?: number;
@@ -53,6 +58,9 @@ interface FSExample {
   id: string;
   useCaseID: string;
   useCaseName: string;
+  /** UseCase 名の英語版を denormalize したもの (UseCase.nameEn と同期)。
+   *  UGC である comment や steps[].text は翻訳しない。 */
+  useCaseNameEn?: string;
   imageURL: string | null;
   /** 一覧表示用の縮小版 (960px max, JPEG q=0.76)。なければ imageURL にフォールバック。 */
   thumbnailURL?: string | null;
@@ -98,6 +106,27 @@ function resolveImageURL(dto: FSUseCase): string {
   return getUseCaseThumbnailURL(dto.id);
 }
 
+// ── i18n フォールバック ──────────────────────────────────────
+
+/**
+ * locale="en" かつ英語値が空でない場合は英語、それ以外は日本語を返す。
+ * Firestore に翻訳バッチが書き込んだ `*En` フィールドが未設定でも安全に日本語に戻る。
+ */
+export function pickI18n(ja: string, en: string | null | undefined, locale: string): string {
+  if (locale === "en" && typeof en === "string" && en.length > 0) return en;
+  return ja;
+}
+
+/** 配列版: locale="en" かつ英語配列が non-empty なら英語、それ以外は日本語を返す。 */
+export function pickI18nArray(
+  ja: string[],
+  en: string[] | null | undefined,
+  locale: string,
+): string[] {
+  if (locale === "en" && Array.isArray(en) && en.length > 0) return en;
+  return ja;
+}
+
 // ── DTO → Model 変換 ─────────────────────────────────────────
 
 /** iOS enum rawValue → Web Difficulty 型 */
@@ -141,14 +170,29 @@ const CATEGORY_SLUG: Record<string, string> = {
   "看板・インテリア": "sign",
 };
 
-function fsUseCaseToModel(dto: FSUseCase): UseCase | null {
+function fsUseCaseToModel(dto: FSUseCase, locale: string): UseCase | null {
   const slug = dto.id;
   const categorySlug = CATEGORY_SLUG[dto.category] ?? dto.categorySlug ?? dto.category;
+  const name = pickI18n(dto.name, dto.nameEn, locale);
+  const fallbackDescription = locale === "en"
+    ? `${name} — DIY blueprint`
+    : `${name}のDIY設計図`;
+  const fallbackAlt = fallbackDescription;
+  const description = pickI18n(
+    dto.description ?? fallbackDescription,
+    dto.descriptionEn,
+    locale,
+  );
+  const imageAlt = pickI18n(
+    dto.imageAlt ?? fallbackAlt,
+    dto.imageAltEn,
+    locale,
+  );
 
   return {
     id: dto.id,
     slug,
-    name: dto.name,
+    name,
     category: dto.category,
     categorySlug,
     difficulty: normalizeDifficulty(dto.difficulty),
@@ -158,8 +202,8 @@ function fsUseCaseToModel(dto: FSUseCase): UseCase | null {
     indoorOutdoor: normalizeIndoorOutdoor(dto.indoorOutdoor),
     supportedRetailers: dto.supportedRetailers as Retailer[],
     templateID: dto.templateID,
-    description: dto.description ?? `${dto.name}のDIY設計図`,
-    imageAlt: dto.imageAlt ?? `${dto.name}のDIY設計図`,
+    description,
+    imageAlt,
     imageURL: resolveImageURL(dto),
     ratingCount: typeof dto.ratingCount === "number" ? dto.ratingCount : 0,
     ratingAverage: typeof dto.ratingAverage === "number" ? dto.ratingAverage : 0,
@@ -190,6 +234,7 @@ interface AuthorMeta {
 function fsExampleToModel(
   dto: FSExample,
   metaMap: Record<string, AuthorMeta> = {},
+  locale: string = "ja",
 ): Example {
   const useCaseID = dto.useCaseID ?? "";
   const useCaseSlug = getUseCaseById(useCaseID)?.slug ?? useCaseID;
@@ -204,7 +249,7 @@ function fsExampleToModel(
   return {
     id: dto.id,
     useCaseID,
-    useCaseName: dto.useCaseName ?? "",
+    useCaseName: pickI18n(dto.useCaseName ?? "", dto.useCaseNameEn, locale),
     useCaseSlug,
     imageURL: dto.imageURL ?? null,
     thumbnailURL: dto.thumbnailURL ?? null,
@@ -263,7 +308,7 @@ async function fetchAuthorMetaMap(
 
 // ── UseCases ────────────────────────────────────────────────
 
-export async function fetchUseCases(): Promise<UseCase[]> {
+export async function fetchUseCases(locale: string = "ja"): Promise<UseCase[]> {
   const db = getAdminDb();
   if (!db) return mockUseCases;
   try {
@@ -276,7 +321,7 @@ export async function fetchUseCases(): Promise<UseCase[]> {
       return mockUseCases;
     }
     const results = snap.docs
-      .map((d) => fsUseCaseToModel({ id: d.id, ...d.data() } as FSUseCase))
+      .map((d) => fsUseCaseToModel({ id: d.id, ...d.data() } as FSUseCase, locale))
       .filter((uc): uc is UseCase => uc !== null);
     results.sort((a, b) => {
       const sa = a.popularityScore ?? 0;
@@ -295,14 +340,17 @@ export async function fetchUseCases(): Promise<UseCase[]> {
 // `config/featured` ドキュメント (scripts/update-featured.ts が書き込み)
 // の popularUseCaseIds を参照し、ID 順で UseCase を返す。
 
-export async function fetchFeaturedUseCases(limit = 6): Promise<UseCase[]> {
+export async function fetchFeaturedUseCases(
+  limit = 6,
+  locale: string = "ja",
+): Promise<UseCase[]> {
   const db = getAdminDb();
   if (!db) return mockUseCases.slice(0, limit);
   try {
     const configSnap = await db.collection("config").doc("featured").get();
     const ids = (configSnap.data()?.popularUseCaseIds ?? []) as string[];
     if (ids.length === 0) {
-      const all = await fetchUseCases();
+      const all = await fetchUseCases(locale);
       return all.slice(0, limit);
     }
 
@@ -313,7 +361,7 @@ export async function fetchFeaturedUseCases(limit = 6): Promise<UseCase[]> {
     const results: UseCase[] = [];
     for (const d of docs) {
       if (!d.exists) continue;
-      const model = fsUseCaseToModel({ id: d.id, ...d.data() } as FSUseCase);
+      const model = fsUseCaseToModel({ id: d.id, ...d.data() } as FSUseCase, locale);
       if (model) results.push(model);
     }
     return results.length > 0 ? results : mockUseCases.slice(0, limit);
@@ -325,13 +373,16 @@ export async function fetchFeaturedUseCases(limit = 6): Promise<UseCase[]> {
 
 // ── Single UseCase ───────────────────────────────────────────
 
-export async function fetchUseCaseById(id: string): Promise<UseCase | null> {
+export async function fetchUseCaseById(
+  id: string,
+  locale: string = "ja",
+): Promise<UseCase | null> {
   const db = getAdminDb();
   if (!db) return getUseCaseById(id) ?? null;
   try {
     const snap = await db.collection("useCases").doc(id).get();
     if (!snap.exists) return getUseCaseById(id) ?? null;
-    return fsUseCaseToModel({ id: snap.id, ...snap.data() } as FSUseCase);
+    return fsUseCaseToModel({ id: snap.id, ...snap.data() } as FSUseCase, locale);
   } catch (e) {
     console.error(`[firestore] fetchUseCaseById(${id}) failed:`, e);
     return getUseCaseById(id) ?? null;
@@ -339,6 +390,13 @@ export async function fetchUseCaseById(id: string): Promise<UseCase | null> {
 }
 
 // ── Blueprint ────────────────────────────────────────────────
+
+export interface FSBlueprintTool {
+  name: string;
+  note?: string;
+  nameEn?: string;
+  noteEn?: string;
+}
 
 export interface FSBlueprintStep {
   order: number;
@@ -352,6 +410,11 @@ export interface FSBlueprintStep {
   pitfalls?: string[];
   /** 想定所要時間（分） */
   estimatedMinutes?: number;
+  // i18n
+  titleEn?: string;
+  descriptionEn?: string;
+  tipsEn?: string[];
+  pitfallsEn?: string[];
 }
 
 export interface FSBlueprintPart {
@@ -360,6 +423,10 @@ export interface FSBlueprintPart {
   quantity: number;
   unit: string;
   note?: string;
+  // i18n
+  nameEn?: string;
+  specEn?: string;
+  noteEn?: string;
 }
 
 export interface FSBlueprintCutItem {
@@ -368,6 +435,8 @@ export interface FSBlueprintCutItem {
   width: number;
   length: number;
   quantity: number;
+  // i18n
+  partNameEn?: string;
 }
 
 export interface FSBlueprintDetail {
@@ -378,19 +447,69 @@ export interface FSBlueprintDetail {
   indoorOutdoor: string;
   dimensions: { width: number; depth: number; height: number };
   warnings: string[];
-  tools: Array<{ name: string; note?: string }>;
+  tools: FSBlueprintTool[];
   steps: FSBlueprintStep[];
   parts: FSBlueprintPart[];
   cutItems: FSBlueprintCutItem[];
+  // i18n
+  nameEn?: string;
+  warningsEn?: string[];
 }
 
-export async function fetchBlueprintByUseCaseID(useCaseID: string): Promise<FSBlueprintDetail | null> {
+/**
+ * FSBlueprintDetail の翻訳可能フィールドを locale に応じて差し替えた新オブジェクトを返す。
+ * `*En` が空または locale==="ja" のときは日本語値にフォールバックする。
+ * 翻訳バッチ未実行のドキュメントでもクラッシュせず、JA で表示できる。
+ */
+export function localizeBlueprint(
+  fs: FSBlueprintDetail,
+  locale: string,
+): FSBlueprintDetail {
+  if (locale !== "en") return fs;
+  return {
+    ...fs,
+    name: pickI18n(fs.name, fs.nameEn, locale),
+    warnings: pickI18nArray(fs.warnings, fs.warningsEn, locale),
+    tools: fs.tools.map((tool) => ({
+      ...tool,
+      name: pickI18n(tool.name, tool.nameEn, locale),
+      note: tool.note !== undefined
+        ? pickI18n(tool.note, tool.noteEn, locale)
+        : tool.note,
+    })),
+    steps: fs.steps.map((s) => ({
+      ...s,
+      title: pickI18n(s.title, s.titleEn, locale),
+      description: pickI18n(s.description, s.descriptionEn, locale),
+      tips: s.tips ? pickI18nArray(s.tips, s.tipsEn, locale) : s.tips,
+      pitfalls: s.pitfalls
+        ? pickI18nArray(s.pitfalls, s.pitfallsEn, locale)
+        : s.pitfalls,
+    })),
+    parts: fs.parts.map((p) => ({
+      ...p,
+      name: pickI18n(p.name, p.nameEn, locale),
+      spec: pickI18n(p.spec, p.specEn, locale),
+      note: p.note !== undefined ? pickI18n(p.note, p.noteEn, locale) : p.note,
+    })),
+    cutItems: fs.cutItems.map((c) => ({
+      ...c,
+      partName: pickI18n(c.partName, c.partNameEn, locale),
+    })),
+  };
+}
+
+export async function fetchBlueprintByUseCaseID(
+  useCaseID: string,
+  locale: string = "ja",
+): Promise<FSBlueprintDetail | null> {
   const db = getAdminDb();
   if (!db) return null;
   try {
     const snap = await db.collection("blueprints").doc(useCaseID).get();
     if (!snap.exists) return null;
-    return snap.data() as FSBlueprintDetail;
+    const fs = snap.data() as FSBlueprintDetail;
+    return localizeBlueprint(fs, locale);
   } catch (e) {
     console.error(`[firestore] fetchBlueprintByUseCaseID(${useCaseID}) failed:`, e);
     return null;
@@ -399,7 +518,10 @@ export async function fetchBlueprintByUseCaseID(useCaseID: string): Promise<FSBl
 
 // ── Examples ────────────────────────────────────────────────
 
-export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
+export async function fetchExamples(
+  useCaseID?: string,
+  locale: string = "ja",
+): Promise<Example[]> {
   const db = getAdminDb();
   if (!db) {
     return useCaseID
@@ -427,7 +549,7 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
     if (dtos.length === 0) return [];
 
     const metaMap = await fetchAuthorMetaMap(db, dtos.map((e) => e.authorUID));
-    return dtos.map((dto) => fsExampleToModel(dto, metaMap));
+    return dtos.map((dto) => fsExampleToModel(dto, metaMap, locale));
   } catch (e) {
     console.error(`[firestore] fetchExamples(${useCaseID ?? "all"}) failed:`, e);
     return useCaseID
@@ -437,7 +559,7 @@ export async function fetchExamples(useCaseID?: string): Promise<Example[]> {
 }
 
 export const fetchExampleById = cache(
-  async (id: string): Promise<Example | null> => {
+  async (id: string, locale: string = "ja"): Promise<Example | null> => {
     const db = getAdminDb();
     if (!db) return mockExamples.find((e) => e.id === id) ?? null;
 
@@ -449,7 +571,7 @@ export const fetchExampleById = cache(
       if (!isPublicExample(dto)) return null;
 
       const metaMap = await fetchAuthorMetaMap(db, [dto.authorUID]);
-      return fsExampleToModel(dto, metaMap);
+      return fsExampleToModel(dto, metaMap, locale);
     } catch (e) {
       console.error(`[firestore] fetchExampleById(${id}) failed:`, e);
       return mockExamples.find((e) => e.id === id) ?? null;
@@ -457,7 +579,10 @@ export const fetchExampleById = cache(
   }
 );
 
-export async function fetchRecentExamples(limit = 3): Promise<Example[]> {
+export async function fetchRecentExamples(
+  limit = 3,
+  locale: string = "ja",
+): Promise<Example[]> {
   const db = getAdminDb();
   if (!db) return mockExamples.slice(0, limit);
 
@@ -476,7 +601,7 @@ export async function fetchRecentExamples(limit = 3): Promise<Example[]> {
     if (dtos.length === 0) return [];
 
     const metaMap = await fetchAuthorMetaMap(db, dtos.map((e) => e.authorUID));
-    return dtos.map((dto) => fsExampleToModel(dto, metaMap));
+    return dtos.map((dto) => fsExampleToModel(dto, metaMap, locale));
   } catch (e) {
     console.error(`[firestore] fetchRecentExamples(${limit}) failed:`, e);
     return mockExamples.slice(0, limit);
@@ -561,7 +686,10 @@ export const fetchExampleCountsByUseCase = cache(
   }
 );
 
-export async function fetchExamplesByAuthor(authorUID: string): Promise<Example[]> {
+export async function fetchExamplesByAuthor(
+  authorUID: string,
+  locale: string = "ja",
+): Promise<Example[]> {
   const db = getAdminDb();
   if (!db) return mockExamples.filter((e) => e.authorUID === authorUID);
   try {
@@ -577,7 +705,7 @@ export async function fetchExamplesByAuthor(authorUID: string): Promise<Example[
     if (dtos.length === 0) return [];
 
     const metaMap = await fetchAuthorMetaMap(db, [authorUID]);
-    return dtos.map((dto) => fsExampleToModel(dto, metaMap));
+    return dtos.map((dto) => fsExampleToModel(dto, metaMap, locale));
   } catch (e) {
     console.error(`[firestore] fetchExamplesByAuthor(${authorUID}) failed:`, e);
     return [];

@@ -52,17 +52,17 @@ export async function generateStaticParams() {
 }
 
 /** UseCase・FirestoreのBlueprintDetailを返す */
-async function resolvePageData(slug: string): Promise<{
+async function resolvePageData(slug: string, locale: string): Promise<{
   bp: (typeof blueprintDetails)[number];
   uc: Awaited<ReturnType<typeof fetchUseCaseById>>;
   fsBp: FSBlueprintDetail | null;
 } | null> {
   // 1) UseCase slug / ID を先に解決し、個別の Firestore データを優先する
-  const uc = await fetchUseCaseById(slug);
+  const uc = await fetchUseCaseById(slug, locale);
   if (uc?.templateID) {
     const bp = getBlueprintByTemplateID(uc.templateID) ?? getBlueprintBySlug(slug);
     if (!bp) return null;
-    const fsBp = await fetchBlueprintByUseCaseID(uc.id);
+    const fsBp = await fetchBlueprintByUseCaseID(uc.id, locale);
     return { bp, uc, fsBp };
   }
 
@@ -77,11 +77,11 @@ async function resolvePageData(slug: string): Promise<{
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const data = await resolvePageData(slug);
+  const locale = await getLocale();
+  const data = await resolvePageData(slug, locale);
   if (!data) return {};
   const { bp, uc } = data;
   const t = await getTranslations("BlueprintDetail");
-  const locale = await getLocale();
   const name = uc?.name ?? bp.name;
   const difficulty = uc?.difficulty ?? bp.difficulty;
   const budgetMin = uc?.estimatedBudgetMin ?? bp.estimatedBudgetMin;
@@ -144,7 +144,8 @@ const retailerKeyMap: Record<string, "cainz" | "komeri" | "kohnan" | "dcm"> = {
 
 export default async function BlueprintPage({ params }: Props) {
   const { slug } = await params;
-  const data = await resolvePageData(slug);
+  const locale = await getLocale();
+  const data = await resolvePageData(slug, locale);
   if (!data) notFound();
 
   const { bp, uc, fsBp } = data;
@@ -153,13 +154,12 @@ export default async function BlueprintPage({ params }: Props) {
   const tDiff = await getTranslations("Difficulty");
   const tIndoor = await getTranslations("IndoorOutdoor");
   const tFooter = await getTranslations("Footer");
-  const locale = await getLocale();
 
   const exampleCounts = await fetchExampleCountsByUseCase();
   const exampleCount = uc ? exampleCounts[uc.id] ?? 0 : 0;
   const [examples, rating, comments] = uc
     ? await Promise.all([
-        exampleCount > 0 ? fetchExamples(uc.id) : Promise.resolve([]),
+        exampleCount > 0 ? fetchExamples(uc.id, locale) : Promise.resolve([]),
         fetchRatingSummary({ kind: "useCase", id: uc.id }),
         fetchComments({ kind: "useCase", id: uc.id }),
       ])

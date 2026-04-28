@@ -115,10 +115,11 @@ const categoryIcon: Record<string, string> = {
 export default async function HomePage() {
   const t = await getTranslations("Home");
   const tFooter = await getTranslations("Footer");
+  const locale = await getLocale();
   const [useCasesData, featuredUseCases, featuredExamples, exampleCounts] = await Promise.all([
-    fetchUseCases(),
-    fetchFeaturedUseCases(6),
-    fetchRecentExamples(3),
+    fetchUseCases(locale),
+    fetchFeaturedUseCases(6, locale),
+    fetchRecentExamples(3, locale),
     fetchExampleCountsByUseCase(),
   ]);
   const countsByCategory = useCasesData.reduce<Record<string, number>>((acc, uc) => {

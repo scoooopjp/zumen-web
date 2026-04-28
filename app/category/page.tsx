@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { categories } from "@/lib/data";
@@ -28,8 +28,9 @@ export default async function CategoryListPage() {
   const t = await getTranslations("CategoryList");
   const tCommon = await getTranslations("Common");
   const tFooter = await getTranslations("Footer");
+  const locale = await getLocale();
   const [useCasesData, exampleCounts] = await Promise.all([
-    fetchUseCases(),
+    fetchUseCases(locale),
     fetchExampleCountsByUseCase(),
   ]);
 

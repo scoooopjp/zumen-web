@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import UserProfileView from "@/components/UserProfileView";
 import { fetchExamplesByAuthor, fetchUserProfileByUsername } from "@/lib/firestore";
 
@@ -43,6 +43,7 @@ export default async function UserHandlePage({ params }: Props) {
   const { handle } = await params;
   const profile = await fetchUserProfileByUsername(handle);
   if (!profile) notFound();
-  const examples = await fetchExamplesByAuthor(profile.uid);
+  const locale = await getLocale();
+  const examples = await fetchExamplesByAuthor(profile.uid, locale);
   return <UserProfileView profile={profile} examples={examples} />;
 }

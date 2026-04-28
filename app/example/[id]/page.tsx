@@ -24,10 +24,10 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const ex = await fetchExampleById(id);
+  const locale = await getLocale();
+  const ex = await fetchExampleById(id, locale);
   if (!ex) return {};
   const t = await getTranslations("ExampleDetail");
-  const locale = await getLocale();
   const flatComment = ex.comment.replace(/\s+/g, " ").trim();
   const description = t("metaDescriptionTpl", {
     cost: ex.actualCost.toLocaleString(),
@@ -61,12 +61,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ExampleDetailPage({ params }: Props) {
   const { id } = await params;
-  const ex = await fetchExampleById(id);
+  const locale = await getLocale();
+  const ex = await fetchExampleById(id, locale);
   if (!ex) notFound();
 
   const t = await getTranslations("ExampleDetail");
   const tCommon = await getTranslations("Common");
-  const locale = await getLocale();
 
   const [rating, comments] = await Promise.all([
     fetchRatingSummary({ kind: "example", id }),

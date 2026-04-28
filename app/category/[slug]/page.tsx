@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import BlueprintFilters from "@/components/BlueprintFilters";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -47,8 +47,9 @@ export default async function CategoryDetailPage({ params }: Props) {
   const tFooter = await getTranslations("Footer");
   const categoryLabel = tFooter(`categories.${slug}` as never) as string;
 
+  const locale = await getLocale();
   const [allUseCases, exampleCounts] = await Promise.all([
-    fetchUseCases(),
+    fetchUseCases(locale),
     fetchExampleCountsByUseCase(),
   ]);
   const items = allUseCases.filter((uc) => uc.categorySlug === slug);

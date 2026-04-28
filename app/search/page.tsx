@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import RecentlyViewed from "@/components/RecentlyViewed";
@@ -80,8 +80,9 @@ export default async function SearchPage({ searchParams }: Props) {
   const t = await getTranslations("Search");
   const tCommon = await getTranslations("Common");
 
+  const locale = await getLocale();
   const [all, exampleCounts] = await Promise.all([
-    fetchUseCases(),
+    fetchUseCases(locale),
     fetchExampleCountsByUseCase(),
   ]);
   const results = tokens.length === 0 ? [] : all.filter((uc) => matches(uc, tokens));

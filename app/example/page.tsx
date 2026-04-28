@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ExampleCard from "@/components/ExampleCard";
@@ -28,7 +28,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function ExampleListPage() {
-  const examples = await fetchExamples();
+  const locale = await getLocale();
+  const examples = await fetchExamples(undefined, locale);
   const t = await getTranslations("ExampleList");
   const tCommon = await getTranslations("Common");
 
