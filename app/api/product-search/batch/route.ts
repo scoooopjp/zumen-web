@@ -24,14 +24,19 @@ function isValidKeyword(keyword: string): boolean {
   return /^[\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\s×✕xX+\-.,/%()#&]+$/u.test(keyword);
 }
 
-function getClientKey(req: NextRequest): string | null {
+// rateLimitHits は per-instance のため Vercel スケール時は実効レートが N 倍。
+// best-effort の bot 抑止用途に留め、厳格な制御が必要になったら共有ストアに置換する。
+function getClientKey(req: NextRequest): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) {
     const first = forwardedFor.split(",")[0]?.trim();
     if (first) return first;
   }
   const realIp = req.headers.get("x-real-ip")?.trim();
-  return realIp || null;
+  if (realIp) return realIp;
+  // IP 不明時は共通バケットに落として fail-closed にする (旧実装は null で
+  // リミットをバイパスしていた)。
+  return "__unknown__";
 }
 
 function isRateLimited(clientKey: string): boolean {
@@ -52,8 +57,7 @@ function normalizeLookup(item: ProductSearchLookup): ProductSearchLookup | null 
 }
 
 export async function POST(req: NextRequest) {
-  const clientKey = getClientKey(req);
-  if (clientKey && isRateLimited(clientKey)) {
+  if (isRateLimited(getClientKey(req))) {
     return NextResponse.json(
       { error: "rate limit exceeded" },
       { status: 429, headers: { "Retry-After": "60" } }

@@ -27,14 +27,20 @@ function isValidKeyword(keyword: string): boolean {
   return /^[\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\s×✕xX+\-.,/%()#&]+$/u.test(keyword);
 }
 
-function getClientKey(req: NextRequest): string | null {
+// NOTE: rateLimitHits is per-instance — Vercel が複数 lambda を起動すると
+// 実効レートは N 倍になる。本番で厳格な制御が必要になったら Vercel KV / Upstash 等の
+// 共有ストアに置き換える。ここでは bot 防止程度の bestEffort として残す。
+function getClientKey(req: NextRequest): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) {
     const first = forwardedFor.split(",")[0]?.trim();
     if (first) return first;
   }
   const realIp = req.headers.get("x-real-ip")?.trim();
-  return realIp || null;
+  if (realIp) return realIp;
+  // IP が取れない場合は共通バケットに落として fail-closed にする (旧実装は null で
+  // 返してリミットを完全バイパスしていた)。
+  return "__unknown__";
 }
 
 function isRateLimited(clientKey: string): boolean {
@@ -65,8 +71,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const clientKey = getClientKey(req);
-  if (clientKey && isRateLimited(clientKey)) {
+  if (isRateLimited(getClientKey(req))) {
     return NextResponse.json(
       { error: "rate limit exceeded" },
       {
