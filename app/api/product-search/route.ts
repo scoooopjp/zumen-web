@@ -11,14 +11,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCachedOrScrape } from "@/lib/productSearchServer";
 import { normalizeProductKeyword, type ProductSearchRetailer } from "@/lib/productSearch";
+import { isRateLimited } from "@/lib/rateLimit";
 
 const VALID_RETAILERS: ProductSearchRetailer[] = ["cainz", "komeri", "kohnan", "dcm"];
 const KEYWORD_MAX_LENGTH = 80;
 const KEYWORD_MAX_TOKENS = 8;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 60;
-
-const rateLimitHits = new Map<string, number[]>();
 
 function isValidKeyword(keyword: string): boolean {
   if (keyword.length === 0 || keyword.length > KEYWORD_MAX_LENGTH) return false;
@@ -27,9 +26,6 @@ function isValidKeyword(keyword: string): boolean {
   return /^[\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\s×✕xX+\-.,/%()#&]+$/u.test(keyword);
 }
 
-// NOTE: rateLimitHits is per-instance — Vercel が複数 lambda を起動すると
-// 実効レートは N 倍になる。本番で厳格な制御が必要になったら Vercel KV / Upstash 等の
-// 共有ストアに置き換える。ここでは bot 防止程度の bestEffort として残す。
 function getClientKey(req: NextRequest): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) {
@@ -39,18 +35,8 @@ function getClientKey(req: NextRequest): string {
   const realIp = req.headers.get("x-real-ip")?.trim();
   if (realIp) return realIp;
   // IP が取れない場合は共通バケットに落として fail-closed にする (旧実装は null で
-  // 返してリミットを完全バイパスしていた)。
+  // リミットを完全バイパスしていた)。
   return "__unknown__";
-}
-
-function isRateLimited(clientKey: string): boolean {
-  const now = Date.now();
-  const recent = (rateLimitHits.get(clientKey) ?? []).filter(
-    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
-  );
-  recent.push(now);
-  rateLimitHits.set(clientKey, recent);
-  return recent.length > RATE_LIMIT_MAX_REQUESTS;
 }
 
 export async function GET(req: NextRequest) {
@@ -71,7 +57,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (isRateLimited(getClientKey(req))) {
+  if (await isRateLimited(`single:${getClientKey(req)}`, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS)) {
     return NextResponse.json(
       { error: "rate limit exceeded" },
       {

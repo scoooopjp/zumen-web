@@ -7,6 +7,7 @@ import {
   type ProductSearchResult,
   type ProductSearchRetailer,
 } from "@/lib/productSearch";
+import { isRateLimited } from "@/lib/rateLimit";
 
 const VALID_RETAILERS: ProductSearchRetailer[] = ["cainz", "komeri", "kohnan", "dcm"];
 const KEYWORD_MAX_LENGTH = 80;
@@ -15,8 +16,6 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 30;
 const BATCH_MAX_ITEMS = 40;
 
-const rateLimitHits = new Map<string, number[]>();
-
 function isValidKeyword(keyword: string): boolean {
   if (keyword.length === 0 || keyword.length > KEYWORD_MAX_LENGTH) return false;
   if (/https?:\/\//i.test(keyword)) return false;
@@ -24,8 +23,6 @@ function isValidKeyword(keyword: string): boolean {
   return /^[\p{L}\p{N}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\s×✕xX+\-.,/%()#&]+$/u.test(keyword);
 }
 
-// rateLimitHits は per-instance のため Vercel スケール時は実効レートが N 倍。
-// best-effort の bot 抑止用途に留め、厳格な制御が必要になったら共有ストアに置換する。
 function getClientKey(req: NextRequest): string {
   const forwardedFor = req.headers.get("x-forwarded-for");
   if (forwardedFor) {
@@ -39,16 +36,6 @@ function getClientKey(req: NextRequest): string {
   return "__unknown__";
 }
 
-function isRateLimited(clientKey: string): boolean {
-  const now = Date.now();
-  const recent = (rateLimitHits.get(clientKey) ?? []).filter(
-    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS
-  );
-  recent.push(now);
-  rateLimitHits.set(clientKey, recent);
-  return recent.length > RATE_LIMIT_MAX_REQUESTS;
-}
-
 function normalizeLookup(item: ProductSearchLookup): ProductSearchLookup | null {
   if (!VALID_RETAILERS.includes(item.retailer)) return null;
   const keyword = normalizeProductKeyword(item.keyword);
@@ -57,7 +44,7 @@ function normalizeLookup(item: ProductSearchLookup): ProductSearchLookup | null 
 }
 
 export async function POST(req: NextRequest) {
-  if (isRateLimited(getClientKey(req))) {
+  if (await isRateLimited(`batch:${getClientKey(req)}`, RATE_LIMIT_WINDOW_MS, RATE_LIMIT_MAX_REQUESTS)) {
     return NextResponse.json(
       { error: "rate limit exceeded" },
       { status: 429, headers: { "Retry-After": "60" } }
