@@ -820,39 +820,52 @@ function userDocToProfile(uid: string, data: FirebaseFirestore.DocumentData): Us
   };
 }
 
-export async function fetchUserProfile(uid: string): Promise<UserProfile | null> {
-  const db = getAdminDb();
-  if (!db) return null;
-  try {
-    const snap = await db.collection("users").doc(uid).get();
-    if (!snap.exists) return null;
-    return userDocToProfile(uid, snap.data() ?? {});
-  } catch (e) {
-    console.error(`[firestore] fetchUserProfile(${uid}) failed:`, e);
-    return null;
-  }
-}
+// プロフィールは「displayName / bio / photoURL の更新は数日に 1 回」レベルで変動が穏やかなので
+// 10 分の cross-request cache で十分。/u/[handle] (revalidate=300) や OG 画像 (revalidate=86400)
+// 経由のリクエストが SNS unfurl などで集中したときの users / usernames reads を抑える。
+const PROFILE_CACHE_TTL_S = 600;
+
+export const fetchUserProfile = unstable_cache(
+  async (uid: string): Promise<UserProfile | null> => {
+    const db = getAdminDb();
+    if (!db) return null;
+    try {
+      const snap = await db.collection("users").doc(uid).get();
+      if (!snap.exists) return null;
+      return userDocToProfile(uid, snap.data() ?? {});
+    } catch (e) {
+      console.error(`[firestore] fetchUserProfile(${uid}) failed:`, e);
+      return null;
+    }
+  },
+  ["firestore-user-profile-v1"],
+  { revalidate: PROFILE_CACHE_TTL_S },
+);
 
 /**
  * `usernames/{handle}` 逆引きから UID を解決し、users/{uid} を取得する。
  * 二段読みになるが、ハンドルは変更可能なので逆引きを介すのが正しい運用。
  */
-export async function fetchUserProfileByUsername(username: string): Promise<UserProfile | null> {
-  const db = getAdminDb();
-  if (!db) return null;
-  try {
-    const handleSnap = await db.collection("usernames").doc(username).get();
-    if (!handleSnap.exists) return null;
-    const uid = handleSnap.data()?.uid as string | undefined;
-    if (!uid) return null;
-    const userSnap = await db.collection("users").doc(uid).get();
-    if (!userSnap.exists) return null;
-    return userDocToProfile(uid, userSnap.data() ?? {});
-  } catch (e) {
-    console.error(`[firestore] fetchUserProfileByUsername(${username}) failed:`, e);
-    return null;
-  }
-}
+export const fetchUserProfileByUsername = unstable_cache(
+  async (username: string): Promise<UserProfile | null> => {
+    const db = getAdminDb();
+    if (!db) return null;
+    try {
+      const handleSnap = await db.collection("usernames").doc(username).get();
+      if (!handleSnap.exists) return null;
+      const uid = handleSnap.data()?.uid as string | undefined;
+      if (!uid) return null;
+      const userSnap = await db.collection("users").doc(uid).get();
+      if (!userSnap.exists) return null;
+      return userDocToProfile(uid, userSnap.data() ?? {});
+    } catch (e) {
+      console.error(`[firestore] fetchUserProfileByUsername(${username}) failed:`, e);
+      return null;
+    }
+  },
+  ["firestore-user-profile-by-username-v1"],
+  { revalidate: PROFILE_CACHE_TTL_S },
+);
 
 // ── Comments / Ratings ───────────────────────────────────────
 // iOS の ContentTarget(.example / .useCase) と対応。
@@ -888,18 +901,38 @@ export interface RatingSummary {
   average: number;
 }
 
-export const fetchComments = cache(
-  async (target: ContentTarget): Promise<Comment[]> => {
+export interface CommentSummary {
+  /** 表示用の最新コメント (createdAt 降順, 最大 COMMENTS_DISPLAY_LIMIT 件)。 */
+  comments: Comment[];
+  /** 親 doc 配下のコメント総数。limit に達していない場合は comments.length と一致。 */
+  total: number;
+}
+
+// 表示は通常 3 件 + アプリ誘導なので 50 件分の余剰を確保する。これを超える分は
+// 「アプリで続きを見る」CTA に集約する。limit を超えた場合のみ count() で正確な総数を取る。
+const COMMENTS_DISPLAY_LIMIT = 50;
+
+/**
+ * 旧実装は `comments` サブコレクションを `.get()` で全件取得しており、人気図面に
+ * コメントが溜まると線形に reads が増える危険があった。最新 N 件 + count() 集約に置換。
+ *
+ * 表示順の変更に注意: 旧実装は `orderBy("createdAt","asc")` だったので「最も古い 3 件」
+ * が表示されていた。新実装では新 → 古の順を返すので、UI 側は先頭から表示すれば
+ * 「最新 3 件」になる。
+ */
+export const fetchCommentSummary = cache(
+  async (target: ContentTarget): Promise<CommentSummary> => {
     const db = getAdminDb();
-    if (!db) return [];
+    if (!db) return { comments: [], total: 0 };
     try {
-      const snap = await db
-        .collection(targetCollection(target.kind))
-        .doc(target.id)
+      const parentDoc = db.collection(targetCollection(target.kind)).doc(target.id);
+      const snap = await parentDoc
         .collection("comments")
-        .orderBy("createdAt", "asc")
+        .orderBy("createdAt", "desc")
+        .limit(COMMENTS_DISPLAY_LIMIT)
         .get();
-      if (snap.empty) return [];
+
+      if (snap.empty) return { comments: [], total: 0 };
 
       const dtos = snap.docs
         .map((d) => {
@@ -919,20 +952,46 @@ export const fetchComments = cache(
           };
         })
         .filter((c): c is Omit<Comment, "authorUsername"> => c !== null);
-      if (dtos.length === 0) return [];
+      if (dtos.length === 0) return { comments: [], total: 0 };
+
+      // 取得分が limit に達していなければ取得数 = 総数。達していれば count() で取り直す
+      // (count() は1k マッチあたり 1 read)。
+      let total = dtos.length;
+      if (snap.docs.length >= COMMENTS_DISPLAY_LIMIT) {
+        try {
+          const agg = await parentDoc.collection("comments").count().get();
+          total = agg.data().count ?? dtos.length;
+        } catch (e) {
+          console.warn(
+            `[firestore] commentCount(${target.kind}/${target.id}) failed:`,
+            e,
+          );
+        }
+      }
 
       // username/photoURL を users から join。photoURL は投稿時点のスナップショット優先。
       const metaMap = await fetchAuthorMetaMap(db, dtos.map((c) => c.authorUID));
-      return dtos.map((c) => ({
+      const comments: Comment[] = dtos.map((c) => ({
         ...c,
         authorPhotoURL: c.authorPhotoURL ?? metaMap[c.authorUID]?.photoURL ?? null,
         authorUsername: metaMap[c.authorUID]?.username ?? null,
       }));
+      return { comments, total };
     } catch (e) {
-      console.error(`[firestore] fetchComments(${target.kind}/${target.id}) failed:`, e);
-      return [];
+      console.error(`[firestore] fetchCommentSummary(${target.kind}/${target.id}) failed:`, e);
+      return { comments: [], total: 0 };
     }
-  }
+  },
+);
+
+/**
+ * 後方互換。新規呼び出しは fetchCommentSummary を使うこと (総数を併せて取得できる)。
+ */
+export const fetchComments = cache(
+  async (target: ContentTarget): Promise<Comment[]> => {
+    const summary = await fetchCommentSummary(target);
+    return summary.comments;
+  },
 );
 
 /**

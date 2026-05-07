@@ -68,7 +68,13 @@ const APP_STORE_URL =
 
 interface Props {
   rating: RatingSummary;
+  /** 新→古の順 (createdAt desc) で渡されることを期待。`fetchCommentSummary` の出力をそのまま流す。 */
   comments: Comment[];
+  /**
+   * コメント総数。`comments.length` ではなく親 doc 配下の本当の件数を渡す。
+   * `fetchCommentSummary().total` から取る。省略時は comments.length にフォールバック。
+   */
+  commentTotal?: number;
   /** 表示する最大コメント数。これを超えた分はアプリ誘導 CTA に置き換える。既定 3 件。 */
   maxComments?: number;
 }
@@ -78,12 +84,18 @@ interface Props {
  * Web は Read のみ提供し、投稿はアプリへ誘導する。
  * コメントは maxComments 件までを表示し、それ以上はアプリで全件閲覧してもらう。
  */
-export default function RatingsCommentsSection({ rating, comments, maxComments = 3 }: Props) {
+export default function RatingsCommentsSection({
+  rating,
+  comments,
+  commentTotal,
+  maxComments = 3,
+}: Props) {
   const t = useTranslations("RatingsComments");
   const avg = rating.count > 0 ? rating.average : 0;
   const avgLabel = avg > 0 ? avg.toFixed(1) : "–";
   const visibleComments = comments.slice(0, maxComments);
-  const hiddenCount = Math.max(0, comments.length - visibleComments.length);
+  const total = typeof commentTotal === "number" ? commentTotal : comments.length;
+  const hiddenCount = Math.max(0, total - visibleComments.length);
   return (
     <section className="mt-10 no-print">
       {/* 評価 */}
@@ -109,12 +121,12 @@ export default function RatingsCommentsSection({ rating, comments, maxComments =
       {/* コメント */}
       <h2 className="text-xl font-bold text-gray-900 mt-8 mb-3">
         {t("commentsHeading")}
-        {comments.length > 0 && (
+        {total > 0 && (
           <span
             className="ml-2 text-sm font-medium"
             style={{ color: "var(--text-tertiary)" }}
           >
-            {t("commentCount", { count: comments.length })}
+            {t("commentCount", { count: total })}
           </span>
         )}
       </h2>
@@ -177,7 +189,7 @@ export default function RatingsCommentsSection({ rating, comments, maxComments =
       )}
 
       {/* 続きはアプリで／コメント投稿動線 */}
-      {comments.length > 0 && (
+      {total > 0 && (
         <div
           className="mt-3 rounded-xl px-4 py-3 flex items-center justify-between gap-3"
           style={{ background: "var(--surface)", border: "1px solid var(--border)" }}

@@ -12,7 +12,7 @@ import StepIllustration from "@/components/StepIllustration";
 import StepVideoPoster from "@/components/StepVideoPoster";
 import RatingsCommentsSection from "@/components/RatingsCommentsSection";
 import { fetchExampleById, formatTime } from "@/lib/examples";
-import { fetchComments, fetchRatingSummary } from "@/lib/firestore";
+import { fetchCommentSummary, fetchRatingSummary } from "@/lib/firestore";
 import { userProfilePath } from "@/lib/userPath";
 import { localizedAlternates } from "@/lib/i18nMeta";
 
@@ -70,10 +70,11 @@ export default async function ExampleDetailPage({ params }: Props) {
   const t = await getTranslations("ExampleDetail");
   const tCommon = await getTranslations("Common");
 
-  const [rating, comments] = await Promise.all([
+  const [rating, commentSummary] = await Promise.all([
     fetchRatingSummary({ kind: "example", id }),
-    fetchComments({ kind: "example", id }),
+    fetchCommentSummary({ kind: "example", id }),
   ]);
+  const { comments, total: commentTotal } = commentSummary;
 
   const dimensionsLabel =
     ex.actualWidth && ex.actualDepth && ex.actualHeight
@@ -287,7 +288,11 @@ export default async function ExampleDetailPage({ params }: Props) {
       })()}
 
       {/* 評価・コメント */}
-      <RatingsCommentsSection rating={rating} comments={comments} />
+      <RatingsCommentsSection
+        rating={rating}
+        comments={comments}
+        commentTotal={commentTotal}
+      />
 
       {/* 作例の投稿ゲート */}
       <div className="mt-10">

@@ -5,6 +5,9 @@ import { fetchUserProfileByUsername } from "@/lib/firestore";
 export const alt = "ZUMEN profile";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+// SNS unfurl のたびに users / usernames を読まないよう 1 日 ISR。
+// プロフィールが更新されても 24 時間以内には反映される。
+export const revalidate = 86400;
 
 const NAVY_DEEP = "#0F2A4A";
 const NAVY_MID = "#1A3A5C";

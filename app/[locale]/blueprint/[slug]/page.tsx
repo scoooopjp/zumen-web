@@ -35,7 +35,7 @@ import {
   fetchBlueprintByUseCaseID,
   fetchExampleCountsByUseCase,
   fetchExamples,
-  fetchComments,
+  fetchCommentSummary,
   fetchRatingSummary,
 } from "@/lib/firestore";
 import type { FSBlueprintDetail } from "@/lib/firestore";
@@ -160,13 +160,15 @@ export default async function BlueprintPage({ params }: Props) {
   const exampleCounts = await fetchExampleCountsByUseCase();
   const exampleCount = uc ? exampleCounts[uc.id] ?? 0 : 0;
   // 表示は previewExamples = examples.slice(0, 6) なので 6 件 + hidden 余裕分しか取らない。
-  const [examples, rating, comments] = uc
+  const [examples, rating, commentSummary] = uc
     ? await Promise.all([
         exampleCount > 0 ? fetchExamples(uc.id, locale, 6) : Promise.resolve([]),
         fetchRatingSummary({ kind: "useCase", id: uc.id }),
-        fetchComments({ kind: "useCase", id: uc.id }),
+        fetchCommentSummary({ kind: "useCase", id: uc.id }),
       ])
-    : [[], { count: 0, average: 0 }, []];
+    : [[], { count: 0, average: 0 }, { comments: [], total: 0 }];
+  const comments = commentSummary.comments;
+  const commentTotal = commentSummary.total;
   const previewExamples = examples.slice(0, 6);
 
   // use case 固有の値を優先、なければテンプレートの値にフォールバック
@@ -648,7 +650,13 @@ export default async function BlueprintPage({ params }: Props) {
         </section>
 
         {/* 評価・コメント (Read 専用、投稿はアプリから) */}
-        {uc && <RatingsCommentsSection rating={rating} comments={comments} />}
+        {uc && (
+          <RatingsCommentsSection
+            rating={rating}
+            comments={comments}
+            commentTotal={commentTotal}
+          />
+        )}
 
         {/* App CTA */}
         <div className="mt-12 no-print">
