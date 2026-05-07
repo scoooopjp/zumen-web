@@ -159,9 +159,10 @@ export default async function BlueprintPage({ params }: Props) {
 
   const exampleCounts = await fetchExampleCountsByUseCase();
   const exampleCount = uc ? exampleCounts[uc.id] ?? 0 : 0;
+  // 表示は previewExamples = examples.slice(0, 6) なので 6 件 + hidden 余裕分しか取らない。
   const [examples, rating, comments] = uc
     ? await Promise.all([
-        exampleCount > 0 ? fetchExamples(uc.id, locale) : Promise.resolve([]),
+        exampleCount > 0 ? fetchExamples(uc.id, locale, 6) : Promise.resolve([]),
         fetchRatingSummary({ kind: "useCase", id: uc.id }),
         fetchComments({ kind: "useCase", id: uc.id }),
       ])

@@ -308,32 +308,60 @@ async function fetchAuthorMetaMap(
 
 // ── UseCases ────────────────────────────────────────────────
 
-export async function fetchUseCases(locale: string = "ja"): Promise<UseCase[]> {
-  const db = getAdminDb();
-  if (!db) return mockUseCases;
-  try {
-    // 一覧トップは人気順 (popularityScore 降順 → category)。useCases は ~50 件と少ないので
-    // 全件取得してクライアント (= server component) 側でソートし、
-    // popularityScore 未設定 doc を取りこぼさない。iOS の fetchUseCases と同じ挙動。
-    const snap = await db.collection("useCases").get();
-    if (snap.empty) {
-      console.warn("[firestore] useCases collection empty — falling back to mock");
-      return mockUseCases;
+// useCases コレクションの生 DTO を 1 時間キャッシュ。`/search` が force-dynamic なため、
+// クローラーや高頻度アクセスでも 1 時間に 1 回の collection scan (約 50 reads) で済むようにする。
+// locale を引数に取らない (= ロケール非依存の DTO のみ) ことで、ja/en のレンダリングが
+// キャッシュを共有する。書き込みは scripts/translate-firestore-en.ts などの管理バッチからのみ。
+const fetchUseCaseDocsRaw = unstable_cache(
+  async (): Promise<FSUseCase[]> => {
+    const db = getAdminDb();
+    if (!db) return [];
+    try {
+      const snap = await db.collection("useCases").get();
+      if (snap.empty) return [];
+      return snap.docs.map((d) => ({ id: d.id, ...d.data() } as FSUseCase));
+    } catch (e) {
+      console.error("[firestore] fetchUseCaseDocsRaw failed:", e);
+      return [];
     }
-    const results = snap.docs
-      .map((d) => fsUseCaseToModel({ id: d.id, ...d.data() } as FSUseCase, locale))
-      .filter((uc): uc is UseCase => uc !== null);
-    results.sort((a, b) => {
-      const sa = a.popularityScore ?? 0;
-      const sb = b.popularityScore ?? 0;
-      if (sa !== sb) return sb - sa;
-      return a.category.localeCompare(b.category, "ja");
-    });
-    return results.length > 0 ? results : mockUseCases;
-  } catch (e) {
-    console.error("[firestore] fetchUseCases failed:", e);
-    return mockUseCases;
-  }
+  },
+  ["firestore-usecases-raw-v1"],
+  { revalidate: 3600 }
+);
+
+const fetchFeaturedConfigRaw = unstable_cache(
+  async (): Promise<string[]> => {
+    const db = getAdminDb();
+    if (!db) return [];
+    try {
+      const snap = await db.collection("config").doc("featured").get();
+      const ids = (snap.data()?.popularUseCaseIds ?? []) as string[];
+      return Array.isArray(ids) ? ids : [];
+    } catch (e) {
+      console.error("[firestore] fetchFeaturedConfigRaw failed:", e);
+      return [];
+    }
+  },
+  ["firestore-featured-config-v1"],
+  { revalidate: 3600 }
+);
+
+export async function fetchUseCases(locale: string = "ja"): Promise<UseCase[]> {
+  const dtos = await fetchUseCaseDocsRaw();
+  if (dtos.length === 0) return mockUseCases;
+  // 一覧トップは人気順 (popularityScore 降順 → category)。useCases は ~50 件と少ないので
+  // 全件取得してクライアント (= server component) 側でソートし、popularityScore 未設定 doc を
+  // 取りこぼさない。iOS の fetchUseCases と同じ挙動。
+  const results = dtos
+    .map((dto) => fsUseCaseToModel(dto, locale))
+    .filter((uc): uc is UseCase => uc !== null);
+  results.sort((a, b) => {
+    const sa = a.popularityScore ?? 0;
+    const sb = b.popularityScore ?? 0;
+    if (sa !== sb) return sb - sa;
+    return a.category.localeCompare(b.category, "ja");
+  });
+  return results.length > 0 ? results : mockUseCases;
 }
 
 // ── Featured UseCases (人気の設計図) ─────────────────────────
@@ -344,24 +372,24 @@ export async function fetchFeaturedUseCases(
   limit = 6,
   locale: string = "ja",
 ): Promise<UseCase[]> {
-  const db = getAdminDb();
-  if (!db) return mockUseCases.slice(0, limit);
   try {
-    const configSnap = await db.collection("config").doc("featured").get();
-    const ids = (configSnap.data()?.popularUseCaseIds ?? []) as string[];
+    const ids = await fetchFeaturedConfigRaw();
+    const dtos = await fetchUseCaseDocsRaw();
+    if (dtos.length === 0) return mockUseCases.slice(0, limit);
+
     if (ids.length === 0) {
+      // featured 未設定時は通常一覧の先頭を返す
       const all = await fetchUseCases(locale);
       return all.slice(0, limit);
     }
 
-    const picked = ids.slice(0, limit);
-    const refs = picked.map((id) => db.collection("useCases").doc(id));
-    const docs = await db.getAll(...refs);
-
+    // キャッシュ済みの全 useCase 辞書から ID 引き。db.getAll を回避し、追加 read ゼロで返す。
+    const byId = new Map(dtos.map((d) => [d.id, d]));
     const results: UseCase[] = [];
-    for (const d of docs) {
-      if (!d.exists) continue;
-      const model = fsUseCaseToModel({ id: d.id, ...d.data() } as FSUseCase, locale);
+    for (const id of ids.slice(0, limit)) {
+      const dto = byId.get(id);
+      if (!dto) continue;
+      const model = fsUseCaseToModel(dto, locale);
       if (model) results.push(model);
     }
     return results.length > 0 ? results : mockUseCases.slice(0, limit);
@@ -518,21 +546,37 @@ export async function fetchBlueprintByUseCaseID(
 
 // ── Examples ────────────────────────────────────────────────
 
+// 作例一覧の取得上限。`examples` は 6M reads/月 (= 全 reads の 90%) を占めていたため、
+// limit() 必須の規約を撹回避策として default で強制する。呼び出し側は表示に必要な分だけ
+// 上書きで指定すること。デフォルトは「/example 一覧の 1 ページ分」相当。
+const DEFAULT_EXAMPLE_LIST_LIMIT = 60;
+const DEFAULT_EXAMPLES_BY_USECASE_LIMIT = 24;
+const DEFAULT_EXAMPLES_BY_AUTHOR_LIMIT = 60;
+
 export async function fetchExamples(
   useCaseID?: string,
   locale: string = "ja",
+  limit?: number,
 ): Promise<Example[]> {
+  const effectiveLimit =
+    typeof limit === "number" && limit > 0
+      ? limit
+      : useCaseID
+        ? DEFAULT_EXAMPLES_BY_USECASE_LIMIT
+        : DEFAULT_EXAMPLE_LIST_LIMIT;
+
   const db = getAdminDb();
   if (!db) {
-    return useCaseID
+    const all = useCaseID
       ? mockExamples.filter((e) => e.useCaseID === useCaseID)
       : mockExamples;
+    return all.slice(0, effectiveLimit);
   }
   try {
     // 一覧トップ (作例 list / blueprint カテゴリ詳細) は人気順:
     // popularityScore 降順 → createdAt 降順。pickup は fetchRecentExamples を使うこと。
     const col = db.collection("examples");
-    const q = useCaseID
+    const base = useCaseID
       ? col
           .where("useCaseID", "==", useCaseID)
           .orderBy("popularityScore", "desc")
@@ -540,21 +584,25 @@ export async function fetchExamples(
       : col
           .orderBy("popularityScore", "desc")
           .orderBy("createdAt", "desc");
+    // `hidden==true` は filter() で落としているので、limit にバッファを乗せて取りこぼしを防ぐ。
+    const q = base.limit(effectiveLimit + 5);
     const snap = await q.get();
     if (snap.empty) return [];
 
     const dtos = snap.docs
       .map((d) => ({ id: d.id, ...d.data() } as FSExample))
-      .filter(isPublicExample);
+      .filter(isPublicExample)
+      .slice(0, effectiveLimit);
     if (dtos.length === 0) return [];
 
     const metaMap = await fetchAuthorMetaMap(db, dtos.map((e) => e.authorUID));
     return dtos.map((dto) => fsExampleToModel(dto, metaMap, locale));
   } catch (e) {
     console.error(`[firestore] fetchExamples(${useCaseID ?? "all"}) failed:`, e);
-    return useCaseID
+    const fallback = useCaseID
       ? mockExamples.filter((e) => e.useCaseID === useCaseID)
       : mockExamples;
+    return fallback.slice(0, effectiveLimit);
   }
 }
 
@@ -616,7 +664,10 @@ function buildExampleCounts(examples: Array<{ useCaseID: string }>): Record<stri
   return counts;
 }
 
-const EXAMPLE_COUNTS_TTL_MS = 15 * 60 * 1000;
+// `config/exampleCounts` doc の鮮度 TTL。これを過ぎたら recompute を発火する。
+// 旧実装は 15 分 + 全件 scan で `examples` reads を 6M/月レベルまで膨らませていた。
+// 24 時間 + count() 集約で 1 日 1 回 (= 約 50 reads) に抑え込む。
+const EXAMPLE_COUNTS_TTL_MS = 24 * 60 * 60 * 1000;
 
 const loadExampleCountsDoc = unstable_cache(
   async (): Promise<ExampleCountsDoc | null> => {
@@ -630,28 +681,50 @@ const loadExampleCountsDoc = unstable_cache(
       return null;
     }
   },
-  ["firestore-example-counts-doc"],
-  { revalidate: 60 }
+  ["firestore-example-counts-doc-v2"],
+  { revalidate: 600 }
 );
 
-async function recomputeExampleCounts(db: FirebaseFirestore.Firestore): Promise<Record<string, number>> {
-  const snap = await db.collection("examples").select("useCaseID", "hidden").get();
+/**
+ * useCase ごとに count() 集約を投げて作例件数を再計算する。
+ * 旧実装は examples コレクションの全件 select() で N reads を消費していたが、
+ * count() を使うと「マッチしたインデックスエントリ 1k 件あたり 1 read」課金なので
+ * 50 useCases × 約 1 read = 50 reads/recompute まで圧縮できる。
+ *
+ * トレードオフ: hidden==true の doc も 1 件としてカウントしてしまう (count() に
+ * 不等価フィルタを掛けると複合 index が必要になり運用負担が増えるため)。hidden は
+ * 通報対応など極めて稀なので、表示上の作例件数が稀に +1 ずれてもユーザー影響は小さい。
+ * 厳密性が必要になったら scripts/recompute-example-counts.ts を別途バッチで回す。
+ */
+async function recomputeExampleCounts(
+  db: FirebaseFirestore.Firestore,
+): Promise<Record<string, number>> {
+  const useCaseDtos = await fetchUseCaseDocsRaw();
+  if (useCaseDtos.length === 0) return {};
+
   const counts: Record<string, number> = {};
-  for (const d of snap.docs) {
-    const data = d.data();
-    if (data.hidden === true) continue;
-    const id = data.useCaseID;
-    if (typeof id !== "string" || !id) continue;
-    counts[id] = (counts[id] ?? 0) + 1;
-  }
+  await Promise.all(
+    useCaseDtos.map(async (uc) => {
+      try {
+        const agg = await db
+          .collection("examples")
+          .where("useCaseID", "==", uc.id)
+          .count()
+          .get();
+        counts[uc.id] = agg.data().count ?? 0;
+      } catch (e) {
+        console.warn(`[firestore] count(useCaseID==${uc.id}) failed:`, e);
+        counts[uc.id] = 0;
+      }
+    }),
+  );
   return counts;
 }
 
 /**
- * useCaseID 別の作例件数を返す（hidden==true は除外）。
- * iOS の FirestoreService.fetchExampleCountsByUseCase と同じく、
- * 1 クエリで全件取得して呼び出し側で集計する単純実装。
- * 同一リクエスト内で複数ページから呼ばれてもキャッシュで重複取得を防ぐ。
+ * useCaseID 別の作例件数を返す（厳密性は recomputeExampleCounts のコメント参照）。
+ * 実体は `config/exampleCounts` の denormalized doc。stale なら count() 集約で再計算。
+ * 同一リクエスト内で複数ページから呼ばれても React `cache` で重複取得を防ぐ。
  */
 export const fetchExampleCountsByUseCase = cache(
   async (): Promise<Record<string, number>> => {
@@ -669,39 +742,46 @@ export const fetchExampleCountsByUseCase = cache(
       }
 
       const counts = await recomputeExampleCounts(db);
-      void db.collection("config").doc("exampleCounts").set(
-        {
-          counts,
-          updatedAt: new Date(),
-        },
-        { merge: true }
-      ).catch((e) => {
-        console.warn("[firestore] exampleCounts write failed:", e);
-      });
+      // doc が空のまま recompute も失敗 (= 全 useCase が 0) は既存値を返してフォールバック。
+      if (Object.keys(counts).length === 0 && doc?.counts) {
+        return doc.counts;
+      }
+      void db
+        .collection("config")
+        .doc("exampleCounts")
+        .set({ counts, updatedAt: new Date() }, { merge: true })
+        .catch((e) => {
+          console.warn("[firestore] exampleCounts write failed:", e);
+        });
       return counts;
     } catch (e) {
       console.error("[firestore] fetchExampleCountsByUseCase failed:", e);
       return buildExampleCounts(mockExamples);
     }
-  }
+  },
 );
 
 export async function fetchExamplesByAuthor(
   authorUID: string,
   locale: string = "ja",
+  limit: number = DEFAULT_EXAMPLES_BY_AUTHOR_LIMIT,
 ): Promise<Example[]> {
   const db = getAdminDb();
-  if (!db) return mockExamples.filter((e) => e.authorUID === authorUID);
+  if (!db) {
+    return mockExamples.filter((e) => e.authorUID === authorUID).slice(0, limit);
+  }
   try {
     const snap = await db
       .collection("examples")
       .where("authorUID", "==", authorUID)
       .orderBy("createdAt", "desc")
+      .limit(limit + 5)
       .get();
     if (snap.empty) return [];
     const dtos = snap.docs
       .map((d) => ({ id: d.id, ...d.data() } as FSExample))
-      .filter(isPublicExample);
+      .filter(isPublicExample)
+      .slice(0, limit);
     if (dtos.length === 0) return [];
 
     const metaMap = await fetchAuthorMetaMap(db, [authorUID]);

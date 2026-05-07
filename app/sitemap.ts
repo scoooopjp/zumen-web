@@ -3,6 +3,10 @@ import { categories } from "@/lib/data";
 import { fetchUseCases } from "@/lib/firestore";
 import { routing } from "@/i18n/routing";
 
+// sitemap は AI/SEO クローラーから連続で叩かれる。fetchUseCases はキャッシュ済みなので
+// 二重防御だが、sitemap 自体も 1 日キャッシュしておく。
+export const revalidate = 86400;
+
 const BASE = "https://zumen.scoooop.com";
 
 function urlFor(locale: string, path: string): string {
