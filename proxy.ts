@@ -33,7 +33,20 @@ export default function proxy(request: NextRequest) {
     return new NextResponse(null, { status: 403 });
   }
 
-  return intlProxy(request);
+  const response = intlProxy(request);
+
+  // /search?q=* は検索結果ページなので index させない (薄い検索結果ページが大量に
+  // index されると SEO 上マイナス)。/search 本体は generateMetadata で index 許可。
+  if (
+    isDynamicSearchPath(pathname) &&
+    request.nextUrl.searchParams.get("q")?.trim()
+  ) {
+    if (response instanceof NextResponse) {
+      response.headers.set("X-Robots-Tag", "noindex, follow");
+    }
+  }
+
+  return response;
 }
 
 export const config = {

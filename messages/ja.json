@@ -252,7 +252,9 @@
     "ctaTitle": "自分も作ってみる",
     "ctaBody": "設計図を選んでサイズを入力。カインズ・コメリ別の材料リストが自動生成されます。",
     "ctaPrimary": "設計図を見る",
-    "ctaSecondary": "アプリで作例を投稿"
+    "ctaSecondary": "アプリで作例を投稿",
+    "loadMore": "もっと見る",
+    "loadMoreLoading": "読み込み中…"
   },
   "ExampleDetail": {
     "metaTitleTpl": "{author}さんの{useCase}作例",

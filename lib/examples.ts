@@ -1,6 +1,7 @@
 // 作例データ (Firestore 接続前のモック)
-// 実際は Firestore から動的取得
-export { fetchExamples, fetchExampleById, fetchRecentExamples } from "./firestore";
+// 実際は Firestore から動的取得 — fetch* は @/lib/firestore から直接 import すること。
+// このファイルから再 export すると、Client Component 経由で firebase-admin が
+// クライアントバンドルに巻き込まれてビルドが落ちる。
 
 export interface ExampleStep {
   id: string;

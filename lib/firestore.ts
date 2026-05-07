@@ -5,6 +5,7 @@
  */
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
+import { Timestamp } from "firebase-admin/firestore";
 import { getAdminDb } from "./firebase-admin";
 import { useCases as mockUseCases } from "./data";
 import { getUseCaseById } from "./data";
@@ -603,6 +604,80 @@ export async function fetchExamples(
       ? mockExamples.filter((e) => e.useCaseID === useCaseID)
       : mockExamples;
     return fallback.slice(0, effectiveLimit);
+  }
+}
+
+/**
+ * /example 一覧のページネーション用。`popularityScore desc, createdAt desc` を
+ * keyset (startAfter) で進めることで、毎ページ Firestore 既知の最大 N+5 reads に抑えられる。
+ * popularityScore + createdAt がタイの 2 件は事実上ほぼ無いが、衝突しても 1 件取り逃がす程度
+ * (= 表示順が安定しない) で済む。
+ */
+export interface ExampleCursor {
+  popularityScore: number;
+  /** ISO 8601 (full precision)。クライアントから受け取るので serializable で渡す。 */
+  createdAtISO: string;
+}
+
+export interface ExamplePage {
+  examples: Example[];
+  /** 次ページが存在しなければ null。これをそのまま次の fetchExamplePage に渡す。 */
+  nextCursor: ExampleCursor | null;
+}
+
+export async function fetchExamplePage(opts: {
+  locale?: string;
+  limit?: number;
+  cursor?: ExampleCursor | null;
+}): Promise<ExamplePage> {
+  const limit = opts.limit && opts.limit > 0 ? opts.limit : 24;
+  const locale = opts.locale ?? "ja";
+  const cursor = opts.cursor ?? null;
+
+  const db = getAdminDb();
+  if (!db) {
+    // mock fallback はカーソル無視 (= 1 ページ目のみ)。本番では発生しない。
+    if (cursor) return { examples: [], nextCursor: null };
+    return { examples: mockExamples.slice(0, limit), nextCursor: null };
+  }
+
+  try {
+    let q = db
+      .collection("examples")
+      .orderBy("popularityScore", "desc")
+      .orderBy("createdAt", "desc");
+
+    if (cursor) {
+      const ts = Timestamp.fromDate(new Date(cursor.createdAtISO));
+      q = q.startAfter(cursor.popularityScore, ts);
+    }
+
+    const snap = await q.limit(limit + 5).get();
+    if (snap.empty) return { examples: [], nextCursor: null };
+
+    const allDtos = snap.docs.map((d) => ({ id: d.id, ...d.data() } as FSExample));
+    const visible = allDtos.filter(isPublicExample).slice(0, limit);
+    if (visible.length === 0) return { examples: [], nextCursor: null };
+
+    const metaMap = await fetchAuthorMetaMap(db, visible.map((e) => e.authorUID));
+    const examples = visible.map((dto) => fsExampleToModel(dto, metaMap, locale));
+
+    // hasMore: 取れた raw 件数 (hidden 込み) が要求 limit を超えていれば次がある可能性あり。
+    const hasMore = allDtos.length > limit;
+    const lastDto = visible[visible.length - 1];
+    const nextCursor: ExampleCursor | null =
+      hasMore && lastDto?.createdAt
+        ? {
+            popularityScore:
+              typeof lastDto.popularityScore === "number" ? lastDto.popularityScore : 0,
+            createdAtISO: lastDto.createdAt.toDate().toISOString(),
+          }
+        : null;
+
+    return { examples, nextCursor };
+  } catch (e) {
+    console.error("[firestore] fetchExamplePage failed:", e);
+    return { examples: [], nextCursor: null };
   }
 }
 

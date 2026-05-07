@@ -11,8 +11,12 @@ import ShareButton from "@/components/ShareButton";
 import StepIllustration from "@/components/StepIllustration";
 import StepVideoPoster from "@/components/StepVideoPoster";
 import RatingsCommentsSection from "@/components/RatingsCommentsSection";
-import { fetchExampleById, formatTime } from "@/lib/examples";
-import { fetchCommentSummary, fetchRatingSummary } from "@/lib/firestore";
+import { formatTime } from "@/lib/examples";
+import {
+  fetchExampleById,
+  fetchCommentSummary,
+  fetchRatingSummary,
+} from "@/lib/firestore";
 import { userProfilePath } from "@/lib/userPath";
 import { localizedAlternates } from "@/lib/i18nMeta";
 

@@ -3,13 +3,15 @@ import { Link } from "@/i18n/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import ExampleCard from "@/components/ExampleCard";
+import ExampleListInfinite from "@/components/ExampleListInfinite";
 import LottieIcon from "@/components/LottieIcon";
-import { fetchExamples } from "@/lib/examples";
+import { fetchExamplePage } from "@/lib/firestore";
 import { localizedAlternates } from "@/lib/i18nMeta";
 
 // 5分ごとに再検証（新しい投稿を反映）
 export const revalidate = 300;
+
+const INITIAL_PAGE_SIZE = 24;
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("ExampleList");
@@ -31,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ExampleListPage() {
   const locale = await getLocale();
-  const examples = await fetchExamples(undefined, locale);
+  const initial = await fetchExamplePage({ locale, limit: INITIAL_PAGE_SIZE });
   const t = await getTranslations("ExampleList");
   const tCommon = await getTranslations("Common");
 
@@ -89,8 +91,8 @@ export default async function ExampleListPage() {
         </AppOnlyGate>
       </div>
 
-      {/* グリッド */}
-      {examples.length === 0 ? (
+      {/* グリッド (初期分はサーバー描画、続きは server action でロード) */}
+      {initial.examples.length === 0 ? (
         <div className="text-center py-20" style={{ color: "var(--text-tertiary)" }}>
           <div className="flex justify-center mb-4">
             <LottieIcon name="photoEmpty" size={180} ariaLabel={t("emptyAria")} />
@@ -99,11 +101,10 @@ export default async function ExampleListPage() {
           <p className="text-sm mt-2">{t("emptyBody")}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {examples.map((ex) => (
-            <ExampleCard key={ex.id} example={ex} />
-          ))}
-        </div>
+        <ExampleListInfinite
+          initialExamples={initial.examples}
+          initialCursor={initial.nextCursor}
+        />
       )}
 
       {/* 下部 CTA */}

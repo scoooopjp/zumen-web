@@ -252,7 +252,9 @@
     "ctaTitle": "Build something yourself",
     "ctaBody": "Pick a blueprint and enter your size. Get a Cainz- or Komeri-ready material list automatically.",
     "ctaPrimary": "Browse blueprints",
-    "ctaSecondary": "Post examples in the app"
+    "ctaSecondary": "Post examples in the app",
+    "loadMore": "Load more",
+    "loadMoreLoading": "Loading…"
   },
   "ExampleDetail": {
     "metaTitleTpl": "{useCase} by {author}",

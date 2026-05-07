@@ -7,8 +7,12 @@ import ExampleCard from "@/components/ExampleCard";
 import LottieIcon from "@/components/LottieIcon";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import { categories } from "@/lib/data";
-import { fetchRecentExamples } from "@/lib/examples";
-import { fetchUseCases, fetchFeaturedUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
+import {
+  fetchRecentExamples,
+  fetchUseCases,
+  fetchFeaturedUseCases,
+  fetchExampleCountsByUseCase,
+} from "@/lib/firestore";
 import { localizedAlternates, SITE_BASE_URL } from "@/lib/i18nMeta";
 
 // LP は Featured/作例ピックアップを含むため CDN キャッシュを 10 分で再検証する。
