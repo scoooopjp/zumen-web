@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // Reduced from defaults (8 each) to cut Vercel Hobby transformation quota usage in half.
+    deviceSizes: [640, 828, 1200, 1920],
+    imageSizes: [64, 128, 256, 384],
     remotePatterns: [
       {
         protocol: "https",
