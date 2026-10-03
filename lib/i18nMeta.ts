@@ -8,12 +8,13 @@ function pathFor(locale: string, path: string): string {
   return `${SITE_BASE_URL}/${locale}${clean}`;
 }
 
+// 英語版は noindex（proxy.ts の X-Robots-Tag）なので hreflang の相手に載せない。
+// noindex のページを hreflang で指すと Search Console で「代替ページ」エラーになる。
 export function localizedAlternates(locale: string, path: string) {
   return {
     canonical: pathFor(locale, path),
     languages: {
       ja: pathFor("ja", path),
-      en: pathFor("en", path),
       "x-default": pathFor(routing.defaultLocale, path),
     },
   };

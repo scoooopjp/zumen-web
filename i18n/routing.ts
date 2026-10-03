@@ -12,8 +12,8 @@ export const routing = defineRouting({
   locales: ["ja", "en"] as const,
   defaultLocale: "ja",
   localePrefix: "as-needed",
-  // proxy 側で hreflang Link ヘッダを自動付与する (sitemap でも兄弟登録するので二重保険)。
-  alternateLinks: true,
+  // 英語版は noindex（proxy.ts）なので hreflang Link ヘッダは付けない (2026-10-03)。
+  alternateLinks: false,
   // SSR ページでは URL から locale が確定するため cookie は不要。
   // ただし next-intl デフォルトでは visit 時に cookie を書きにいくため、
   // /en へ自動リダイレクトされて検索流入が壊れないよう off にしておく。

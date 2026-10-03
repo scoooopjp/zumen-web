@@ -35,6 +35,13 @@ export default function proxy(request: NextRequest) {
 
   const response = intlProxy(request);
 
+  // 英語版 (/en, /en/*) は中身が日本語のままの半翻訳で、同じ scoooop.com の中で唯一の
+  // 「量産された薄いページ」型になっていたため検索から外す (2026-10-03)。
+  // ページ自体は残し、リンクはたどらせる。
+  if (/^\/en(?:\/|$)/.test(pathname) && response instanceof NextResponse) {
+    response.headers.set("X-Robots-Tag", "noindex, follow");
+  }
+
   // /search?q=* は検索結果ページなので index させない (薄い検索結果ページが大量に
   // index されると SEO 上マイナス)。/search 本体は generateMetadata で index 許可。
   if (

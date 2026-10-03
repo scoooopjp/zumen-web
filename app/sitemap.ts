@@ -20,16 +20,8 @@ function localizedEntries(
   path: string,
   meta: Omit<MetadataRoute.Sitemap[number], "url" | "alternates">,
 ): MetadataRoute.Sitemap {
-  const languages = {
-    ja: urlFor("ja", path),
-    en: urlFor("en", path),
-    "x-default": urlFor(routing.defaultLocale, path),
-  } as const;
-  return routing.locales.map((loc) => ({
-    ...meta,
-    url: urlFor(loc, path),
-    alternates: { languages },
-  }));
+  // 英語版は noindex（proxy.ts）なので sitemap には日本語版だけを載せる。
+  return [{ ...meta, url: urlFor(routing.defaultLocale, path) }];
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
