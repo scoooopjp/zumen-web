@@ -60,7 +60,7 @@ export default async function SupportPage() {
             {t("contactBody")}
           </p>
           <a
-            href="mailto:scoooop.team@gmail.com"
+            href="mailto:support@scoooop.com"
             className="inline-block bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
             {t("contactCta")}
