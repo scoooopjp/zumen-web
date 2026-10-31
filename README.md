@@ -25,15 +25,10 @@ npx tsc --noEmit # 型チェック
 
 ## Firebase 設定
 
-`.env.local` を作成して環境変数を設定:
+`.env.local` を作成して環境変数を設定 (Firestore はサーバー側で Admin SDK 経由でのみ読む。Web はクライアント SDK を使わない):
 
 ```
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
-NEXT_PUBLIC_FIREBASE_APP_ID=...
+FIREBASE_SERVICE_ACCOUNT_KEY=...   # サービスアカウント JSON (1 行)
 ```
 
 未設定の場合は `lib/data.ts` / `lib/examples.ts` のモックデータにフォールバックします。
@@ -52,7 +47,7 @@ vercel --prod
 
 ```
 lib/
-  firebase.ts      # Firebase 初期化 (未設定時は null)
+  firebase-admin.ts # Firebase Admin SDK 初期化 (サーバー専用、未設定時は null)
   firestore.ts     # Firestore データフェッチ (FSUseCase/FSExample DTO → model)
   data.ts          # UseCase モデル・モックデータ
   examples.ts      # Example モデル・モックデータ

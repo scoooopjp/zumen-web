@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
-export const runtime = "edge";
-
 const NAVY_DEEP = "#0F2A4A";
 const NAVY_MID = "#1A3A5C";
 const AMBER = "#D97B2A";
