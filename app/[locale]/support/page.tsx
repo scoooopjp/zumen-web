@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { localizedAlternates } from "@/lib/i18nMeta";
+import { serializeJsonLd } from "@/lib/jsonLd";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Support");
@@ -35,7 +36,7 @@ export default async function SupportPage() {
     <div className="max-w-2xl mx-auto px-4 py-16">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(faqJsonLd) }}
       />
       <h1 className="text-2xl font-bold text-gray-900 mb-2">{t("h1")}</h1>
       <p className="text-sm text-gray-500 mb-10">{t("lead")}</p>

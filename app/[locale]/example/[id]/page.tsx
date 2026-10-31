@@ -19,6 +19,7 @@ import {
 } from "@/lib/firestore";
 import { userProfilePath } from "@/lib/userPath";
 import { localizedAlternates } from "@/lib/i18nMeta";
+import { serializeJsonLd } from "@/lib/jsonLd";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -129,7 +130,7 @@ export default async function ExampleDetailPage({ params }: Props) {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(articleLd) }}
       />
       <Breadcrumbs
         items={[

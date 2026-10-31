@@ -4,6 +4,7 @@ import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import type { Example } from "@/lib/examples";
 import type { UserProfile } from "@/lib/firestore";
+import { serializeJsonLd } from "@/lib/jsonLd";
 
 interface Props {
   profile: UserProfile;
@@ -32,7 +33,7 @@ export default function UserProfileView({ profile, examples }: Props) {
     <div className="max-w-3xl mx-auto px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(personLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(personLd) }}
       />
       <Breadcrumbs
         items={[

@@ -11,6 +11,19 @@ function docIdFor(retailer: RetailerKey, keyword: string): string {
   return `${retailer}__${safe}`;
 }
 
+/**
+ * productPrices は iOS と共有しており Web 以外からも書かれ得るため、
+ * リンクとして描画する前に https URL であることを確認する (javascript: 等を弾く)。
+ */
+function isSafeProductUrl(url: unknown): url is string {
+  if (typeof url !== "string") return false;
+  try {
+    return new URL(url).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 function shouldPersistResult(result: ProductResult, keyword: string): boolean {
   if (!result.name || result.url.length === 0) return false;
   if (result.price !== null) return true;
@@ -34,11 +47,11 @@ export async function getCachedOrScrape(retailer: RetailerKey, keyword: string):
           const data = snap.data()!;
           const fetchedAt = data.fetchedAt?.toDate?.() ?? new Date(0);
           const fresh = Date.now() - fetchedAt.getTime() < FRESH_TTL_MS;
-          if (fresh) {
+          if (fresh && isSafeProductUrl(data.url)) {
             return {
               name: (data.name as string) ?? "",
               price: (data.price as number | null) ?? null,
-              url: (data.url as string) ?? "",
+              url: data.url,
               retailer: (data.retailer as string) ?? retailer,
             };
           }

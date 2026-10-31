@@ -8,6 +8,7 @@ import RelatedNav from "@/components/RelatedNav";
 import type { Retailer } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 import { localizedAlternates } from "@/lib/i18nMeta";
+import { serializeJsonLd } from "@/lib/jsonLd";
 
 interface Props {
   params: Promise<{ retailer: string }>;
@@ -91,7 +92,7 @@ export default async function StorePage({ params }: Props) {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionLd) }}
       />
       <Breadcrumbs
         items={[{ name: tCommon("breadcrumbHome"), href: "/" }, { name: retailerLabel }]}

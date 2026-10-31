@@ -25,6 +25,8 @@ const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 const HAS_UPSTASH = Boolean(UPSTASH_URL && UPSTASH_TOKEN);
 
 const memoryStore = new Map<string, number[]>();
+// IP ごとにキーが増え続けないよう、一定数を超えたら期限切れのバケットを掃除する。
+const MEMORY_STORE_SWEEP_THRESHOLD = 10_000;
 
 type PipelineCommand = (string | number)[];
 
@@ -82,6 +84,12 @@ export async function isRateLimited(
       // Network glitch shouldn't break the API. Fall through to in-memory
       // so the request is still subject to *some* limit.
       console.warn("[rateLimit] Upstash failure, using in-memory fallback:", err);
+    }
+  }
+
+  if (memoryStore.size > MEMORY_STORE_SWEEP_THRESHOLD) {
+    for (const [key, timestamps] of memoryStore) {
+      if (now - (timestamps[timestamps.length - 1] ?? 0) >= windowMs) memoryStore.delete(key);
     }
   }
 

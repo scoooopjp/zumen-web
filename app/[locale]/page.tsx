@@ -14,6 +14,7 @@ import {
   fetchExampleCountsByUseCase,
 } from "@/lib/firestore";
 import { localizedAlternates, SITE_BASE_URL } from "@/lib/i18nMeta";
+import { serializeJsonLd } from "@/lib/jsonLd";
 
 // LP は Featured/作例ピックアップを含むため CDN キャッシュを 10 分で再検証する。
 // Featured (`config/featured.popularUseCaseIds`) は人手 or バッチで更新される程度なので 10 分で十分。
@@ -147,7 +148,7 @@ export default async function HomePage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
 
       {/* ── Hero ─────────────────────────────────────────── */}
