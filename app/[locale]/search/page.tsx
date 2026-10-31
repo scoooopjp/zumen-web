@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
-import SearchResults from "@/components/SearchResults";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
+import { Suspense } from "react";
+import SearchResults, { SearchResultsView } from "@/components/SearchResults";
 import { getBlueprintByTemplateID } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 import type { UseCase } from "@/lib/data";
@@ -10,7 +11,8 @@ import { localizedAlternates } from "@/lib/i18nMeta";
 // /search?q=* は noindex を維持するため、proxy.ts で X-Robots-Tag を付与している。
 export const revalidate = 3600;
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const t = await getTranslations("Search");
   const locale = await getLocale();
   const title = t("metaTitle");
@@ -54,8 +56,9 @@ function buildHaystack(uc: UseCase): string {
   return text.toLowerCase().normalize("NFKC").replace(/[×✕]/g, "x");
 }
 
-export default async function SearchPage() {
-  const locale = await getLocale();
+export default async function SearchPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const [all, exampleCounts] = await Promise.all([
     fetchUseCases(locale),
     fetchExampleCountsByUseCase(),
@@ -65,7 +68,14 @@ export default async function SearchPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <SearchResults useCases={all} exampleCounts={exampleCounts} haystacks={haystacks} />
+      {/* useSearchParams は静的プリレンダー時に Suspense が必須。fallback は ?q なしの表示。 */}
+      <Suspense
+        fallback={
+          <SearchResultsView useCases={all} exampleCounts={exampleCounts} haystacks={haystacks} query="" />
+        }
+      >
+        <SearchResults useCases={all} exampleCounts={exampleCounts} haystacks={haystacks} />
+      </Suspense>
     </div>
   );
 }

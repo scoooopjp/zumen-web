@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Link } from "@/i18n/navigation";
-import { getTranslations, getLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import LottieIcon from "@/components/LottieIcon";
@@ -21,7 +21,7 @@ import { userProfilePath } from "@/lib/userPath";
 import { localizedAlternates } from "@/lib/i18nMeta";
 
 interface Props {
-  params: Promise<{ id: string }>;
+  params: Promise<{ locale: string; id: string }>;
 }
 
 // UGC (作例 + コメント + 評価) は 5 分 ISR。書込は iOS アプリ主導なので
@@ -29,8 +29,8 @@ interface Props {
 export const revalidate = 300;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const locale = await getLocale();
+  const { locale, id } = await params;
+  setRequestLocale(locale);
   const ex = await fetchExampleById(id, locale);
   if (!ex) return {};
   const t = await getTranslations("ExampleDetail");
@@ -66,8 +66,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ExampleDetailPage({ params }: Props) {
-  const { id } = await params;
-  const locale = await getLocale();
+  const { locale, id } = await params;
+  setRequestLocale(locale);
   const ex = await fetchExampleById(id, locale);
   if (!ex) notFound();
 
