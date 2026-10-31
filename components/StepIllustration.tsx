@@ -438,7 +438,7 @@ const Diagrams: Record<IllType, React.FC<DiagramProps>> = {
 
   // 壁固定: 壁断面 + 下地(スタッド) + 板 + Lブラケット + アンカー
   wallMount: ({ accent, t }) => {
-    const cx = W / 2, cy = H / 2;
+    const cy = H / 2;
     const bW = W * 0.52, bH = 56;
     const bX = 28, bY = cy - bH / 2;
     const brY = bY + 8;

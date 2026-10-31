@@ -56,9 +56,11 @@ export default function proxy(request: NextRequest) {
   return response;
 }
 
+// `/og` (動的 OGP 画像の Route Handler) は locale 配下に無いため、intl proxy を通すと
+// `/ja/og` に rewrite されて 404 になる。matcher から除外する。
 export const config = {
   matcher: [
     "/_next/image",
-    "/((?!api|_next|_vercel|opengraph-image|robots.txt|sitemap.xml|.*\\..*).*)",
+    "/((?!api|_next|_vercel|og(?:/|$)|opengraph-image|robots.txt|sitemap.xml|.*\\..*).*)",
   ],
 };
