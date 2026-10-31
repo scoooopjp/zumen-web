@@ -89,6 +89,7 @@ export default async function Image({ params }: Props) {
           {photoURL ? (
             <img
               src={photoURL}
+              alt=""
               width={180}
               height={180}
               style={{
