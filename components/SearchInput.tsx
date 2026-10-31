@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 
 interface Props {
@@ -21,9 +21,12 @@ export default function SearchInput({
   const [value, setValue] = useState(query);
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
+  // URL の q が変わったら入力欄も追従させる (effect ではなくレンダー中に調整)。
+  const [prevQuery, setPrevQuery] = useState(query);
+  if (query !== prevQuery) {
+    setPrevQuery(query);
     setValue(query);
-  }, [query]);
+  }
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
