@@ -6,6 +6,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { categories } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 import { localizedAlternates } from "@/lib/i18nMeta";
+import { serializeJsonLd } from "@/lib/jsonLd";
 
 // カテゴリ一覧は ほぼ静的 (UseCase マスタ + exampleCounts のみ)。1時間 ISR で十分。
 export const revalidate = 3600;
@@ -60,7 +61,7 @@ export default async function CategoryListPage() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionLd) }}
       />
       <Breadcrumbs
         items={[{ name: tCommon("breadcrumbHome"), href: "/" }, { name: t("breadcrumbCurrent") }]}

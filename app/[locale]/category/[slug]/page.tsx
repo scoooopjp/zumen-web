@@ -9,6 +9,7 @@ import RelatedNav from "@/components/RelatedNav";
 import { categories } from "@/lib/data";
 import { fetchUseCases, fetchExampleCountsByUseCase } from "@/lib/firestore";
 import { localizedAlternates } from "@/lib/i18nMeta";
+import { serializeJsonLd } from "@/lib/jsonLd";
 
 // カテゴリ詳細は静的なカテゴリ集合に対する ISR。1時間で十分。
 export const revalidate = 3600;
@@ -84,7 +85,7 @@ export default async function CategoryDetailPage({ params }: Props) {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(collectionLd) }}
       />
       <Breadcrumbs
         items={[

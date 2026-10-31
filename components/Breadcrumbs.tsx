@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
+import { serializeJsonLd } from "@/lib/jsonLd";
 
 export interface Crumb {
   name: string;
@@ -29,7 +30,7 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
       <nav
         aria-label={t("breadcrumbAria")}

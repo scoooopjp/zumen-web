@@ -8,11 +8,14 @@ const AMBER_PALE = "#FEF3E2";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const title = searchParams.get("title") ?? "つくれるDIY設計図";
-  const category = searchParams.get("category") ?? "";
-  const difficulty = searchParams.get("difficulty") ?? "";
-  const budget = searchParams.get("budget") ?? "";
-  const icon = searchParams.get("icon") ?? "🪚";
+  // 任意のクエリで呼べる公開エンドポイントなので、描画コストを抑えるため長さを丸める。
+  const param = (key: string, fallback: string, max: number) =>
+    Array.from(searchParams.get(key) ?? fallback).slice(0, max).join("");
+  const title = param("title", "つくれるDIY設計図", 100);
+  const category = param("category", "", 40);
+  const difficulty = param("difficulty", "", 20);
+  const budget = param("budget", "", 20);
+  const icon = param("icon", "🪚", 8);
 
   return new ImageResponse(
     (

@@ -40,6 +40,7 @@ import {
 } from "@/lib/firestore";
 import type { FSBlueprintDetail } from "@/lib/firestore";
 import { localizedAlternates } from "@/lib/i18nMeta";
+import { serializeJsonLd } from "@/lib/jsonLd";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -248,7 +249,7 @@ export default async function BlueprintPage({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(howToSchema) }}
       />
       <ViewRecorder slug={slug} />
 
