@@ -37,11 +37,23 @@ function normalizeSearchText(value: string): string {
  * 大量アクセス (クローラー含む) で Vercel function invocation が増えなくなる。
  * 旧: SSR 毎回 fetchUseCases / fetchExampleCountsByUseCase 実行 → 新: 静的レスポンスを配信。
  */
-export default function SearchResults({ useCases, exampleCounts, haystacks }: Props) {
+export default function SearchResults(props: Props) {
+  const params = useSearchParams();
+  return <SearchResultsView {...props} query={(params.get("q") ?? "").trim()} />;
+}
+
+/**
+ * `useSearchParams` を使わない描画本体。ページ側の Suspense fallback (= 静的 HTML) では
+ * query="" で描画し、ハイドレーション後に実際の `?q=` で再描画される。
+ */
+export function SearchResultsView({
+  useCases,
+  exampleCounts,
+  haystacks,
+  query,
+}: Props & { query: string }) {
   const t = useTranslations("Search");
   const tCommon = useTranslations("Common");
-  const params = useSearchParams();
-  const query = (params.get("q") ?? "").trim();
 
   const tokens = useMemo(() => tokenize(query), [query]);
   const results = useMemo(() => {
@@ -79,7 +91,7 @@ export default function SearchResults({ useCases, exampleCounts, haystacks }: Pr
       </p>
 
       <div className="mb-8">
-        <SearchInput />
+        <SearchInput query={query} />
       </div>
 
       {query && results.length === 0 && (

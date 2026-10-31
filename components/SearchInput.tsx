@@ -1,23 +1,23 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useState, useTransition } from "react";
 import { useTranslations } from "next-intl";
 
 interface Props {
+  /** 現在の検索クエリ (`?q=`)。親が useSearchParams で読んで渡す。 */
+  query: string;
   placeholder?: string;
   className?: string;
 }
 
 export default function SearchInput({
+  query,
   placeholder,
   className,
 }: Props) {
   const t = useTranslations("SearchInput");
   const router = useRouter();
-  const params = useSearchParams();
-  const query = params.get("q") ?? "";
   const [value, setValue] = useState(query);
   const [isPending, startTransition] = useTransition();
 

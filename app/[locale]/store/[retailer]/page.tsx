@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -11,7 +11,7 @@ import { localizedAlternates } from "@/lib/i18nMeta";
 import { serializeJsonLd } from "@/lib/jsonLd";
 
 interface Props {
-  params: Promise<{ retailer: string }>;
+  params: Promise<{ locale: string; retailer: string }>;
 }
 
 const storeMap: Record<string, { name: Retailer; descKey: "descCainz" | "descKomeri" | "descKohnan" | "descDcm" }> = {
@@ -29,6 +29,7 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { retailer } = await params;
   const store = storeMap[retailer];
   if (!store) return {};
@@ -52,6 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function StorePage({ params }: Props) {
+  setRequestLocale((await params).locale);
   const { retailer } = await params;
   const store = storeMap[retailer];
   if (!store) notFound();

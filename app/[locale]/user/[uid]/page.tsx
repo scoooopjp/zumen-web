@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { redirect } from "@/i18n/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import UserProfileView from "@/components/UserProfileView";
 import { fetchExamplesByAuthor, fetchUserProfile } from "@/lib/firestore";
 import { localizedAlternates } from "@/lib/i18nMeta";
 
 interface Props {
-  params: Promise<{ uid: string }>;
+  params: Promise<{ locale: string; uid: string }>;
 }
 
 // UID URL は noindex 配信なので CDN キャッシュも実質シェアリンク経由のみ。5 分 ISR で十分。
@@ -15,6 +15,7 @@ interface Props {
 export const revalidate = 300;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { uid } = await params;
   const profile = await fetchUserProfile(uid);
   if (!profile) return { robots: { index: false, follow: false } };
@@ -49,6 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function UserProfilePage({ params }: Props) {
+  setRequestLocale((await params).locale);
   const { uid } = await params;
   const profile = await fetchUserProfile(uid);
   if (!profile) notFound();

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import BlueprintFilters from "@/components/BlueprintFilters";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -20,10 +20,11 @@ export async function generateStaticParams() {
 }
 
 interface Props {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { slug } = await params;
   const cat = categories.find((c) => c.slug === slug);
   if (!cat) return {};
@@ -46,6 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CategoryDetailPage({ params }: Props) {
+  setRequestLocale((await params).locale);
   const { slug } = await params;
   const cat = categories.find((c) => c.slug === slug);
   if (!cat) notFound();

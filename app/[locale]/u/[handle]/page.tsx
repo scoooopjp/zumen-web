@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import UserProfileView from "@/components/UserProfileView";
 import { fetchExamplesByAuthor, fetchUserProfileByUsername } from "@/lib/firestore";
 import { localizedAlternates, SITE_BASE_URL } from "@/lib/i18nMeta";
 
 interface Props {
-  params: Promise<{ handle: string }>;
+  params: Promise<{ locale: string; handle: string }>;
 }
 
 // プロフィールは表示頻度が高い割に書込頻度が低いので 5 分 ISR。
@@ -14,6 +14,7 @@ interface Props {
 export const revalidate = 300;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const { handle } = await params;
   const profile = await fetchUserProfileByUsername(handle);
   if (!profile) return { robots: { index: false } };
@@ -48,6 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function UserHandlePage({ params }: Props) {
+  setRequestLocale((await params).locale);
   const { handle } = await params;
   const profile = await fetchUserProfileByUsername(handle);
   if (!profile) notFound();

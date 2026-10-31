@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { categories } from "@/lib/data";
@@ -11,7 +11,8 @@ import { serializeJsonLd } from "@/lib/jsonLd";
 // カテゴリ一覧は ほぼ静的 (UseCase マスタ + exampleCounts のみ)。1時間 ISR で十分。
 export const revalidate = 3600;
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const t = await getTranslations("CategoryList");
   const locale = await getLocale();
   const ogUrl = `/og?title=${encodeURIComponent(t("metaTitle"))}&category=${encodeURIComponent(t("ogCategory"))}&icon=${encodeURIComponent(t("ogIcon"))}`;
@@ -28,7 +29,8 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function CategoryListPage() {
+export default async function CategoryListPage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale((await params).locale);
   const t = await getTranslations("CategoryList");
   const tCommon = await getTranslations("Common");
   const tFooter = await getTranslations("Footer");

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import { localizedAlternates } from "@/lib/i18nMeta";
 import { serializeJsonLd } from "@/lib/jsonLd";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const t = await getTranslations("Support");
   const locale = await getLocale();
   return {
@@ -18,7 +19,8 @@ interface FaqItem {
   a: string;
 }
 
-export default async function SupportPage() {
+export default async function SupportPage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale((await params).locale);
   const t = await getTranslations("Support");
   const faqs = t.raw("faq") as FaqItem[];
 

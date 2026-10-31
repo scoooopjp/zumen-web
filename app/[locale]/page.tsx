@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { getTranslations, getLocale } from "next-intl/server";
+import { getTranslations, getLocale, setRequestLocale } from "next-intl/server";
 import BlueprintCard from "@/components/BlueprintCard";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import ExampleCard from "@/components/ExampleCard";
@@ -21,8 +21,9 @@ import { serializeJsonLd } from "@/lib/jsonLd";
 export const revalidate = 600;
 
 /* ─── SEO Metadata ─── */
-export async function generateMetadata(): Promise<Metadata> {
-  const locale = await getLocale();
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations("Home");
   return {
     title: t("metaTitle"),
@@ -122,7 +123,8 @@ const categoryIcon: Record<string, string> = {
   "看板・インテリア": "🪧",
 };
 
-export default async function HomePage() {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
+  setRequestLocale((await params).locale);
   const t = await getTranslations("Home");
   const tFooter = await getTranslations("Footer");
   const locale = await getLocale();

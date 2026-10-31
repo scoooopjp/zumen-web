@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import AppStoreCTA from "@/components/AppStoreCTA";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import BlueprintPartsTable from "@/components/BlueprintPartsTable";
@@ -43,7 +43,7 @@ import { localizedAlternates } from "@/lib/i18nMeta";
 import { serializeJsonLd } from "@/lib/jsonLd";
 
 interface Props {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 }
 
 export const dynamicParams = true;
@@ -79,8 +79,8 @@ async function resolvePageData(slug: string, locale: string): Promise<{
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const locale = await getLocale();
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
   const data = await resolvePageData(slug, locale);
   if (!data) return {};
   const { bp, uc } = data;
@@ -146,8 +146,8 @@ const retailerKeyMap: Record<string, "cainz" | "komeri" | "kohnan" | "dcm"> = {
 };
 
 export default async function BlueprintPage({ params }: Props) {
-  const { slug } = await params;
-  const locale = await getLocale();
+  const { locale, slug } = await params;
+  setRequestLocale(locale);
   const data = await resolvePageData(slug, locale);
   if (!data) notFound();
 

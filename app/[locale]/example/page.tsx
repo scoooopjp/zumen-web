@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 import AppOnlyGate from "@/components/AppOnlyGate";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ExampleListInfinite from "@/components/ExampleListInfinite";
@@ -13,7 +13,8 @@ export const revalidate = 300;
 
 const INITIAL_PAGE_SIZE = 24;
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const t = await getTranslations("ExampleList");
   const locale = await getLocale();
   const exampleOgUrl = `/og?title=${encodeURIComponent(t("h1"))}&category=${encodeURIComponent(t("label"))}&icon=${encodeURIComponent("📸")}`;
@@ -31,8 +32,9 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function ExampleListPage() {
-  const locale = await getLocale();
+export default async function ExampleListPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const initial = await fetchExamplePage({ locale, limit: INITIAL_PAGE_SIZE });
   const t = await getTranslations("ExampleList");
   const tCommon = await getTranslations("Common");
