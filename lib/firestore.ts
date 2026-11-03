@@ -88,6 +88,16 @@ interface ExampleCountsDoc {
   updatedAt?: FirebaseFirestore.Timestamp;
 }
 
+/**
+ * unstable_cache に載せる形。unstable_cache は戻り値を JSON シリアライズするため、
+ * Firestore Timestamp はキャッシュ経由で `{_seconds,_nanoseconds}` の素のオブジェクトになり
+ * `.toDate()` が消える。epoch ms (number) に変換してから返す。
+ */
+interface CachedExampleCountsDoc {
+  counts?: Record<string, number>;
+  updatedAtMs?: number;
+}
+
 // ── Storage URL ベース（リサイズ済み） ────────────────────────
 const STORAGE_RESIZED_BASE =
   "https://firebasestorage.googleapis.com/v0/b/zumen-d0625.firebasestorage.app/o/usecase-thumbnails-resized%2F";
@@ -745,18 +755,24 @@ function buildExampleCounts(examples: Array<{ useCaseID: string }>): Record<stri
 const EXAMPLE_COUNTS_TTL_MS = 24 * 60 * 60 * 1000;
 
 const loadExampleCountsDoc = unstable_cache(
-  async (): Promise<ExampleCountsDoc | null> => {
+  async (): Promise<CachedExampleCountsDoc | null> => {
     const db = getAdminDb();
     if (!db) return null;
     try {
       const snap = await db.collection("config").doc("exampleCounts").get();
-      return snap.exists ? (snap.data() as ExampleCountsDoc) : null;
+      if (!snap.exists) return null;
+      const data = snap.data() as ExampleCountsDoc;
+      return {
+        counts: data.counts,
+        updatedAtMs: data.updatedAt?.toMillis?.(),
+      };
     } catch (e) {
       console.error("[firestore] loadExampleCountsDoc failed:", e);
       return null;
     }
   },
-  ["firestore-example-counts-doc-v2"],
+  // v3: 戻り値の形を変えたので、旧形式 (updatedAt: Timestamp) のキャッシュを読まないようキーを更新
+  ["firestore-example-counts-doc-v3"],
   { revalidate: 600 }
 );
 
@@ -808,10 +824,13 @@ export const fetchExampleCountsByUseCase = cache(
 
     try {
       const doc = await loadExampleCountsDoc();
-      const updatedAt = doc?.updatedAt?.toDate?.();
+      // 以前は doc.updatedAt.toDate() を見ていたが、unstable_cache 経由で Timestamp が
+      // 素のオブジェクトになり isFresh が常に false → ISR 再生成のたびに useCase 数ぶんの
+      // count() が走り、RunAggregationQuery が月 600 万回を超えていた (Firestore 課金のほぼ全て)。
+      const updatedAtMs = doc?.updatedAtMs;
       const isFresh =
-        updatedAt instanceof Date &&
-        Date.now() - updatedAt.getTime() < EXAMPLE_COUNTS_TTL_MS;
+        typeof updatedAtMs === "number" &&
+        Date.now() - updatedAtMs < EXAMPLE_COUNTS_TTL_MS;
       if (doc?.counts && isFresh) {
         return doc.counts;
       }
