@@ -1,7 +1,7 @@
 # ZUMEN Web
 
 ZUMEN DIY アプリの公開 Web サイト。
-Next.js 14 App Router / Tailwind CSS / TypeScript / Vercel デプロイ。
+Next.js 16 App Router / Tailwind CSS / TypeScript / Firebase App Hosting。
 
 ## ページ構成
 
@@ -35,13 +35,15 @@ FIREBASE_SERVICE_ACCOUNT_KEY=...   # サービスアカウント JSON (1 行)
 
 ## デプロイ
 
-Vercel (東京リージョン hnd1):
+Firebase App Hosting（プロジェクト `zumen-d0625`、backend `zumen-web`、リージョン `asia-east1`）。
+設定は `apphosting.yaml`（台数・メモリ）と `firebase.json`（アップロードから除くファイル）。
 
 ```bash
-vercel --prod
+firebase deploy --only apphosting --project zumen-d0625
 ```
 
-`vercel.json` でセキュリティヘッダと hnd1 リージョンを設定済み。
+Firestore は App Hosting の実行サービスアカウントの既定の認証情報で読むので、本番に鍵は置かない。
+2026-11 に Vercel（Hobby の CPU 無料枠超過で停止）から移した。
 
 ## ライブラリ構成
 
