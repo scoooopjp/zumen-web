@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getLocale } from "next-intl/server";
+import { routing } from "@/i18n/routing";
 
 export const alt = "ZUMEN — DIY blueprints you can build";
 export const size = { width: 1200, height: 630 };
@@ -11,7 +11,9 @@ const AMBER = "#D97B2A";
 const AMBER_PALE = "#FEF3E2";
 
 export default async function Image() {
-  const locale = await getLocale();
+  // この画像は proxy (next-intl) を通らない URL なので、getLocale() は常に既定の言語になる。
+  // getLocale() はリクエストヘッダーを読むため、ページがアクセスごとの描画になっていた。
+  const locale: string = routing.defaultLocale;
   const isEn = locale === "en";
   const tagline = isEn ? "DIY blueprints you can build" : "つくれるDIY設計図";
   const headline1 = isEn ? "Just enter a size to get" : "サイズを入れるだけで";

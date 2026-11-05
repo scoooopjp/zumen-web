@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getLocale } from "next-intl/server";
+import { routing } from "@/i18n/routing";
 import { fetchUserProfileByUsername } from "@/lib/firestore";
 
 export const alt = "ZUMEN profile";
@@ -8,6 +8,11 @@ export const contentType = "image/png";
 // SNS unfurl のたびに users / usernames を読まないよう 1 日 ISR。
 // プロフィールが更新されても 24 時間以内には反映される。
 export const revalidate = 86400;
+
+// 空配列で「最初のアクセスで作ってキャッシュ」にする（無いとアクセスごとに描画される）。
+export async function generateStaticParams() {
+  return [];
+}
 
 const NAVY_DEEP = "#0F2A4A";
 const NAVY_MID = "#1A3A5C";
@@ -21,7 +26,9 @@ interface Props {
 export default async function Image({ params }: Props) {
   const { handle } = await params;
   const profile = await fetchUserProfileByUsername(handle);
-  const locale = await getLocale();
+  // この画像は proxy (next-intl) を通らない URL なので、getLocale() は常に既定の言語になる。
+  // getLocale() はリクエストヘッダーを読むため、ページがアクセスごとの描画になっていた。
+  const locale: string = routing.defaultLocale;
   const isEn = locale === "en";
   const tagline = isEn ? "DIY blueprints you can build" : "つくれるDIY設計図";
   const bioFallback = isEn ? "Sharing DIY builds on ZUMEN" : "ZUMEN で DIY 作例を共有中";

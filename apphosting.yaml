@@ -1,0 +1,14 @@
+# Firebase App Hosting (backend: zumen-web, project: zumen-d0625, region: asia-northeast1)
+# Firestore は実行サービスアカウントの既定の認証情報で読むので、鍵の環境変数は置かない。
+runConfig:
+  minInstances: 0   # アクセスがなければ0台（課金なし）
+  maxInstances: 2   # 想定外のアクセスでも費用が膨らまないよう上限を置く
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 1024   # 画像変換 (sharp) と OG 画像の生成に余裕を持たせる
+
+# GA を使う場合は測定 ID を足す（未設定なら GA のタグは出ない）:
+# env:
+#   - variable: NEXT_PUBLIC_GA_ID
+#     value: G-XXXXXXXXXX
+#     availability: [BUILD, RUNTIME]

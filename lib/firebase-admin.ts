@@ -13,12 +13,16 @@ function getAdminApp() {
   if (existing) return existing;
 
   const keyJson = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-  if (!keyJson) {
+  // Firebase App Hosting (Cloud Run) では鍵を置かず、実行サービスアカウントの
+  // 既定の認証情報 (ADC) を使う。FIREBASE_CONFIG / K_SERVICE は App Hosting が設定する。
+  const onGoogleCloud = Boolean(process.env.FIREBASE_CONFIG || process.env.K_SERVICE);
+  if (!keyJson && !onGoogleCloud) {
     console.warn("[firebase-admin] FIREBASE_SERVICE_ACCOUNT_KEY not set — falling back to mock data");
     return null;
   }
 
   try {
+    if (!keyJson) return initializeApp(undefined, APP_NAME);
     const serviceAccount = JSON.parse(keyJson);
     return initializeApp({ credential: cert(serviceAccount) }, APP_NAME);
   } catch (e) {

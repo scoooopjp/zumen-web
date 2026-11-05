@@ -9,7 +9,8 @@ import { fetchExamplePage } from "@/lib/firestore";
 import { localizedAlternates } from "@/lib/i18nMeta";
 
 // 5分ごとに再検証（新しい投稿を反映）
-export const revalidate = 300;
+// 作例・ユーザーページは約2,300件あり、クローラーの巡回ごとに作り直すと CPU を食うので1時間にする。
+export const revalidate = 3600;
 
 const INITIAL_PAGE_SIZE = 24;
 

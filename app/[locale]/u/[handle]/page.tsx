@@ -11,7 +11,14 @@ interface Props {
 
 // プロフィールは表示頻度が高い割に書込頻度が低いので 5 分 ISR。
 // 投稿が増えた時の表示遅延は 5 分以内に収まる。
-export const revalidate = 300;
+// 作例・ユーザーページは約2,300件あり、クローラーの巡回ごとに作り直すと CPU を食うので1時間にする。
+export const revalidate = 3600;
+
+// 空配列を返すと、ビルド時には作らず「最初のアクセスで作ってキャッシュ」する（ISR）。
+// これが無いとアクセスのたびに描画され、revalidate も効かない。
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   setRequestLocale((await params).locale);

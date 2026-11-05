@@ -12,7 +12,14 @@ interface Props {
 
 // UID URL は noindex 配信なので CDN キャッシュも実質シェアリンク経由のみ。5 分 ISR で十分。
 // /u/{username} 経由は別ページとしてキャッシュされる。
-export const revalidate = 300;
+// 作例・ユーザーページは約2,300件あり、クローラーの巡回ごとに作り直すと CPU を食うので1時間にする。
+export const revalidate = 3600;
+
+// 空配列を返すと、ビルド時には作らず「最初のアクセスで作ってキャッシュ」する（ISR）。
+// これが無いとアクセスのたびに描画され、revalidate も効かない。
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   setRequestLocale((await params).locale);
