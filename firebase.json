@@ -1,0 +1,23 @@
+{
+  "apphosting": [
+    {
+      "backendId": "zumen-web",
+      "rootDir": "/",
+      "ignore": [
+        "node_modules",
+        ".git",
+        ".next",
+        ".vercel",
+        ".claude",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "functions",
+        "serviceAccountKey.json",
+        ".env",
+        ".env.*",
+        "scripts",
+        "tsconfig.tsbuildinfo"
+      ]
+    }
+  ]
+}
