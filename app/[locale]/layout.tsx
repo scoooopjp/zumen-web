@@ -6,7 +6,6 @@ import "../globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { routing } from "@/i18n/routing";
 import { SITE_BASE_URL, localizedAlternates } from "@/lib/i18nMeta";
 
@@ -87,7 +86,6 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col bg-white text-gray-900">
         <NextIntlClientProvider>
           <GoogleAnalytics />
-          <SpeedInsights />
           <Header />
           <main className="flex-1">{children}</main>
           <Footer />

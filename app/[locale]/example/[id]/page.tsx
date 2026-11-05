@@ -27,7 +27,14 @@ interface Props {
 
 // UGC (作例 + コメント + 評価) は 5 分 ISR。書込は iOS アプリ主導なので
 // 5 分の鮮度ラグは許容。CDN キャッシュが効くので多数アクセス時のコストを抑えられる。
-export const revalidate = 300;
+// 作例・ユーザーページは約2,300件あり、クローラーの巡回ごとに作り直すと CPU を食うので1時間にする。
+export const revalidate = 3600;
+
+// 空配列を返すと、ビルド時には作らず「最初のアクセスで作ってキャッシュ」する（ISR）。
+// これが無いとアクセスのたびに描画され、revalidate も効かない。
+export async function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, id } = await params;
